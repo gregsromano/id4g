@@ -1,26 +1,79 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* === Brand Colors (matching Greg Romano Art) === */
+  --bg-primary: #050505;
+  --bg-section-alt: #151515;
+  --bg-charcoal: #222222;
+
+  --accent: #E87511;
+  --accent-hover: #FF8A1F;
+  --gold: #C99A3A;
+
+  --text-primary: #FFFFFF;
+  --text-body: #D8D8D8;
+  --text-muted: #888888;
+  --border: #1e1e1e;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--accent);
+  --color-gold: var(--gold);
+  --font-block: var(--font-block);
+  --font-body: var(--font-body);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-body);
+  font-family: var(--font-body, 'Montserrat', sans-serif);
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+h1, .h1 {
+  font-family: var(--font-block, 'Bebas Neue', sans-serif);
+  font-size: clamp(56px, 9vw, 118px);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+h2, .h2 {
+  font-family: var(--font-block, 'Bebas Neue', sans-serif);
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.section-label {
+  font-family: var(--font-body, 'Montserrat', sans-serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+}
+
+.lead {
+  font-size: clamp(18px, 2vw, 22px);
+  color: var(--text-body);
+  line-height: 1.6;
 }

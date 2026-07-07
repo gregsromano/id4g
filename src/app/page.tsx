@@ -24,33 +24,55 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="mx-auto flex max-w-3xl flex-col items-center gap-8 px-6 py-24 text-center">
-        <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">
-          Greg Romano Art — Limited Drop
-        </p>
-        <h1 className="text-5xl font-bold leading-tight sm:text-6xl">
-          I Die For The Gospel
-        </h1>
-        <p className="max-w-xl text-lg text-zinc-300">
+    <main className="flex-1 bg-[var(--bg-primary)]">
+      {/* Hero */}
+      <section className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-6 pt-20 pb-16 text-center sm:pt-28">
+        <span className="section-label">Greg Romano Art — Limited Drop</span>
+        <h1 className="max-w-3xl">I Die For The Gospel</h1>
+        <p className="lead max-w-xl">
           Wearable art for those who count the cost and follow anyway. A bold
-          declaration of faith, made for the ones who mean it.
+          declaration of faith, worn by the ones who mean it.
         </p>
+      </section>
 
-        <div className="mt-8 aspect-square w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-900 flex items-center justify-center text-zinc-600">
-          Shirt mockup goes here
+      {/* Product image */}
+      <section className="mx-auto max-w-3xl px-6">
+        <div className="aspect-square w-full overflow-hidden rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)] flex items-center justify-center">
+          <span className="text-sm uppercase tracking-widest text-[var(--text-muted)]">
+            Shirt mockup coming soon
+          </span>
         </div>
+      </section>
 
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <div className="flex gap-2">
+      {/* Story */}
+      <section className="mx-auto max-w-2xl px-6 py-20 text-center">
+        <span className="section-label mb-3">The Statement</span>
+        <p className="text-lg text-[var(--text-body)]">
+          &ldquo;For to me, to live is Christ, and to die is gain.&rdquo;
+          Philippians 1:21. This isn&apos;t merch. It&apos;s a declaration
+          stitched into cotton, made for people who wear their convictions
+          out loud.
+        </p>
+      </section>
+
+      {/* Purchase */}
+      <section className="mx-auto max-w-md px-6 pb-28">
+        <div className="rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)] p-8">
+          <h2 className="h2 mb-2 text-center">Get Yours</h2>
+          <p className="mb-6 text-center text-sm text-[var(--text-muted)]">
+            Limited run. Once it&apos;s gone, it&apos;s gone.
+          </p>
+
+          <p className="section-label mb-3 text-center">Select Size</p>
+          <div className="mb-8 flex justify-center gap-2">
             {SIZES.map((s) => (
               <button
                 key={s}
                 onClick={() => setSize(s)}
-                className={`h-10 w-10 rounded-full border text-sm font-medium transition-colors ${
+                className={`h-11 w-11 rounded-full border text-sm font-semibold transition-colors ${
                   size === s
-                    ? "border-white bg-white text-black"
-                    : "border-zinc-700 text-zinc-300 hover:border-zinc-400"
+                    ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                    : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
                 }`}
               >
                 {s}
@@ -61,7 +83,7 @@ export default function Home() {
           <button
             onClick={handleCheckout}
             disabled={loading}
-            className="mt-2 rounded-full bg-white px-10 py-3 text-base font-semibold text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-sm bg-[var(--accent)] py-4 text-base font-bold uppercase tracking-widest text-black transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50"
           >
             {loading ? "Redirecting..." : "Buy Now"}
           </button>
