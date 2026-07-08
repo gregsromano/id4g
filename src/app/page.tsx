@@ -38,8 +38,37 @@ export default function Home() {
 
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
+      {/* Top nav — logo mark */}
+      <header className="absolute left-0 top-0 z-20 px-6 py-6">
+        <Image
+          src="/idfg-logo.webp"
+          alt="ID4G — I'll Die For The Gospel"
+          width={653}
+          height={633}
+          className="w-full max-w-[72px]"
+        />
+      </header>
+
       {/* Full-bleed hero */}
       <section className="relative overflow-hidden bg-black">
+        {/* Paint splatter texture — top-right and bottom-left corners */}
+        <Image
+          src="/paint-splatter.svg"
+          alt=""
+          width={260}
+          height={210}
+          aria-hidden
+          className="pointer-events-none absolute -right-6 -top-4 z-[1] w-[280px] opacity-80 mix-blend-screen sm:w-[380px]"
+        />
+        <Image
+          src="/paint-splatter.svg"
+          alt=""
+          width={260}
+          height={210}
+          aria-hidden
+          className="pointer-events-none absolute -bottom-16 -left-16 z-[1] hidden w-[220px] rotate-180 opacity-40 mix-blend-screen sm:block sm:w-[300px]"
+        />
+
         {/* Mobile: shirt photo up top, full width */}
         <div className="relative h-[46vh] w-full sm:hidden">
           <Image
@@ -77,9 +106,7 @@ export default function Home() {
 
         <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-8 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
           <div className="max-w-xl">
-            <span className="section-label mb-4">
-              Presented by Greg Romano Art
-            </span>
+            <span className="section-label mb-4">Greg Romano Presents</span>
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
               Brok3n.
               <br />
@@ -224,16 +251,6 @@ export default function Home() {
             <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
               Limited run &middot; Once it&apos;s gone, it&apos;s gone
             </p>
-
-            <div className="mt-12 border-t border-[var(--border)] pt-8">
-              <Image
-                src="/idfg-logo.webp"
-                alt="ID4G — I'll Die For The Gospel"
-                width={653}
-                height={633}
-                className="w-full max-w-[160px]"
-              />
-            </div>
           </div>
         </div>
       </section>
