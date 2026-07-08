@@ -8,6 +8,7 @@ const SIZES = ["S", "M", "L", "XL", "2XL"];
 export default function Home() {
   const [size, setSize] = useState("M");
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"front" | "back">("front");
 
   async function handleCheckout() {
     setLoading(true);
@@ -45,10 +46,42 @@ export default function Home() {
 
       {/* Product image */}
       <section className="mx-auto max-w-3xl px-6">
-        <div className="aspect-square w-full overflow-hidden rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)] flex items-center justify-center">
-          <span className="text-sm uppercase tracking-widest text-[var(--text-muted)]">
-            Shirt mockup coming soon
-          </span>
+        <div className="aspect-square w-full overflow-hidden rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)]">
+          <Image
+            src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
+            alt={
+              view === "front"
+                ? "BROK3N t-shirt front — Psalm 34:18"
+                : "BROK3N t-shirt back — The LORD is close to the brokenhearted"
+            }
+            width={1054}
+            height={1054}
+            className="h-full w-full object-contain"
+            priority
+          />
+        </div>
+
+        <div className="mt-4 flex justify-center gap-2">
+          <button
+            onClick={() => setView("front")}
+            className={`rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+              view === "front"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
+            }`}
+          >
+            Front
+          </button>
+          <button
+            onClick={() => setView("back")}
+            className={`rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+              view === "back"
+                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
+            }`}
+          >
+            Back
+          </button>
         </div>
       </section>
 
@@ -56,10 +89,10 @@ export default function Home() {
       <section className="mx-auto max-w-2xl px-6 py-20 text-center">
         <span className="section-label mb-3">The Statement</span>
         <p className="text-lg text-[var(--text-body)]">
-          &ldquo;For to me, to live is Christ, and to die is gain.&rdquo;
-          Philippians 1:21. This isn&apos;t merch. It&apos;s a declaration
-          stitched into cotton, made for people who wear their convictions
-          out loud.
+          &ldquo;The LORD is close to the brokenhearted and saves those who
+          are crushed in spirit.&rdquo; Psalm 34:18. We&apos;re broken. Christ
+          died for us anyway. This is a declaration stitched into cotton for
+          the ones who&apos;ll die for that gospel too.
         </p>
       </section>
 
