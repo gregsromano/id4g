@@ -39,119 +39,120 @@ export default function Home() {
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
       {/* Hero */}
-      <section className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-6 pt-20 pb-16 text-center sm:pt-28">
-        <span className="section-label">Greg Romano Art — Limited Drop</span>
+      <section className="border-b border-[var(--border)]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-2 lg:items-center lg:gap-16">
+          {/* Product image */}
+          <div className="order-1 lg:order-2">
+            <div className="aspect-square w-full overflow-hidden bg-[var(--bg-section-alt)]">
+              <Image
+                src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
+                alt={
+                  view === "front"
+                    ? "BROK3N t-shirt front — Psalm 34:18"
+                    : "BROK3N t-shirt back — The LORD is close to the brokenhearted"
+                }
+                width={1054}
+                height={1054}
+                className="h-full w-full object-contain"
+                priority
+              />
+            </div>
+            <div className="mt-3 flex gap-6 border-t border-[var(--border)] pt-3">
+              <button
+                onClick={() => setView("front")}
+                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                  view === "front"
+                    ? "text-[var(--accent)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-body)]"
+                }`}
+              >
+                Front
+              </button>
+              <button
+                onClick={() => setView("back")}
+                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
+                  view === "back"
+                    ? "text-[var(--accent)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-body)]"
+                }`}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+
+          {/* Copy + purchase */}
+          <div className="order-2 lg:order-1">
+            <span className="section-label mb-4">
+              Presented by Greg Romano Art
+            </span>
+            <h1 className="mb-5 text-5xl sm:text-6xl">
+              Brok3n.
+              <br />
+              Not Forsaken.
+            </h1>
+            <p className="lead mb-8 max-w-md">
+              &ldquo;The LORD is close to the brokenhearted and saves those
+              who are crushed in spirit.&rdquo; Psalm 34:18. A limited-run tee
+              for the ones who&apos;ll die for that gospel.
+            </p>
+
+            <div className="mb-6 flex items-baseline gap-3">
+              <span className="text-3xl font-bold text-[var(--text-primary)]">
+                {formatPrice(PRODUCT.priceCents)}
+              </span>
+              <span className="text-sm text-[var(--text-muted)]">
+                + {formatPrice(PRODUCT.shippingCents)} shipping
+              </span>
+            </div>
+
+            <p className="section-label mb-3">Select Size</p>
+            <div className="mb-6 flex gap-2">
+              {PRODUCT.sizes.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    setSize(s);
+                    setError(null);
+                  }}
+                  className={`h-11 w-11 border text-sm font-semibold transition-colors ${
+                    size === s
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                      : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {error && (
+              <p className="mb-4 text-sm text-red-400">{error}</p>
+            )}
+
+            <button
+              onClick={handleCheckout}
+              disabled={loading}
+              className="w-full bg-[var(--accent)] py-4 text-base font-bold uppercase tracking-widest text-black transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto sm:px-16"
+            >
+              {loading ? "Redirecting..." : "Buy Now"}
+            </button>
+            <p className="mt-3 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+              Limited run &middot; Once it&apos;s gone, it&apos;s gone
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Brand mark */}
+      <section className="mx-auto max-w-6xl px-6 py-16 text-center">
         <Image
           src="/idfg-logo.webp"
           alt="ID4G — I'll Die For The Gospel"
           width={653}
           height={633}
-          priority
-          className="w-full max-w-sm sm:max-w-md"
+          className="mx-auto w-full max-w-[220px]"
         />
-        <p className="lead max-w-xl">
-          Wearable art for those who count the cost and follow anyway. A bold
-          declaration of faith, worn by the ones who mean it.
-        </p>
-      </section>
-
-      {/* Product image */}
-      <section className="mx-auto max-w-3xl px-6">
-        <div className="aspect-square w-full overflow-hidden rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)]">
-          <Image
-            src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
-            alt={
-              view === "front"
-                ? "BROK3N t-shirt front — Psalm 34:18"
-                : "BROK3N t-shirt back — The LORD is close to the brokenhearted"
-            }
-            width={1054}
-            height={1054}
-            className="h-full w-full object-contain"
-            priority
-          />
-        </div>
-
-        <div className="mt-4 flex justify-center gap-2">
-          <button
-            onClick={() => setView("front")}
-            className={`rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
-              view === "front"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
-            }`}
-          >
-            Front
-          </button>
-          <button
-            onClick={() => setView("back")}
-            className={`rounded-full border px-5 py-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
-              view === "back"
-                ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
-            }`}
-          >
-            Back
-          </button>
-        </div>
-      </section>
-
-      {/* Story */}
-      <section className="mx-auto max-w-2xl px-6 py-20 text-center">
-        <span className="section-label mb-3">The Statement</span>
-        <p className="text-lg text-[var(--text-body)]">
-          &ldquo;The LORD is close to the brokenhearted and saves those who
-          are crushed in spirit.&rdquo; Psalm 34:18. We&apos;re broken. Christ
-          died for us anyway. This is a declaration stitched into cotton for
-          the ones who&apos;ll die for that gospel too.
-        </p>
-      </section>
-
-      {/* Purchase */}
-      <section className="mx-auto max-w-md px-6 pb-28">
-        <div className="rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)] p-8">
-          <h2 className="h2 mb-2 text-center">Get Yours</h2>
-          <p className="mb-1 text-center text-2xl font-bold text-[var(--text-primary)]">
-            {formatPrice(PRODUCT.priceCents)}
-          </p>
-          <p className="mb-6 text-center text-sm text-[var(--text-muted)]">
-            +{" "}
-            {formatPrice(PRODUCT.shippingCents)} shipping{" "}
-            &middot; Limited run. Once it&apos;s gone, it&apos;s gone.
-          </p>
-
-          <p className="section-label mb-3 text-center">Select Size</p>
-          <div className="mb-2 flex justify-center gap-2">
-            {PRODUCT.sizes.map((s) => (
-              <button
-                key={s}
-                onClick={() => {
-                  setSize(s);
-                  setError(null);
-                }}
-                className={`h-11 w-11 rounded-full border text-sm font-semibold transition-colors ${
-                  size === s
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-                    : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {error && (
-            <p className="mb-2 text-center text-sm text-red-400">{error}</p>
-          )}
-
-          <button
-            onClick={handleCheckout}
-            disabled={loading}
-            className="mt-6 w-full rounded-sm bg-[var(--accent)] py-4 text-base font-bold uppercase tracking-widest text-black transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50"
-          >
-            {loading ? "Redirecting..." : "Buy Now"}
-          </button>
-        </div>
       </section>
     </main>
   );
