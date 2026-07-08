@@ -21,12 +21,16 @@ export async function POST(req: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const supabaseAdmin = getSupabaseAdmin();
+    const shipping = session.collected_information?.shipping_details;
 
     await supabaseAdmin.from("orders").insert({
       stripe_session_id: session.id,
       customer_email: session.customer_details?.email,
+      customer_name: session.customer_details?.name,
       amount_total: session.amount_total,
       size: session.metadata?.size,
+      shipping_name: shipping?.name,
+      shipping_address: shipping?.address,
       status: "paid",
     });
   }
