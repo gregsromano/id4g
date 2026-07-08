@@ -58,7 +58,7 @@ export default function Home() {
           width={291}
           height={168}
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 z-[1] w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+          className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
         />
         <Image
           src="/paint-drip.png"
@@ -66,11 +66,11 @@ export default function Home() {
           width={291}
           height={168}
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
+          className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
         />
 
         {/* Mobile: shirt photo up top, full width */}
-        <div className="relative h-[46vh] w-full sm:hidden">
+        <div className="relative z-[1] h-[46vh] w-full sm:hidden">
           <Image
             src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
             alt=""
@@ -87,7 +87,7 @@ export default function Home() {
         </div>
 
         {/* Desktop: oversized background photo, right-anchored */}
-        <div className="absolute inset-0 hidden sm:block">
+        <div className="absolute inset-0 z-[1] hidden sm:block">
           <Image
             src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
             alt=""
