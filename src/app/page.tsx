@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 const SIZES = ["S", "M", "L", "XL", "2XL"];
@@ -28,7 +29,14 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto flex max-w-5xl flex-col items-center gap-6 px-6 pt-20 pb-16 text-center sm:pt-28">
         <span className="section-label">Greg Romano Art — Limited Drop</span>
-        <h1 className="max-w-3xl">I Die For The Gospel</h1>
+        <Image
+          src="/idfg-logo.webp"
+          alt="ID4G — I'll Die For The Gospel"
+          width={653}
+          height={633}
+          priority
+          className="w-full max-w-sm sm:max-w-md"
+        />
         <p className="lead max-w-xl">
           Wearable art for those who count the cost and follow anyway. A bold
           declaration of faith, worn by the ones who mean it.
