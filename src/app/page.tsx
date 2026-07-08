@@ -53,20 +53,20 @@ export default function Home() {
       <section className="relative overflow-hidden bg-black">
         {/* Paint splatter texture — dripping from top-right, pooling bottom-left */}
         <Image
-          src="/paint-splatter.svg"
+          src="/paint-drip.png"
           alt=""
-          width={320}
-          height={420}
+          width={291}
+          height={168}
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 z-[1] w-[220px] opacity-90 mix-blend-screen sm:w-[300px] lg:w-[360px]"
+          className="pointer-events-none absolute right-0 top-0 z-[1] w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
         />
         <Image
-          src="/paint-splatter-ground.svg"
+          src="/paint-drip.png"
           alt=""
-          width={320}
-          height={260}
+          width={291}
+          height={168}
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden w-[260px] opacity-55 mix-blend-screen sm:block sm:w-[320px]"
+          className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
         />
 
         {/* Mobile: shirt photo up top, full width */}
