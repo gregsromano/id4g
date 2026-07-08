@@ -51,22 +51,22 @@ export default function Home() {
 
       {/* Full-bleed hero */}
       <section className="relative overflow-hidden bg-black">
-        {/* Paint splatter texture — top-right and bottom-left corners */}
+        {/* Paint splatter texture — dripping from top-right, pooling bottom-left */}
         <Image
           src="/paint-splatter.svg"
           alt=""
-          width={260}
-          height={210}
+          width={320}
+          height={420}
           aria-hidden
-          className="pointer-events-none absolute -right-6 -top-4 z-[1] w-[280px] opacity-80 mix-blend-screen sm:w-[380px]"
+          className="pointer-events-none absolute right-0 top-0 z-[1] w-[220px] opacity-90 mix-blend-screen sm:w-[300px] lg:w-[360px]"
         />
         <Image
-          src="/paint-splatter.svg"
+          src="/paint-splatter-ground.svg"
           alt=""
-          width={260}
-          height={210}
+          width={320}
+          height={260}
           aria-hidden
-          className="pointer-events-none absolute -bottom-16 -left-16 z-[1] hidden w-[220px] rotate-180 opacity-40 mix-blend-screen sm:block sm:w-[300px]"
+          className="pointer-events-none absolute bottom-0 left-0 z-[1] hidden w-[260px] opacity-55 mix-blend-screen sm:block sm:w-[320px]"
         />
 
         {/* Mobile: shirt photo up top, full width */}
