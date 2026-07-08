@@ -5,6 +5,7 @@
   --bg-primary: #050505;
   --bg-section-alt: #151515;
   --bg-charcoal: #222222;
+  --bg-cream: #F3F0EA;
 
   --accent: #E87511;
   --accent-hover: #FF8A1F;
@@ -76,4 +77,53 @@ h2, .h2 {
   font-size: clamp(18px, 2vw, 22px);
   color: var(--text-body);
   line-height: 1.6;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-body, 'Montserrat', sans-serif);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 18px 36px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-body, 'Montserrat', sans-serif);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 18px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
 }

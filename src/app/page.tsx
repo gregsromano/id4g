@@ -38,11 +38,91 @@ export default function Home() {
 
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
-      {/* Hero */}
-      <section className="border-b border-[var(--border)]">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-2 lg:items-center lg:gap-16">
+      {/* Full-bleed hero */}
+      <section className="relative overflow-hidden bg-black">
+        {/* Mobile: shirt photo up top, full width */}
+        <div className="relative h-[46vh] w-full sm:hidden">
+          <Image
+            src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
+            alt=""
+            fill
+            priority
+            className="object-cover object-top"
+          />
+          <div
+            className="absolute inset-x-0 bottom-0 h-2/3"
+            style={{
+              background: "linear-gradient(to top, #000 15%, transparent)",
+            }}
+          />
+        </div>
+
+        {/* Desktop: oversized background photo, right-anchored */}
+        <div className="absolute inset-0 hidden sm:block">
+          <Image
+            src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
+            alt=""
+            fill
+            priority
+            className="object-contain object-right"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(100deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.97) 28%, rgba(0,0,0,0.82) 48%, rgba(0,0,0,0.4) 68%, rgba(0,0,0,0.15) 100%)",
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-8 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
+          <div className="max-w-xl">
+            <span className="section-label mb-4">
+              Presented by Greg Romano Art
+            </span>
+            <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
+              Brok3n.
+              <br />
+              Not Forsaken.
+            </h1>
+            <p className="lead mb-10 max-w-md">
+              &ldquo;The LORD is close to the brokenhearted and saves those
+              who are crushed in spirit.&rdquo; Psalm 34:18. A limited-run tee
+              for the ones who&apos;ll die for that gospel.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <a href="#get-yours" className="btn-primary">
+                Get Yours &mdash; {formatPrice(PRODUCT.priceCents)}
+              </a>
+              <button
+                onClick={() => setView(view === "front" ? "back" : "front")}
+                className="btn-outline"
+              >
+                View {view === "front" ? "Back" : "Front"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Cream urgency panel */}
+      <section style={{ background: "var(--bg-cream)" }}>
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 py-6 text-center sm:flex-row sm:justify-between sm:text-left">
+          <p className="text-sm font-bold uppercase tracking-widest text-black">
+            Limited run &middot; Never restocked
+          </p>
+          <p className="text-sm font-semibold text-black/70">
+            Once it&apos;s gone, it&apos;s gone for good.
+          </p>
+        </div>
+      </section>
+
+      {/* Product detail + purchase */}
+      <section id="get-yours" className="border-b border-[var(--border)]">
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-2 lg:items-start lg:gap-16">
           {/* Product image */}
-          <div className="order-1 lg:order-2">
+          <div>
             <div className="aspect-square w-full overflow-hidden bg-[var(--bg-section-alt)]">
               <Image
                 src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
@@ -54,7 +134,6 @@ export default function Home() {
                 width={1054}
                 height={1054}
                 className="h-full w-full object-contain"
-                priority
               />
             </div>
             <div className="mt-3 flex gap-6 border-t border-[var(--border)] pt-3">
@@ -79,26 +158,33 @@ export default function Home() {
                 Back
               </button>
             </div>
+
+            {/* Details matter, GRA-style feature list */}
+            <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-4">
+              {[
+                ["Heavyweight Cotton", "Structured, boxy drape"],
+                ["Screen Printed", "Cracked gothic lettering"],
+                ["Front & Back", "Full statement both sides"],
+                ["Numbered Drop", "Never restocked"],
+              ].map(([title, desc]) => (
+                <div key={title}>
+                  <span className="mb-1 block h-[3px] w-6 bg-[var(--accent)]" />
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
+                    {title}
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">{desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Copy + purchase */}
-          <div className="order-2 lg:order-1">
-            <span className="section-label mb-4">
-              Presented by Greg Romano Art
-            </span>
-            <h1 className="mb-5 text-5xl sm:text-6xl">
-              Brok3n.
-              <br />
-              Not Forsaken.
-            </h1>
-            <p className="lead mb-8 max-w-md">
-              &ldquo;The LORD is close to the brokenhearted and saves those
-              who are crushed in spirit.&rdquo; Psalm 34:18. A limited-run tee
-              for the ones who&apos;ll die for that gospel.
-            </p>
+          {/* Purchase */}
+          <div>
+            <span className="section-label mb-3">The Drop</span>
+            <h2 className="mb-6 text-4xl sm:text-5xl">Get Yours</h2>
 
-            <div className="mb-6 flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-[var(--text-primary)]">
+            <div className="mb-8 flex items-baseline gap-3">
+              <span className="text-4xl font-bold text-[var(--text-primary)]">
                 {formatPrice(PRODUCT.priceCents)}
               </span>
               <span className="text-sm text-[var(--text-muted)]">
@@ -107,7 +193,7 @@ export default function Home() {
             </div>
 
             <p className="section-label mb-3">Select Size</p>
-            <div className="mb-6 flex gap-2">
+            <div className="mb-8 flex gap-2">
               {PRODUCT.sizes.map((s) => (
                 <button
                   key={s}
@@ -115,9 +201,9 @@ export default function Home() {
                     setSize(s);
                     setError(null);
                   }}
-                  className={`h-11 w-11 border text-sm font-semibold transition-colors ${
+                  className={`h-12 w-12 border text-sm font-semibold transition-colors ${
                     size === s
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                       : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
                   }`}
                 >
@@ -126,33 +212,30 @@ export default function Home() {
               ))}
             </div>
 
-            {error && (
-              <p className="mb-4 text-sm text-red-400">{error}</p>
-            )}
+            {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
             <button
               onClick={handleCheckout}
               disabled={loading}
-              className="w-full bg-[var(--accent)] py-4 text-base font-bold uppercase tracking-widest text-black transition-colors hover:bg-[var(--accent-hover)] disabled:opacity-50 sm:w-auto sm:px-16"
+              className="btn-primary w-full sm:w-auto"
             >
               {loading ? "Redirecting..." : "Buy Now"}
             </button>
-            <p className="mt-3 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+            <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
               Limited run &middot; Once it&apos;s gone, it&apos;s gone
             </p>
+
+            <div className="mt-12 border-t border-[var(--border)] pt-8">
+              <Image
+                src="/idfg-logo.webp"
+                alt="ID4G — I'll Die For The Gospel"
+                width={653}
+                height={633}
+                className="w-full max-w-[160px]"
+              />
+            </div>
           </div>
         </div>
-      </section>
-
-      {/* Brand mark */}
-      <section className="mx-auto max-w-6xl px-6 py-16 text-center">
-        <Image
-          src="/idfg-logo.webp"
-          alt="ID4G — I'll Die For The Gospel"
-          width={653}
-          height={633}
-          className="mx-auto w-full max-w-[220px]"
-        />
       </section>
     </main>
   );
