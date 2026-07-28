@@ -136,16 +136,17 @@ export default function Success() {
         <Link href="/" className="btn-primary">
           Back to Store
         </Link>
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
-            Tag us when it lands &mdash; @id4gospel
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-lg font-bold uppercase tracking-widest text-[var(--text-primary)] sm:text-2xl">
+            Tag us when it lands &mdash;{" "}
+            <span className="text-[var(--accent)]">@id4gospel</span>
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-8">
             <a
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)]"
+              className="text-base font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)] sm:text-lg"
             >
               Instagram
             </a>
@@ -153,7 +154,7 @@ export default function Success() {
               href={TIKTOK_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)]"
+              className="text-base font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)] sm:text-lg"
             >
               TikTok
             </a>
