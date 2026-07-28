@@ -136,7 +136,7 @@ export default function Success() {
         <Link href="/" className="btn-primary">
           Back to Store
         </Link>
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-8">
           <p className="text-lg font-bold uppercase tracking-widest text-[var(--text-primary)] sm:text-2xl">
             Tag us when it lands &mdash;{" "}
             <span className="text-[var(--accent)]">@id4gospel</span>
