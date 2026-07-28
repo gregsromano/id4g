@@ -15,10 +15,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    let items: { size: string; quantity: number }[] | null = null;
+    try {
+      items = session.metadata?.items
+        ? JSON.parse(session.metadata.items)
+        : null;
+    } catch {
+      items = null;
+    }
+
     return NextResponse.json({
       email: session.customer_details?.email,
       amountTotal: session.amount_total,
-      size: session.metadata?.size,
+      items,
+      itemsSummary: session.metadata?.items_summary ?? null,
     });
   } catch {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });

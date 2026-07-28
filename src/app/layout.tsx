@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Bebas_Neue, Montserrat } from "next/font/google";
 import "./globals.css";
+import { CartProvider } from "@/lib/cart-context";
+import CartButton from "@/components/CartButton";
+import CartDrawer from "@/components/CartDrawer";
 
 const bebasNeue = Bebas_Neue({
   weight: ["400"],
@@ -32,7 +35,13 @@ export default function RootLayout({
       lang="en"
       className={`${bebasNeue.variable} ${montserrat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <CartProvider>
+          <CartButton />
+          {children}
+          <CartDrawer />
+        </CartProvider>
+      </body>
     </html>
   );
 }

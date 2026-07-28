@@ -3,26 +3,37 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/product";
+import { useCart } from "@/lib/cart-context";
+
+type OrderItem = { size: string; quantity: number };
 
 type Order = {
   email?: string;
   amountTotal?: number;
-  size?: string;
+  items?: OrderItem[] | null;
+  itemsSummary?: string | null;
 };
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("session_id");
+  const { clear } = useCart();
   const [order, setOrder] = useState<Order | null>(null);
+  // Missing session id is an error from the first render — no effect needed.
   const [status, setStatus] = useState<"loading" | "ready" | "error">(
-    "loading",
+    sessionId ? "loading" : "error",
   );
 
+  // The order is placed — empty the local cart so a refresh/back doesn't
+  // leave stale items behind.
   useEffect(() => {
-    if (!sessionId) {
-      setStatus("error");
-      return;
-    }
+    clear();
+    // Run once on mount; `clear` identity is stable enough for this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
     fetch(`/api/order?session_id=${sessionId}`)
       .then((res) => {
         if (!res.ok) throw new Error("not found");
@@ -63,11 +74,27 @@ function SuccessContent() {
       </p>
       {order && (
         <div className="mt-4 rounded-sm border border-[var(--border)] bg-[var(--bg-section-alt)] px-8 py-6 text-left">
-          {order.size && (
-            <p className="mb-2 text-sm text-[var(--text-body)]">
-              <span className="text-[var(--text-muted)]">Size:</span>{" "}
-              {order.size}
-            </p>
+          {order.items && order.items.length > 0 ? (
+            <div className="mb-2">
+              <span className="text-sm text-[var(--text-muted)]">Items:</span>
+              <ul className="mt-1 space-y-1">
+                {order.items.map((it) => (
+                  <li
+                    key={it.size}
+                    className="text-sm text-[var(--text-body)]"
+                  >
+                    Size {it.size} &times; {it.quantity}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            order.itemsSummary && (
+              <p className="mb-2 text-sm text-[var(--text-body)]">
+                <span className="text-[var(--text-muted)]">Items:</span>{" "}
+                {order.itemsSummary}
+              </p>
+            )
           )}
           {order.amountTotal != null && (
             <p className="mb-2 text-sm text-[var(--text-body)]">

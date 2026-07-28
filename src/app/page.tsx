@@ -2,38 +2,27 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { PRODUCT, formatPrice } from "@/lib/product";
+import { PRODUCT, formatPrice, type Size } from "@/lib/product";
+import { useCart } from "@/lib/cart-context";
 
 export default function Home() {
-  const [size, setSize] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { addItem } = useCart();
+  const [size, setSize] = useState<Size | null>(null);
   const [view, setView] = useState<"front" | "back">("front");
   const [error, setError] = useState<string | null>(null);
 
-  async function handleCheckout() {
+  function handleAddToCart() {
     if (!size) {
       setError("Please select a size.");
       return;
     }
     setError(null);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ size }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Something went wrong. Please try again.");
-        setLoading(false);
-      }
-    } catch {
-      setError("Something went wrong. Please try again.");
-      setLoading(false);
-    }
+    addItem({
+      productId: PRODUCT.id,
+      name: PRODUCT.name,
+      size,
+      priceCents: PRODUCT.priceCents,
+    });
   }
 
   return (
@@ -242,11 +231,10 @@ export default function Home() {
             {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
             <button
-              onClick={handleCheckout}
-              disabled={loading}
+              onClick={handleAddToCart}
               className="btn-primary w-full sm:w-auto"
             >
-              {loading ? "Redirecting..." : "Buy Now"}
+              Add to Cart
             </button>
             <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
               Limited run &middot; Once it&apos;s gone, it&apos;s gone
