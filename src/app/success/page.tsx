@@ -2,8 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { formatPrice } from "@/lib/product";
 import { useCart } from "@/lib/cart-context";
+
+const INSTAGRAM_URL = "https://instagram.com/id4gospel";
+const TIKTOK_URL = "https://tiktok.com/@id4gospel";
 
 type OrderItem = { size: string; quantity: number };
 
@@ -126,6 +130,36 @@ export default function Success() {
       >
         <SuccessContent />
       </Suspense>
+
+      {/* Onward navigation — the confirmation page is otherwise a dead end. */}
+      <div className="mt-8 flex flex-col items-center gap-6">
+        <Link href="/" className="btn-primary">
+          Back to Store
+        </Link>
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
+            Tag us when it lands &mdash; @id4gospel
+          </p>
+          <div className="flex items-center gap-6">
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)]"
+            >
+              Instagram
+            </a>
+            <a
+              href={TIKTOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)]"
+            >
+              TikTok
+            </a>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
