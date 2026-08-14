@@ -92,8 +92,7 @@ export default function Home() {
             </h1>
             <p className="lead mb-10 max-w-md">
               &ldquo;The LORD is close to the brokenhearted and saves those
-              who are crushed in spirit.&rdquo; Psalm 34:18. A limited-run tee
-              for the ones who&apos;ll die for that gospel.
+              who are crushed in spirit.&rdquo; Psalm 34:18
             </p>
 
             {/* Mobile: shirts above the CTA; desktop keeps CTA in place */}
@@ -223,13 +222,8 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
           <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <span className="section-label mb-3">On The Street</span>
-              <h2 className="!text-4xl sm:!text-5xl">Worn</h2>
+              <h2 className="!text-4xl sm:!text-5xl">Lifestyle</h2>
             </div>
-            <p className="max-w-xs text-sm text-[var(--text-muted)]">
-              One tee, five ways. Studio to street, the print reads different
-              in every light.
-            </p>
           </div>
 
           {/* Mosaic: tall hero left, stacked pair right, two wide below */}
@@ -378,9 +372,9 @@ export default function Home() {
               <div className="space-y-5 text-lg text-[var(--text-body)] sm:text-xl">
                 <p>
                   Every I&rsquo;ll Die for the Gospel piece is created as
-                  wearable art. Through hand-done details, bleaching, graphics,
-                  and different techniques, each piece develops its own
-                  variations.
+                  wearable art. Through hand-done details, rhinestones,
+                  bleaching, and different techniques, each piece develops its
+                  own variations.
                 </p>
                 <p className="text-2xl text-[var(--text-primary)] sm:text-3xl">
                   No two will ever be exactly the same.
@@ -390,7 +384,7 @@ export default function Home() {
                   collectible.
                 </p>
                 <p>
-                  I didn&rsquo;t want to create another clothing line that
+                  I didn&rsquo;t want to create another clothing brand that
                   simply puts a Bible verse on a shirt. I wanted to take my
                   background in art, graffiti, design, film, music, and
                   television and use it to create something that represents God
