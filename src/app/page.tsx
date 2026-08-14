@@ -4,14 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 import { PRODUCT, formatPrice, type Size } from "@/lib/product";
 import { useCart } from "@/lib/cart-context";
-import ZoomModal from "@/components/ZoomModal";
 
 export default function Home() {
   const { addItem } = useCart();
   const [size, setSize] = useState<Size | null>(null);
   const [view, setView] = useState<"front" | "back">("front");
   const [error, setError] = useState<string | null>(null);
-  const [zoomSrc, setZoomSrc] = useState<string | null>(null);
 
   function handleAddToCart() {
     if (!size) {
@@ -30,7 +28,7 @@ export default function Home() {
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
       {/* Top nav — logo mark */}
-      <header className="absolute inset-x-0 top-0 z-40 py-6">
+      <header className="absolute inset-x-0 top-0 z-20 py-6">
         <div className="mx-auto w-full max-w-6xl px-6">
           <Image
             src="/idfg-logo.webp"
@@ -63,37 +61,27 @@ export default function Home() {
         />
 
         {/* Desktop: oversized background photo, pulled in from the right edge */}
-        <div className="absolute inset-y-0 right-[2%] z-20 hidden w-[60%] sm:block lg:right-[4%] lg:w-[56%]">
-          <button
-            type="button"
-            onClick={() => setZoomSrc("/shirt-front-back.png")}
-            aria-label="Zoom in on the BROK3N tee"
-            className="group absolute inset-0 cursor-zoom-in"
-          >
-            <Image
-              src="/shirt-front-back.png"
-              alt=""
-              fill
-              priority
-              className="object-contain object-center transition-transform duration-500 group-hover:scale-[1.02]"
-            />
-            <span className="pointer-events-none absolute bottom-[12%] left-1/2 -translate-x-1/2 whitespace-nowrap border border-white/25 bg-black/70 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100">
-              Click to zoom
-            </span>
-          </button>
+        <div className="absolute inset-y-0 right-[2%] z-[1] hidden w-[60%] sm:block lg:right-[4%] lg:w-[56%]">
+          <Image
+            src="/shirt-front-back.png"
+            alt=""
+            fill
+            priority
+            className="object-contain object-center"
+          />
         </div>
 
         {/* Desktop: gradient scrim so the copy stays legible over the photo */}
         <div
-          className="pointer-events-none absolute inset-0 z-30 hidden sm:block"
+          className="pointer-events-none absolute inset-0 z-[2] hidden sm:block"
           style={{
             background:
               "linear-gradient(100deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 24%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0) 70%)",
           }}
         />
 
-        <div className="pointer-events-none relative z-40 mx-auto w-full max-w-6xl px-6 pb-16 pt-32 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
-          <div className="pointer-events-auto max-w-xl">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-32 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
+          <div className="max-w-xl">
             <span className="section-label mb-4">Greg Romano Presents</span>
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
               Brok3n
@@ -111,12 +99,7 @@ export default function Home() {
             {/* Mobile: shirts above the CTA; desktop keeps CTA in place */}
             <div className="flex flex-col">
               {/* Mobile: shirt photo below the copy */}
-              <button
-                type="button"
-                onClick={() => setZoomSrc("/shirt-front-back.png")}
-                aria-label="Zoom in on the BROK3N tee"
-                className="relative order-1 mb-10 h-[42vh] w-full sm:hidden"
-              >
+              <div className="relative order-1 mb-10 h-[42vh] w-full sm:hidden">
                 <Image
                   src="/shirt-front-back.png"
                   alt=""
@@ -124,10 +107,7 @@ export default function Home() {
                   priority
                   className="object-contain object-center"
                 />
-                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 whitespace-nowrap border border-white/25 bg-black/70 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white">
-                  Tap to zoom
-                </span>
-              </button>
+              </div>
 
               <div className="order-2 flex flex-wrap items-center gap-4">
                 <a href="#get-yours" className="btn-primary">
@@ -154,16 +134,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-2 lg:items-start lg:gap-16">
           {/* Product image */}
           <div>
-            <button
-              type="button"
-              onClick={() =>
-                setZoomSrc(
-                  view === "front" ? "/shirt-front.png" : "/shirt-back.png",
-                )
-              }
-              aria-label="Zoom in on the BROK3N tee"
-              className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden"
-            >
+            <div className="aspect-square w-full overflow-hidden">
               <Image
                 src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
                 alt={
@@ -173,12 +144,9 @@ export default function Home() {
                 }
                 width={2559}
                 height={2739}
-                className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
+                className="h-full w-full object-contain"
               />
-              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap border border-white/25 bg-black/70 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100 sm:opacity-0">
-                Click to zoom
-              </span>
-            </button>
+            </div>
             <div className="mt-3 flex gap-6 border-t border-[var(--border)] pt-3">
               <button
                 onClick={() => setView("front")}
@@ -444,15 +412,6 @@ export default function Home() {
         </div>
       </section>
 
-      {zoomSrc && (
-        <ZoomModal
-          src={zoomSrc}
-          alt="BROK3N tee, close up"
-          width={2559}
-          height={2739}
-          onClose={() => setZoomSrc(null)}
-        />
-      )}
     </main>
   );
 }
