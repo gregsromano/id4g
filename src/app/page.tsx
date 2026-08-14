@@ -123,7 +123,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-6 py-6">
           <p className="text-center text-sm font-bold uppercase tracking-widest text-black">
             Hand Made &middot; Unique Distinct Design &middot; No Two Alike
-            &middot; Every piece one of a kind.
+            &middot; Every piece one of a kind
           </p>
         </div>
       </section>
