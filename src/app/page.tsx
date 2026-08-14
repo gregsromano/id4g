@@ -60,42 +60,27 @@ export default function Home() {
           className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
         />
 
-        {/* Mobile: shirt photo up top, full width */}
-        <div className="relative z-[1] h-[46vh] w-full sm:hidden">
+        {/* Desktop: oversized background photo, pulled in from the right edge */}
+        <div className="absolute inset-y-0 right-[2%] z-[1] hidden w-[60%] sm:block lg:right-[4%] lg:w-[56%]">
           <Image
             src="/shirt-front-back.png"
             alt=""
             fill
             priority
-            className="object-contain object-top"
-          />
-          <div
-            className="absolute inset-x-0 bottom-0 h-2/3"
-            style={{
-              background: "linear-gradient(to top, #000 15%, transparent)",
-            }}
+            className="object-contain object-center"
           />
         </div>
 
-        {/* Desktop: oversized background photo, right-anchored */}
-        <div className="absolute inset-0 z-[1] hidden sm:block">
-          <Image
-            src="/shirt-front-back.png"
-            alt=""
-            fill
-            priority
-            className="object-contain object-right"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(100deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.97) 28%, rgba(0,0,0,0.82) 48%, rgba(0,0,0,0.4) 68%, rgba(0,0,0,0.15) 100%)",
-            }}
-          />
-        </div>
+        {/* Desktop: gradient scrim so the copy stays legible over the photo */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[2] hidden sm:block"
+          style={{
+            background:
+              "linear-gradient(100deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0.95) 24%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0) 70%)",
+          }}
+        />
 
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-8 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-32 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
           <div className="max-w-xl">
             <span className="section-label mb-4">Greg Romano Presents</span>
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
@@ -115,6 +100,17 @@ export default function Home() {
               <a href="#get-yours" className="btn-primary">
                 Get Yours &mdash; {formatPrice(PRODUCT.priceCents)}
               </a>
+            </div>
+
+            {/* Mobile: shirt photo below the copy */}
+            <div className="relative mt-10 h-[42vh] w-full sm:hidden">
+              <Image
+                src="/shirt-front-back.png"
+                alt=""
+                fill
+                priority
+                className="object-contain object-center"
+              />
             </div>
           </div>
         </div>
