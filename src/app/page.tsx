@@ -211,9 +211,6 @@ export default function Home() {
             >
               Add to Cart
             </button>
-            <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
-              Limited run &middot; Once it&apos;s gone, it&apos;s gone
-            </p>
           </div>
         </div>
       </section>
