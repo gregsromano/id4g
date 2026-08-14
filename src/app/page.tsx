@@ -97,9 +97,9 @@ export default function Home() {
           <div className="max-w-xl">
             <span className="section-label mb-4">Greg Romano Presents</span>
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
-              Brok3n.
+              Brok3n
               <br />
-              Not Forsaken.
+              <span className="text-[var(--accent)]">Psalm 34:18</span>
             </h1>
             <p className="lead mb-10 max-w-md">
               &ldquo;The LORD is close to the brokenhearted and saves those
