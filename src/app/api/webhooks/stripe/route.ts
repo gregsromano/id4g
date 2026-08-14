@@ -35,7 +35,11 @@ export async function POST(req: NextRequest) {
       items = null;
     }
 
-    await supabaseAdmin.from("orders").insert({
+    // The customer has already paid at this point. If we cannot record the
+    // order we must NOT return 2xx: Stripe treats that as delivered and never
+    // retries, leaving a paid order with nothing to ship against. Returning
+    // 5xx makes Stripe retry with backoff.
+    const { error } = await supabaseAdmin.from("orders").insert({
       stripe_session_id: session.id,
       customer_email: session.customer_details?.email,
       customer_name: session.customer_details?.name,
@@ -46,6 +50,30 @@ export async function POST(req: NextRequest) {
       shipping_address: shipping?.address,
       status: "paid",
     });
+
+    if (error) {
+      // Retrying a delivered event re-inserts the same session. The unique
+      // constraint on stripe_session_id makes that a no-op rather than a
+      // duplicate order, so treat it as success.
+      if (error.code === "23505") {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+
+      console.error("[stripe-webhook] order insert failed", {
+        stripe_session_id: session.id,
+        customer_email: session.customer_details?.email,
+        amount_total: session.amount_total,
+        items_summary: session.metadata?.items_summary,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      });
+
+      return NextResponse.json(
+        { error: "Failed to record order" },
+        { status: 500 },
+      );
+    }
   }
 
   return NextResponse.json({ received: true });
