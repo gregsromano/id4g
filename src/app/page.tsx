@@ -373,8 +373,8 @@ export default function Home() {
                 <p>
                   Every I&rsquo;ll Die for the Gospel piece is created as
                   wearable art. Through hand-done details, rhinestones,
-                  bleaching, and different techniques, each piece develops its
-                  own variations.
+                  bleaching, and different techniques, each piece becomes
+                  uniquely its own.
                 </p>
                 <p className="text-2xl text-[var(--text-primary)] sm:text-3xl">
                   No two will ever be exactly the same.
