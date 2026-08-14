@@ -96,21 +96,24 @@ export default function Home() {
               for the ones who&apos;ll die for that gospel.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <a href="#get-yours" className="btn-primary">
-                Get Yours &mdash; {formatPrice(PRODUCT.priceCents)}
-              </a>
-            </div>
+            {/* Mobile: shirts above the CTA; desktop keeps CTA in place */}
+            <div className="flex flex-col">
+              {/* Mobile: shirt photo below the copy */}
+              <div className="relative order-1 mb-10 h-[42vh] w-full sm:hidden">
+                <Image
+                  src="/shirt-front-back.png"
+                  alt=""
+                  fill
+                  priority
+                  className="object-contain object-center"
+                />
+              </div>
 
-            {/* Mobile: shirt photo below the copy */}
-            <div className="relative mt-10 h-[42vh] w-full sm:hidden">
-              <Image
-                src="/shirt-front-back.png"
-                alt=""
-                fill
-                priority
-                className="object-contain object-center"
-              />
+              <div className="order-2 flex flex-wrap items-center gap-4">
+                <a href="#get-yours" className="btn-primary">
+                  Get Yours &mdash; {formatPrice(PRODUCT.priceCents)}
+                </a>
+              </div>
             </div>
           </div>
         </div>
