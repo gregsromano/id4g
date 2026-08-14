@@ -38,6 +38,13 @@ Vercel at https://id4g.vercel.app**, git-connected so every push to `main` auto-
 
 ## Next step(s)
 
+> ⚠️ **2026-08-14: this list is superseded.** Current state lives in the
+> `📍 CURRENT STATE` block of
+> `../../References/Documentation/I Die For The Gospel_5_Status.md`, and the
+> Stripe sequence in `Stripe-Go-Live-Checklist.md`. What the list below does
+> NOT say: the id4g **Vercel project is not on Jeff's Vercel account** — it is
+> Greg's, so steps 1 and 3 cannot be done from Jeff's machine at all.
+
 1. **Finish sales tax (blocked on user — Stripe dashboard):**
    - Set origin/ship-from address + activate Stripe Tax: https://dashboard.stripe.com/settings/tax
    - Add state **registrations** (tax only charges in registered states):
