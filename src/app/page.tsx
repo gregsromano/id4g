@@ -171,8 +171,8 @@ export default function Home() {
                     ? "BROK3N t-shirt front — Psalm 34:18"
                     : "BROK3N t-shirt back — The LORD is close to the brokenhearted"
                 }
-                width={747}
-                height={800}
+                width={2559}
+                height={2739}
                 className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.03]"
               />
               <span className="absolute bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap border border-white/25 bg-black/70 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-white opacity-0 backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100 sm:opacity-0">
@@ -448,8 +448,8 @@ export default function Home() {
         <ZoomModal
           src={zoomSrc}
           alt="BROK3N tee, close up"
-          width={747}
-          height={800}
+          width={2559}
+          height={2739}
           onClose={() => setZoomSrc(null)}
         />
       )}

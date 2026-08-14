@@ -11,7 +11,7 @@ type ZoomModalProps = {
   onClose: () => void;
 };
 
-const MAX_ZOOM = 2.5;
+const MAX_ZOOM = 4;
 
 export default function ZoomModal({
   src,
@@ -99,6 +99,10 @@ export default function ZoomModal({
           width={width}
           height={height}
           priority
+          quality={90}
+          // The image is scaled up to MAX_ZOOM in place, so ask for a source
+          // several times wider than the frame or the zoom reveals compression.
+          sizes="(max-width: 640px) 200vw, 300vw"
           draggable={false}
           className="h-full w-full select-none object-contain transition-transform duration-300 ease-out"
           style={{
