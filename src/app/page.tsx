@@ -61,11 +61,11 @@ export default function Home() {
         {/* Mobile: shirt photo up top, full width */}
         <div className="relative z-[1] h-[46vh] w-full sm:hidden">
           <Image
-            src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
+            src="/shirt-front-back.png"
             alt=""
             fill
             priority
-            className="object-cover object-top"
+            className="object-contain object-top"
           />
           <div
             className="absolute inset-x-0 bottom-0 h-2/3"
@@ -78,7 +78,7 @@ export default function Home() {
         {/* Desktop: oversized background photo, right-anchored */}
         <div className="absolute inset-0 z-[1] hidden sm:block">
           <Image
-            src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
+            src="/shirt-front-back.png"
             alt=""
             fill
             priority
@@ -113,12 +113,6 @@ export default function Home() {
               <a href="#get-yours" className="btn-primary">
                 Get Yours &mdash; {formatPrice(PRODUCT.priceCents)}
               </a>
-              <button
-                onClick={() => setView(view === "front" ? "back" : "front")}
-                className="btn-outline"
-              >
-                View {view === "front" ? "Back" : "Front"}
-              </button>
             </div>
           </div>
         </div>
