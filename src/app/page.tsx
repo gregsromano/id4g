@@ -307,11 +307,11 @@ export default function Home() {
           </div>
 
           <div>
-            <p className="border-l-2 border-[var(--accent)] pl-6 text-2xl leading-snug text-[var(--text-primary)] sm:text-3xl">
+            <p className="border-l-2 border-[var(--accent)] pl-6 text-3xl leading-snug text-[var(--text-primary)] sm:text-4xl">
               I&rsquo;ll Die for the Gospel was born from my love for God,
               clothing, and art.
             </p>
-            <p className="mt-6 pl-6 text-[var(--text-body)]">
+            <p className="mt-6 pl-6 text-lg text-[var(--text-body)] sm:text-xl">
               I wanted to create something that represents my faith without
               losing the creativity and individuality of streetwear.
             </p>
@@ -327,7 +327,7 @@ export default function Home() {
                 <br />
                 Craft Comes From
               </h3>
-              <div className="space-y-5 text-[var(--text-body)]">
+              <div className="space-y-5 text-lg text-[var(--text-body)] sm:text-xl">
                 <p>
                   Art has been part of my life for as long as I can remember.
                   From graffiti and graphic design to producing and directing
@@ -338,7 +338,7 @@ export default function Home() {
                   I also spent over 12 years working in television on Emmy
                   Award-winning shows, creating graphics seen on air every day.
                 </p>
-                <p className="text-xl text-[var(--text-primary)] sm:text-2xl">
+                <p className="text-2xl text-[var(--text-primary)] sm:text-3xl">
                   Now I&rsquo;m bringing all of those experiences together with
                   my faith.
                 </p>
@@ -357,7 +357,7 @@ export default function Home() {
                   <p className="font-[family-name:var(--font-block)] text-3xl uppercase leading-none text-[var(--accent)] sm:text-4xl">
                     {stat}
                   </p>
-                  <p className="mt-2 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                  <p className="mt-2 text-base uppercase tracking-wide text-[var(--text-muted)]">
                     {label}
                   </p>
                 </div>
@@ -375,14 +375,14 @@ export default function Home() {
                 <br />
                 Art
               </h3>
-              <div className="space-y-5 text-[var(--text-body)]">
+              <div className="space-y-5 text-lg text-[var(--text-body)] sm:text-xl">
                 <p>
                   Every I&rsquo;ll Die for the Gospel piece is created as
                   wearable art. Through hand-done details, bleaching, graphics,
                   and different techniques, each piece develops its own
                   variations.
                 </p>
-                <p className="text-xl text-[var(--text-primary)] sm:text-2xl">
+                <p className="text-2xl text-[var(--text-primary)] sm:text-3xl">
                   No two will ever be exactly the same.
                 </p>
                 <p>
