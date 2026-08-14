@@ -217,7 +217,8 @@ export default function Home() {
 
       {/* The story behind the shirt */}
       <section id="the-story" style={{ background: "var(--bg-section-alt)" }}>
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
+        {/* Opening: headline + the origin line as a pull quote */}
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 pt-16 sm:pt-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
           <div>
             <span className="section-label mb-4 !text-base sm:!text-lg">
               The Story
@@ -230,27 +231,109 @@ export default function Home() {
             <span className="mt-8 block h-[4px] w-24 bg-[var(--accent)]" />
           </div>
 
-          <div className="space-y-5 text-[var(--text-body)]">
-            <p className="lead">
-              Every BROK3N tee is made by hand, one at a time. The cracks in the
-              lettering never land the same way twice.
+          <div>
+            <p className="border-l-2 border-[var(--accent)] pl-6 text-2xl leading-snug text-[var(--text-primary)] sm:text-3xl">
+              I&rsquo;ll Die for the Gospel was born from my love for God,
+              clothing, and art.
             </p>
-            <p>
-              [Story paragraph one — where the design came from, and what Greg
-              was walking through when he made it.]
-            </p>
-            <p>
-              [Story paragraph two — what the broken lettering means, and why
-              Psalm 34:18 is on the back.]
-            </p>
-            <p>
-              [Story paragraph three — who this shirt is for, and what wearing
-              it declares.]
-            </p>
-            <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-primary)]">
-              &mdash; Greg Romano
+            <p className="mt-6 pl-6 text-[var(--text-body)]">
+              I wanted to create something that represents my faith without
+              losing the creativity and individuality of streetwear.
             </p>
           </div>
+        </div>
+
+        {/* Where the craft comes from */}
+        <div className="mx-auto max-w-6xl px-6 pt-16 sm:pt-20">
+          <div className="border-t border-[var(--border)] pt-12 sm:pt-16">
+            <div className="grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-16">
+              <h3 className="font-[family-name:var(--font-block)] text-3xl uppercase leading-none tracking-wide text-[var(--text-primary)] sm:text-4xl">
+                Where The
+                <br />
+                Craft Comes From
+              </h3>
+              <div className="space-y-5 text-[var(--text-body)]">
+                <p>
+                  Art has been part of my life for as long as I can remember.
+                  From graffiti and graphic design to producing and directing
+                  movies and music videos, creativity has always been how I
+                  express myself.
+                </p>
+                <p>
+                  I also spent over 12 years working in television on Emmy
+                  Award-winning shows, creating graphics seen on air every day.
+                </p>
+                <p className="text-xl text-[var(--text-primary)] sm:text-2xl">
+                  Now I&rsquo;m bringing all of those experiences together with
+                  my faith.
+                </p>
+              </div>
+            </div>
+
+            {/* Credentials strip */}
+            <div className="mt-12 grid grid-cols-2 gap-8 border-t border-[var(--border)] pt-10 sm:grid-cols-4">
+              {[
+                ["12+", "Years in television"],
+                ["Emmy", "Award-winning shows"],
+                ["Film", "Produced and directed"],
+                ["Graffiti", "Where it started"],
+              ].map(([stat, label]) => (
+                <div key={label}>
+                  <p className="font-[family-name:var(--font-block)] text-3xl uppercase leading-none text-[var(--accent)] sm:text-4xl">
+                    {stat}
+                  </p>
+                  <p className="mt-2 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Wearable art */}
+        <div className="mx-auto max-w-6xl px-6 pt-16 sm:pt-20">
+          <div className="border-t border-[var(--border)] pt-12 sm:pt-16">
+            <div className="grid gap-10 lg:grid-cols-[1fr_1.25fr] lg:gap-16">
+              <h3 className="font-[family-name:var(--font-block)] text-3xl uppercase leading-none tracking-wide text-[var(--text-primary)] sm:text-4xl">
+                Wearable
+                <br />
+                Art
+              </h3>
+              <div className="space-y-5 text-[var(--text-body)]">
+                <p>
+                  Every I&rsquo;ll Die for the Gospel piece is created as
+                  wearable art. Through hand-done details, bleaching, graphics,
+                  and different techniques, each piece develops its own
+                  variations.
+                </p>
+                <p className="text-xl text-[var(--text-primary)] sm:text-2xl">
+                  No two will ever be exactly the same.
+                </p>
+                <p>
+                  Every piece is meant to feel personal, original, and
+                  collectible.
+                </p>
+                <p>
+                  I didn&rsquo;t want to create another clothing line that
+                  simply puts a Bible verse on a shirt. I wanted to take my
+                  background in art, graffiti, design, film, music, and
+                  television and use it to create something that represents God
+                  in a way that feels authentic to me.
+                </p>
+                <p className="pt-2 text-sm font-bold uppercase tracking-widest text-[var(--text-primary)]">
+                  Greg Romano
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Closer */}
+        <div className="mt-16 sm:mt-24" style={{ background: "var(--accent)" }}>
+          <p className="mx-auto max-w-6xl px-6 py-10 text-center font-[family-name:var(--font-block)] text-4xl uppercase leading-none tracking-wide text-white sm:py-14 sm:text-6xl lg:text-7xl">
+            Faith. Art. One of One.
+          </p>
         </div>
       </section>
     </main>
