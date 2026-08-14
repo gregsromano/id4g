@@ -139,8 +139,8 @@ export default function Home() {
                     ? "BROK3N t-shirt front — Psalm 34:18"
                     : "BROK3N t-shirt back — The LORD is close to the brokenhearted"
                 }
-                width={1054}
-                height={1054}
+                width={747}
+                height={800}
                 className="h-full w-full object-contain"
               />
             </div>
