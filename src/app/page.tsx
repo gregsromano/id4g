@@ -131,7 +131,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-2 lg:items-start lg:gap-16">
           {/* Product image */}
           <div>
-            <div className="aspect-square w-full overflow-hidden bg-[var(--bg-section-alt)]">
+            <div className="aspect-square w-full overflow-hidden">
               <Image
                 src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
                 alt={
@@ -273,7 +273,7 @@ export default function Home() {
             {/* Credentials strip */}
             <div className="mt-12 grid grid-cols-2 gap-8 border-t border-[var(--border)] pt-10 sm:grid-cols-4">
               {[
-                ["12+", "Years in television"],
+                ["12+", "Years in Hollywood"],
                 ["Emmy", "Award-winning shows"],
                 ["Film", "Produced and directed"],
                 ["Graffiti", "Where it started"],
