@@ -215,6 +215,93 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Lookbook — lifestyle gallery */}
+      <section id="lookbook" className="border-b border-[var(--border)]">
+        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+          <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <span className="section-label mb-3">On The Street</span>
+              <h2 className="!text-4xl sm:!text-5xl">Worn</h2>
+            </div>
+            <p className="max-w-xs text-sm text-[var(--text-muted)]">
+              One tee, five ways. Studio to street, the print reads different
+              in every light.
+            </p>
+          </div>
+
+          {/* Mosaic: tall hero left, stacked pair right, two wide below */}
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-12">
+            {/* Hero portrait */}
+            <figure className="group relative overflow-hidden lg:col-span-7 lg:row-span-2">
+              <Image
+                src="/lifestyle-alleyway.png"
+                alt="BROK3N tee worn in a city alleyway at night"
+                width={800}
+                height={1000}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
+                After Hours
+              </figcaption>
+            </figure>
+
+            {/* Stacked pair */}
+            <figure className="group relative overflow-hidden lg:col-span-5">
+              <Image
+                src="/lifestyle-studio-seated.png"
+                alt="BROK3N tee in a studio portrait"
+                width={800}
+                height={1000}
+                className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+              />
+              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
+                Studio Light
+              </figcaption>
+            </figure>
+
+            <figure className="group relative overflow-hidden lg:col-span-5">
+              <Image
+                src="/lifestyle-escalade.png"
+                alt="BROK3N tee worn against a city skyline"
+                width={800}
+                height={600}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
+                Skyline
+              </figcaption>
+            </figure>
+
+            {/* Wide pair */}
+            <figure className="group relative overflow-hidden lg:col-span-7">
+              <Image
+                src="/lifestyle-street-race.png"
+                alt="BROK3N tee worn on the street at night"
+                width={800}
+                height={640}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
+                Off The Line
+              </figcaption>
+            </figure>
+
+            <figure className="group relative overflow-hidden lg:col-span-5">
+              <Image
+                src="/lifestyle-studio-full.png"
+                alt="BROK3N tee, full-length studio shot"
+                width={800}
+                height={1000}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
+                Full Length
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+
       {/* The story behind the shirt */}
       <section id="the-story" style={{ background: "var(--bg-section-alt)" }}>
         {/* Opening: headline + the origin line as a pull quote */}
