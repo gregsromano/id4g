@@ -31,17 +31,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid cart" }, { status: 400 });
   }
 
-  // tax_behavior "exclusive" = tax is added on top of the listed price.
   const line_items = normalized.map(({ size, quantity }) => ({
     price_data: {
       currency: PRODUCT.currency,
       unit_amount: PRODUCT.priceCents,
-      tax_behavior: "exclusive" as const,
       product_data: {
         name: PRODUCT.name,
         description: `Size: ${size}`,
-        // Apparel tax category so Stripe Tax rates it correctly per state.
-        tax_code: "txcd_30011000", // General - Clothing
       },
     },
     quantity,
@@ -52,11 +48,9 @@ export async function POST(req: NextRequest) {
     price_data: {
       currency: PRODUCT.currency,
       unit_amount: PRODUCT.shippingCents,
-      tax_behavior: "exclusive" as const,
       product_data: {
         name: "Shipping",
         description: "Flat-rate shipping",
-        tax_code: "txcd_92010001", // Shipping
       },
     },
     quantity: 1,
@@ -69,9 +63,10 @@ export async function POST(req: NextRequest) {
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
-    // Stripe Tax computes sales tax from the shipping address, and only
-    // charges in states where you've added a tax registration.
-    automatic_tax: { enabled: true },
+    // Sales tax is intentionally not collected yet — pending state tax
+    // registrations. To re-enable: set automatic_tax { enabled: true } here and
+    // restore tax_behavior "exclusive" + tax_code on the line items above
+    // (txcd_30011000 apparel, txcd_92010001 shipping).
     shipping_address_collection: {
       allowed_countries: ["US"],
     },
