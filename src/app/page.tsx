@@ -124,12 +124,10 @@ export default function Home() {
 
       {/* Cream urgency panel */}
       <section style={{ background: "var(--bg-cream)" }}>
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-2 px-6 py-6 text-center sm:flex-row sm:justify-between sm:text-left">
-          <p className="text-sm font-bold uppercase tracking-widest text-black">
-            Limited run &middot; Never restocked
-          </p>
-          <p className="text-sm font-semibold text-black/70">
-            Once it&apos;s gone, it&apos;s gone for good.
+        <div className="mx-auto max-w-6xl px-6 py-6">
+          <p className="text-center text-sm font-bold uppercase tracking-widest text-black">
+            Hand Made &middot; Unique Distinct Design &middot; No Two Alike
+            &middot; Every piece one of a kind.
           </p>
         </div>
       </section>
@@ -175,23 +173,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Details matter, GRA-style feature list */}
-            <div className="mt-10 grid grid-cols-2 gap-6 sm:grid-cols-4">
-              {[
-                ["Heavyweight Cotton", "Structured, boxy drape"],
-                ["Screen Printed", "Cracked gothic lettering"],
-                ["Front & Back", "Full statement both sides"],
-                ["Numbered Drop", "Never restocked"],
-              ].map(([title, desc]) => (
-                <div key={title}>
-                  <span className="mb-1 block h-[3px] w-6 bg-[var(--accent)]" />
-                  <p className="mb-1 text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
-                    {title}
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)]">{desc}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Purchase */}
@@ -238,6 +219,43 @@ export default function Home() {
             </button>
             <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
               Limited run &middot; Once it&apos;s gone, it&apos;s gone
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* The story behind the shirt */}
+      <section id="the-story" style={{ background: "var(--bg-section-alt)" }}>
+        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
+          <div>
+            <span className="section-label mb-3">The Story</span>
+            <h2 className="text-4xl sm:text-5xl">
+              Behind
+              <br />
+              The Shirt
+            </h2>
+            <span className="mt-6 block h-[3px] w-16 bg-[var(--accent)]" />
+          </div>
+
+          <div className="space-y-5 text-[var(--text-body)]">
+            <p className="lead">
+              Every BROK3N tee is made by hand, one at a time. The cracks in the
+              lettering never land the same way twice.
+            </p>
+            <p>
+              [Story paragraph one — where the design came from, and what Greg
+              was walking through when he made it.]
+            </p>
+            <p>
+              [Story paragraph two — what the broken lettering means, and why
+              Psalm 34:18 is on the back.]
+            </p>
+            <p>
+              [Story paragraph three — who this shirt is for, and what wearing
+              it declares.]
+            </p>
+            <p className="text-sm font-bold uppercase tracking-widest text-[var(--text-primary)]">
+              &mdash; Greg Romano
             </p>
           </div>
         </div>
