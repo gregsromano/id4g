@@ -7,9 +7,10 @@
   --bg-charcoal: #222222;
   --bg-cream: #F3F0EA;
 
-  --accent: #0B7E7E;
-  --accent-hover: #14A0A0;
-  --gold: #5FB8B0;
+  --accent: #14E5D0;
+  --accent-hover: #5BFFEC;
+  --gold: #14E5D0;
+  --on-accent: #041312;
 
   --text-primary: #FFFFFF;
   --text-body: #D8D8D8;
@@ -84,7 +85,7 @@ h2, .h2 {
   align-items: center;
   justify-content: center;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-family: var(--font-body, 'Montserrat', sans-serif);
   font-weight: 700;
   font-size: 12px;

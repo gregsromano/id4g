@@ -194,7 +194,7 @@ export default function Home() {
                   }}
                   className={`h-12 w-12 border text-sm font-semibold transition-colors ${
                     size === s
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
                       : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
                   }`}
                 >
@@ -331,7 +331,7 @@ export default function Home() {
 
         {/* Closer */}
         <div className="mt-16 sm:mt-24" style={{ background: "var(--accent)" }}>
-          <p className="mx-auto max-w-6xl px-6 py-10 text-center font-[family-name:var(--font-block)] text-4xl uppercase leading-none tracking-wide text-white sm:py-14 sm:text-6xl lg:text-7xl">
+          <p className="mx-auto max-w-6xl px-6 py-10 text-center font-[family-name:var(--font-block)] text-4xl uppercase leading-none tracking-wide text-[var(--on-accent)] sm:py-14 sm:text-6xl lg:text-7xl">
             Faith. Art. One of One.
           </p>
         </div>
