@@ -240,9 +240,6 @@ export default function Home() {
                 height={1000}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
-                After Hours
-              </figcaption>
             </figure>
 
             {/* Stacked pair */}
@@ -254,9 +251,6 @@ export default function Home() {
                 height={1000}
                 className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
               />
-              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
-                Studio Light
-              </figcaption>
             </figure>
 
             <figure className="group relative overflow-hidden lg:col-span-5">
@@ -267,9 +261,6 @@ export default function Home() {
                 height={600}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
-                Skyline
-              </figcaption>
             </figure>
 
             {/* Wide pair */}
@@ -281,9 +272,6 @@ export default function Home() {
                 height={640}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
-                Off The Line
-              </figcaption>
             </figure>
 
             <figure className="group relative overflow-hidden lg:col-span-5">
@@ -294,9 +282,6 @@ export default function Home() {
                 height={1000}
                 className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               />
-              <figcaption className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-5 text-xs font-bold uppercase tracking-widest text-white">
-                Full Length
-              </figcaption>
             </figure>
           </div>
         </div>
