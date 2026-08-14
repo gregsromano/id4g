@@ -28,14 +28,16 @@ export default function Home() {
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
       {/* Top nav — logo mark */}
-      <header className="absolute left-0 top-0 z-20 px-6 py-6">
-        <Image
-          src="/idfg-logo.webp"
-          alt="ID4G — I'll Die For The Gospel"
-          width={653}
-          height={633}
-          className="w-full max-w-[72px]"
-        />
+      <header className="absolute inset-x-0 top-0 z-20 py-6">
+        <div className="mx-auto w-full max-w-6xl px-6">
+          <Image
+            src="/idfg-logo.webp"
+            alt="ID4G — I'll Die For The Gospel"
+            width={653}
+            height={633}
+            className="w-full max-w-[72px]"
+          />
+        </div>
       </header>
 
       {/* Full-bleed hero */}
