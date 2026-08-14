@@ -230,13 +230,15 @@ export default function Home() {
       <section id="the-story" style={{ background: "var(--bg-section-alt)" }}>
         <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
           <div>
-            <span className="section-label mb-3">The Story</span>
-            <h2 className="text-4xl sm:text-5xl">
+            <span className="section-label mb-4 !text-base sm:!text-lg">
+              The Story
+            </span>
+            <h2 className="!text-5xl sm:!text-6xl lg:!text-7xl">
               Behind
               <br />
               The Shirt
             </h2>
-            <span className="mt-6 block h-[3px] w-16 bg-[var(--accent)]" />
+            <span className="mt-8 block h-[4px] w-24 bg-[var(--accent)]" />
           </div>
 
           <div className="space-y-5 text-[var(--text-body)]">
