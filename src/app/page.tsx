@@ -99,7 +99,9 @@ export default function Home() {
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
               Brok3n
               <br />
-              <span className="text-[var(--accent)]">Psalm 34:18</span>
+              <span className="block text-4xl text-[var(--accent)] sm:text-5xl lg:text-6xl">
+                Psalm 34:18
+              </span>
             </h1>
             <p className="lead mb-10 max-w-md">
               &ldquo;The LORD is close to the brokenhearted and saves those
