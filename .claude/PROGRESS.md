@@ -3,8 +3,12 @@
 ## Where things stand
 
 **id4g ("I'll Die For The Gospel")** is a single-product streetwear drop store — the
-BROK3N tee ($49 + $15 flat shipping, sizes S–3XL), deployed on Vercel at
-https://id4g.vercel.app, git-connected so every push to `main` auto-deploys.
+BROK3N tee ($49 + $15 flat shipping, sizes S–3XL), deployed on Vercel and
+git-connected so every push to `main` auto-deploys.
+
+**Live at https://www.id4g.com** — `www` is canonical; the apex `id4g.com` 308-redirects
+to it (that direction was deliberate, matching Vercel's domain config). The original
+`id4g.vercel.app` still resolves and is a valid fallback.
 
 **🔴 STRIPE IS IN LIVE MODE. The site charges real cards as of 2026-08-14.**
 
@@ -13,9 +17,10 @@ https://id4g.vercel.app, git-connected so every push to `main` auto-deploys.
   A sandbox order (Jeff Studmffin, $64, M x1, TX) landed in `orders` with every
   field populated — email, name, total, items JSON, shipping address, status `paid`.
   This was the **first order row ever recorded**; see below for why.
-- Live mode confirmed: production `/api/checkout` returns a `cs_live_…` session.
+- Live mode confirmed: `/api/checkout` on www.id4g.com returns a `cs_live_…` session.
 - Webhook route returns 400 on unsigned requests.
 - `/api/keepalive` returns 401 unauthenticated, 200 + row count with `CRON_SECRET`.
+- Apex → www redirect verified (308) against Vercel's IP directly.
 
 **Live Stripe account (`acct_1TyIjwQzBlVRwUbh`) is fully verified** — `charges_enabled`,
 `payouts_enabled`, `details_submitted` all true, `requirements.currently_due` empty.
@@ -33,9 +38,11 @@ Two separate faults made this invisible for weeks:
    even a failed write looked like success and Stripe never retried (fixed in
    `05da845`).
 
-Both sandbox and live webhooks point at `https://id4g.vercel.app/api/webhooks/stripe`,
-event `checkout.session.completed`. **They are separate objects with different signing
-secrets** — Vercel currently holds the LIVE secret.
+Both are for event `checkout.session.completed`, and **they are separate objects with
+different signing secrets** — Vercel currently holds the LIVE secret.
+- LIVE `we_1U4SQlQzBlVRwUbhVr44MJKp` → `https://www.id4g.com/api/webhooks/stripe`
+- SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` → still `https://id4g.vercel.app/...`
+  (test-mode only, harmless; move it if sandbox testing resumes)
 
 ### Also fixed this session
 - **Sales tax removed** (`a7369c4`). Stripe Tax charged $0 without state registrations,
@@ -57,17 +64,19 @@ secrets** — Vercel currently holds the LIVE secret.
   receipt is the only email. Note Stripe never sends receipts in test mode, so the
   "no email" seen during sandbox testing was expected, not a bug.
 - **Live branding empty** — no icon, logo, or primary color, so receipts look plain.
-- Still on the `id4g.vercel.app` domain; no custom domain.
+- **No MX records on id4g.com**, though a DMARC TXT record (`p=quarantine`, pointing at
+  `onsecureserver.net`) exists. Nothing can receive mail at `@id4g.com` as configured.
+  Not a launch blocker — Stripe sends receipts from its own domain.
 
 ## Next step(s)
 
-1. **Place one real order on a real card** at https://id4g.vercel.app, confirm the row
+1. **Place one real order on a real card** at https://www.id4g.com, confirm the row
    lands in `orders`, then refund it from the Stripe dashboard. This is the last
    unverified link — launch day should not be the live webhook's first firing.
+   Use the www domain so it exercises the real customer path.
 2. **Upgrade Supabase to a paid plan** before any real volume (user decision).
 3. Optional polish: live branding (icon/logo/color), sales tax registrations,
-   branded confirmation email, custom domain. Swapping domains means updating
-   `NEXT_PUBLIC_SITE_URL` **and** the live webhook URL together.
+   branded confirmation email, MX records for `@id4g.com`.
 
 ## Notes / gotchas
 - id4g lives INSIDE the gregromanoart repo folder (`~/Desktop/CLAUDE/id4g`) but is its
@@ -85,8 +94,18 @@ secrets** — Vercel currently holds the LIVE secret.
   INACTIVE and has no keepalive.
 - Reading `.env.local` via `node --env-file` returned a stale/wrong value once this
   session and sent debugging down a false path. Trust the file contents.
+- **DNS: id4g.com is registered at GoDaddy** (nameservers `ns39/ns40.domaincontrol.com`),
+  NOT on Vercel DNS. Apex is a single `A @ → 76.76.21.21`; `www` is a CNAME to
+  `…vercel-dns-017.com`. When checking DNS changes, the local resolver cache lies —
+  a GoDaddy parking page kept appearing after the records were already correct.
+  Verify with `dig +short @ns39.domaincontrol.com id4g.com` or
+  `curl --resolve id4g.com:443:76.76.21.21` to bypass cache.
 
 ## History
+- 2026-08-14 (later): **Custom domain live.** Pointed id4g.com at Vercel (GoDaddy apex
+  A record → 76.76.21.21, replacing a parking record), so the apex now 308-redirects to
+  www.id4g.com. Moved `NEXT_PUBLIC_SITE_URL` and the LIVE Stripe webhook to
+  www.id4g.com and redeployed. Dropped a trailing period from the urgency line.
 - 2026-08-14: **Went live on Stripe.** Found the real reason orders never recorded —
   no webhook endpoint had ever existed in Stripe. Created endpoints in both sandbox
   and live, fixed the handler to fail loudly (500 + retry) instead of silently
