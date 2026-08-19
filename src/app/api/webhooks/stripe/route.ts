@@ -44,6 +44,12 @@ export async function POST(req: NextRequest) {
       customer_email: session.customer_details?.email,
       customer_name: session.customer_details?.name,
       amount_total: session.amount_total,
+      // Stripe Tax is enabled, so amount_total includes sales tax. Record the
+      // tax and pre-tax components separately — both are already on the
+      // session, so this costs no extra API call, and without them the tax
+      // collected for a filing can't be derived from our own data.
+      amount_tax: session.total_details?.amount_tax,
+      amount_subtotal: session.amount_subtotal,
       items,
       items_summary: session.metadata?.items_summary,
       shipping_name: shipping?.name,

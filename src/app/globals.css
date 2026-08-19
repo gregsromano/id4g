@@ -128,3 +128,18 @@ h2, .h2 {
   color: #000;
   border-color: #fff;
 }
+
+/* --- Print (admin packing slips) --- */
+/* The storefront palette is near-black; slips must print dark-on-white and
+   stay legible as photocopies, so force the page white and drop the app
+   chrome (nav, buttons, back links) from the printed sheet. */
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
