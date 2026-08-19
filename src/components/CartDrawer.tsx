@@ -159,10 +159,15 @@ export default function CartDrawer() {
                 <span>Shipping</span>
                 <span>{formatPrice(shippingCents)}</span>
               </div>
-              <div className="mb-5 flex justify-between border-t border-[var(--border)] pt-3 text-base font-bold text-[var(--text-primary)]">
+              <div className="mb-1 flex justify-between border-t border-[var(--border)] pt-3 text-base font-bold text-[var(--text-primary)]">
                 <span>Total</span>
                 <span>{formatPrice(totalCents)}</span>
               </div>
+              {/* Sales tax depends on the shipping address, which Stripe
+                  collects at checkout, so it cannot be shown here. */}
+              <p className="mb-5 text-xs text-[var(--text-muted)]">
+                Sales tax calculated at checkout
+              </p>
 
               {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
