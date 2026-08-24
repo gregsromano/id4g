@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 const LINKS = [
   { href: "/admin", label: "Orders" },
+  { href: "/admin/products", label: "Products" },
   { href: "/admin/import", label: "Import tracking" },
 ];
 
@@ -22,10 +23,10 @@ export default function AdminNav() {
   }
 
   return (
-    <header className="no-print flex items-center justify-between border-b border-[var(--border)] px-6 py-4 sm:px-10">
-      <div className="flex items-center gap-8">
+    <header className="no-print flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-[var(--border)] px-6 py-4 sm:px-10">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 sm:gap-8">
         <span className="section-label">ID4G Fulfillment</span>
-        <nav className="flex items-center gap-6">
+        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:gap-6">
           {LINKS.map((link) => {
             const active =
               link.href === "/admin"
