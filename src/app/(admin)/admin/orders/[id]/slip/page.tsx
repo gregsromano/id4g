@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { getOrder } from "@/lib/admin-orders";
 import { formatAddressLines, orderUnitCount, orderWeightOz } from "@/lib/fulfillment";
-import { PRODUCT } from "@/lib/product";
 
 export const dynamic = "force-dynamic";
 
@@ -75,15 +74,18 @@ export default async function PackingSlipPage({
           <thead>
             <tr className="border-b border-black text-left">
               <th className="py-2 font-bold">Item</th>
-              <th className="py-2 font-bold">Size</th>
+              <th className="py-2 font-bold">Variant</th>
               <th className="py-2 text-right font-bold">Qty</th>
             </tr>
           </thead>
           <tbody>
             {order.items.map((item) => (
-              <tr key={item.size} className="border-b border-neutral-300">
-                <td className="py-2">{PRODUCT.name}</td>
-                <td className="py-2">{item.size}</td>
+              <tr
+                key={`${item.productId}-${item.variantId}`}
+                className="border-b border-neutral-300"
+              >
+                <td className="py-2">{item.name}</td>
+                <td className="py-2">{item.variantLabel || "—"}</td>
                 <td className="py-2 text-right">{item.quantity}</td>
               </tr>
             ))}

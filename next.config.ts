@@ -7,6 +7,21 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname),
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/images/**",
+      },
+      // Local Supabase (supabase start) serves Storage from 127.0.0.1.
+      {
+        protocol: "http",
+        hostname: "127.0.0.1",
+        pathname: "/storage/v1/object/public/images/**",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

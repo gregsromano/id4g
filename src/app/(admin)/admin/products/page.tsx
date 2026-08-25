@@ -1,0 +1,120 @@
+import Link from "next/link";
+
+import { listAllProductsForAdmin, type ProductFilter } from "@/lib/products";
+import { formatPrice } from "@/lib/product";
+
+export const dynamic = "force-dynamic";
+
+const FILTERS: { value: ProductFilter; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "draft", label: "Draft" },
+  { value: "archived", label: "Archived" },
+  { value: "all", label: "All" },
+];
+
+function isFilter(value: string | undefined): value is ProductFilter {
+  return value === "active" || value === "draft" || value === "archived" || value === "all";
+}
+
+export default async function AdminProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>;
+}) {
+  const params = await searchParams;
+  const filter: ProductFilter = isFilter(params.filter) ? params.filter : "active";
+
+  const products = await listAllProductsForAdmin(filter);
+
+  return (
+    <div className="mx-auto w-full max-w-6xl">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <span className="section-label">Catalog</span>
+          <h1 className="!text-4xl mt-1 text-[var(--text-primary)]">Products</h1>
+        </div>
+        <Link href="/admin/products/new" className="btn-primary !py-3 !px-6">
+          New product
+        </Link>
+      </div>
+
+      <nav className="mt-8 flex gap-6 border-b border-[var(--border)] pb-4">
+        {FILTERS.map((option) => (
+          <Link
+            key={option.value}
+            href={`/admin/products?filter=${option.value}`}
+            className={`text-xs uppercase tracking-widest transition-colors ${
+              option.value === filter
+                ? "text-[var(--accent)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            }`}
+          >
+            {option.label}
+          </Link>
+        ))}
+      </nav>
+
+      {products.length === 0 ? (
+        <p className="py-16 text-center text-sm text-[var(--text-muted)]">
+          No products in this view.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-2xl border-collapse text-left">
+            <thead>
+              <tr className="bg-[var(--bg-section-alt)]">
+                <Th>Name</Th>
+                <Th>Status</Th>
+                <Th>Price</Th>
+                <Th>Variants</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr
+                  key={product.id}
+                  className="border-b border-[var(--border)] transition-colors hover:bg-[var(--bg-section-alt)]"
+                >
+                  <Td>
+                    <Link
+                      href={`/admin/products/${product.id}`}
+                      className="text-[var(--text-primary)] transition-colors hover:text-[var(--accent)]"
+                    >
+                      {product.name}
+                    </Link>
+                    <span className="block text-xs text-[var(--text-muted)]">
+                      /{product.slug}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                      {product.status}
+                    </span>
+                  </Td>
+                  <Td>
+                    {product.minPriceCents === product.maxPriceCents
+                      ? formatPrice(product.minPriceCents)
+                      : `${formatPrice(product.minPriceCents)} – ${formatPrice(product.maxPriceCents)}`}
+                  </Td>
+                  <Td>{product.variantCount}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="border-b border-[var(--border)] px-4 py-3 text-xs font-bold uppercase tracking-widest text-[var(--text-muted)]">
+      {children}
+    </th>
+  );
+}
+
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="px-4 py-4 text-sm text-[var(--text-body)]">{children}</td>;
+}

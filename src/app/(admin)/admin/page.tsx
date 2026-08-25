@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getFulfillmentSummary, listOrders, type OrderFilter } from "@/lib/admin-orders";
-import { formatPrice, PRODUCT } from "@/lib/product";
+import { formatPrice } from "@/lib/product";
 import { orderUnitCount } from "@/lib/fulfillment";
 import StatusPill from "@/components/admin/StatusPill";
 
@@ -75,30 +75,32 @@ export default async function AdminOrdersPage({
         />
       </div>
 
-      {/* What to pull from inventory before packing. */}
+      {/* What to pull from inventory before packing. Unlike the old
+          single-product size grid, this can't show every possible
+          combination up front — there's no longer one fixed list across the
+          whole catalog — so it only lists combos with open quantity. */}
       <div className="mt-6 border border-[var(--border)] p-5">
-        <span className="section-label">Sizes to pull ({summary.unitsToShip} units)</span>
-        <div className="mt-3 flex flex-wrap gap-px bg-[var(--border)]">
-          {PRODUCT.sizes.map((size) => (
-            <div
-              key={size}
-              className="min-w-20 flex-1 bg-[var(--bg-primary)] px-4 py-3 text-center"
-            >
-              <div className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
-                {size}
-              </div>
+        <span className="section-label">Units to pull ({summary.unitsToShip} units)</span>
+        {summary.variants.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--text-muted)]">Nothing open.</p>
+        ) : (
+          <div className="mt-3 flex flex-wrap gap-px bg-[var(--border)]">
+            {summary.variants.map((row) => (
               <div
-                className={`mt-1 text-2xl font-bold ${
-                  summary.sizes[size] > 0
-                    ? "text-[var(--text-primary)]"
-                    : "text-[var(--text-muted)]"
-                }`}
+                key={`${row.productName}-${row.variantLabel}`}
+                className="min-w-32 flex-1 bg-[var(--bg-primary)] px-4 py-3 text-center"
               >
-                {summary.sizes[size]}
+                <div className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                  {row.productName}
+                  {row.variantLabel ? ` · ${row.variantLabel}` : ""}
+                </div>
+                <div className="mt-1 text-2xl font-bold text-[var(--text-primary)]">
+                  {row.quantity}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Filters + search */}

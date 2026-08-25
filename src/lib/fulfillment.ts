@@ -1,5 +1,3 @@
-import { PRODUCT, type Size } from "./product";
-
 /**
  * Fulfillment vocabulary for the admin dashboard.
  *
@@ -37,27 +35,39 @@ export function isOrderStatus(value: unknown): value is OrderStatus {
 }
 
 /**
- * Shipping weight estimates, used for the "Weight (oz)" column of the Pirate
- * Ship export.
- *
- * These are ESTIMATES for a single blank cotton tee (~5.5-6.5oz depending on
- * size) plus a poly mailer. True them up against a real scale after the first
- * batch of labels: under-declaring weight gets the package hit with a USPS
- * postage-due adjustment after the fact, which costs more than the postage.
+ * Fallback shipping weight estimate, used for the "Weight (oz)" column of the
+ * Pirate Ship export when a line item has no per-product weight recorded
+ * (either the product's `weight_oz` was left blank, or the order predates
+ * per-product weight tracking).
  */
 export const UNIT_WEIGHT_OZ = 6;
 export const PACKAGING_WEIGHT_OZ = 2;
 
-/** A single line of the `items` jsonb column. */
+/**
+ * A single line of the `items` jsonb column — a full point-of-sale snapshot
+ * taken at checkout time, not a live reference to the catalog. This is what
+ * lets an order keep rendering correctly forever even after its product is
+ * edited or archived: nothing here is re-derived from the live `products`
+ * table at read time.
+ */
 export type OrderItem = {
-  size: Size;
+  productId: string;
+  variantId: string;
+  name: string;
+  variantLabel: string;
+  /** Null on legacy rows recorded before per-line pricing was stored. */
+  unitPriceCents: number | null;
+  unitWeightOz: number;
   quantity: number;
 };
 
 export function orderWeightOz(items: OrderItem[]): number {
   const units = items.reduce((sum, item) => sum + item.quantity, 0);
   if (units === 0) return 0;
-  return PACKAGING_WEIGHT_OZ + units * UNIT_WEIGHT_OZ;
+  return (
+    PACKAGING_WEIGHT_OZ +
+    items.reduce((sum, item) => sum + item.quantity * item.unitWeightOz, 0)
+  );
 }
 
 /** Total unit count for an order. */
@@ -66,10 +76,39 @@ export function orderUnitCount(items: OrderItem[]): number {
 }
 
 /**
+ * Frozen historical values for the single product this store sold before the
+ * catalog existed. Used only to synthesize a snapshot for orders written
+ * before this migration — NOT a live catalog reference, so this store must
+ * never be updated to match a current product edit.
+ */
+const LEGACY_PRODUCT_ID = "brok3n-tee";
+const LEGACY_PRODUCT_NAME = "BROK3N Tee — I'll Die For The Gospel";
+const LEGACY_SIZES = new Set(["S", "M", "L", "XL", "2XL", "3XL"]);
+
+function legacyItem(size: string, quantity: number): OrderItem {
+  return {
+    productId: LEGACY_PRODUCT_ID,
+    variantId: size,
+    name: LEGACY_PRODUCT_NAME,
+    variantLabel: `Size ${size}`,
+    unitPriceCents: null,
+    unitWeightOz: UNIT_WEIGHT_OZ,
+    quantity,
+  };
+}
+
+/**
  * Defensively parse the `items` jsonb column.
  *
- * Rows written before migration 20260728000002 have `items = null` and carry
- * only the legacy single `size` column, so callers pass that as a fallback.
+ * Handles three generations of row shape:
+ *  1. Current: {productId, variantId, name, variantLabel, unitPriceCents,
+ *     unitWeightOz, quantity} — used as-is.
+ *  2. Middle-generation (rows written before the catalog existed): jsonb
+ *     items shaped as {size, quantity}, no productId — synthesized into a
+ *     legacy snapshot.
+ *  3. Oldest (pre-jsonb): `items` is null, only the legacy single `size`
+ *     column exists — callers pass that column as `legacySize`.
+ *
  * Never throws: one malformed row must not blank out the whole dashboard.
  */
 export function parseItems(raw: unknown, legacySize?: string | null): OrderItem[] {
@@ -77,18 +116,33 @@ export function parseItems(raw: unknown, legacySize?: string | null): OrderItem[
     const parsed: OrderItem[] = [];
     for (const entry of raw) {
       if (!entry || typeof entry !== "object") continue;
-      const { size, quantity } = entry as { size?: unknown; quantity?: unknown };
-      if (!PRODUCT.sizes.includes(size as Size)) continue;
-      const qty = Number(quantity);
-      if (!Number.isInteger(qty) || qty < 1) continue;
-      parsed.push({ size: size as Size, quantity: qty });
+      const e = entry as Record<string, unknown>;
+      const quantity = Number(e.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1) continue;
+
+      if (typeof e.productId === "string" && typeof e.variantId === "string") {
+        parsed.push({
+          productId: e.productId,
+          variantId: e.variantId,
+          name: typeof e.name === "string" ? e.name : "Unknown product",
+          variantLabel: typeof e.variantLabel === "string" ? e.variantLabel : "",
+          unitPriceCents: typeof e.unitPriceCents === "number" ? e.unitPriceCents : null,
+          unitWeightOz:
+            typeof e.unitWeightOz === "number" ? e.unitWeightOz : UNIT_WEIGHT_OZ,
+          quantity,
+        });
+        continue;
+      }
+
+      if (typeof e.size === "string" && LEGACY_SIZES.has(e.size)) {
+        parsed.push(legacyItem(e.size, quantity));
+      }
     }
     if (parsed.length > 0) return parsed;
   }
 
-  // Legacy single-size order.
-  if (PRODUCT.sizes.includes(legacySize as Size)) {
-    return [{ size: legacySize as Size, quantity: 1 }];
+  if (legacySize && LEGACY_SIZES.has(legacySize)) {
+    return [legacyItem(legacySize, 1)];
   }
 
   return [];
@@ -96,25 +150,47 @@ export function parseItems(raw: unknown, legacySize?: string | null): OrderItem[
 
 /** Rebuild the "M x1, L x2" summary for rows where `items_summary` is null. */
 export function itemsSummaryFrom(items: OrderItem[]): string {
-  return items.map(({ size, quantity }) => `${size} x${quantity}`).join(", ");
+  return items
+    .map(({ variantLabel, name, quantity }) => `${variantLabel || name} x${quantity}`)
+    .join(", ");
 }
 
+export type VariantBreakdownRow = {
+  productName: string;
+  variantLabel: string;
+  quantity: number;
+};
+
 /**
- * Units per size across a set of orders. Every size is present (zeroed) so a
- * size with no open orders renders as "0" rather than disappearing from the
- * packing list.
+ * Units per product+variant across a set of orders, for the admin "units to
+ * pull" picking list. Unlike the old single-product sizeBreakdown(), this
+ * cannot enumerate every possible combination up front (there's no longer one
+ * fixed list) — it only returns combos that actually appear with quantity > 0.
  */
-export function sizeBreakdown(orders: { items: OrderItem[] }[]): Record<Size, number> {
-  const breakdown = Object.fromEntries(
-    PRODUCT.sizes.map((size) => [size, 0]),
-  ) as Record<Size, number>;
+export function variantBreakdown(orders: { items: OrderItem[] }[]): VariantBreakdownRow[] {
+  const totals = new Map<string, VariantBreakdownRow>();
 
   for (const order of orders) {
-    for (const { size, quantity } of order.items) {
-      breakdown[size] += quantity;
+    for (const item of order.items) {
+      const key = `${item.productId}::${item.variantId}`;
+      const existing = totals.get(key);
+      if (existing) {
+        existing.quantity += item.quantity;
+      } else {
+        totals.set(key, {
+          productName: item.name,
+          variantLabel: item.variantLabel,
+          quantity: item.quantity,
+        });
+      }
     }
   }
-  return breakdown;
+
+  return [...totals.values()].sort(
+    (a, b) =>
+      a.productName.localeCompare(b.productName) ||
+      a.variantLabel.localeCompare(b.variantLabel),
+  );
 }
 
 /**

@@ -1,29 +1,13 @@
-"use client";
-
 import Image from "next/image";
-import { useState } from "react";
-import { PRODUCT, formatPrice, type Size } from "@/lib/product";
-import { useCart } from "@/lib/cart-context";
+import Link from "next/link";
 
-export default function Home() {
-  const { addItem } = useCart();
-  const [size, setSize] = useState<Size | null>(null);
-  const [view, setView] = useState<"front" | "back">("front");
-  const [error, setError] = useState<string | null>(null);
+import { listActiveProducts } from "@/lib/products";
+import { formatPrice } from "@/lib/product";
 
-  function handleAddToCart() {
-    if (!size) {
-      setError("Please select a size.");
-      return;
-    }
-    setError(null);
-    addItem({
-      productId: PRODUCT.id,
-      name: PRODUCT.name,
-      size,
-      priceCents: PRODUCT.priceCents,
-    });
-  }
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const products = await listActiveProducts();
 
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
@@ -109,8 +93,8 @@ export default function Home() {
               </div>
 
               <div className="order-2 flex flex-wrap items-center gap-4">
-                <a href="#get-yours" className="btn-primary">
-                  Get Yours &mdash; {formatPrice(PRODUCT.priceCents)}
+                <a href="#shop" className="btn-primary">
+                  Shop the Drop
                 </a>
               </div>
             </div>
@@ -128,92 +112,50 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Product detail + purchase */}
-      <section id="get-yours" className="border-b border-[var(--border)]">
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:py-24 lg:grid-cols-2 lg:items-start lg:gap-16">
-          {/* Product image */}
-          <div>
-            <div className="aspect-square w-full overflow-hidden">
-              <Image
-                src={view === "front" ? "/shirt-front.png" : "/shirt-back.png"}
-                alt={
-                  view === "front"
-                    ? "BROK3N t-shirt front — Psalm 34:18"
-                    : "BROK3N t-shirt back — The LORD is close to the brokenhearted"
-                }
-                width={2559}
-                height={2739}
-                className="h-full w-full object-contain"
-              />
+      {/* Shop — product grid */}
+      <section id="shop" className="border-b border-[var(--border)]">
+        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+          <span className="section-label mb-3">The Drop</span>
+          <h2 className="mb-10 text-4xl sm:text-5xl">Shop</h2>
+
+          {products.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)]">Nothing in stock right now.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {products.map((product) => {
+                const image = product.images[0];
+                return (
+                  <Link
+                    key={product.id}
+                    href={`/products/${product.slug}`}
+                    className="group block"
+                  >
+                    <div className="aspect-square w-full overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
+                      {image ? (
+                        <Image
+                          src={image.url}
+                          alt={image.alt}
+                          width={800}
+                          height={800}
+                          className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
+                      {product.name}
+                    </h3>
+                    <p className="mt-1 text-sm text-[var(--text-muted)]">
+                      {formatPrice(product.priceCents)}
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
-            <div className="mt-3 flex gap-6 border-t border-[var(--border)] pt-3">
-              <button
-                onClick={() => setView("front")}
-                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
-                  view === "front"
-                    ? "text-[var(--accent)]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-body)]"
-                }`}
-              >
-                Front
-              </button>
-              <button
-                onClick={() => setView("back")}
-                className={`text-xs font-bold uppercase tracking-widest transition-colors ${
-                  view === "back"
-                    ? "text-[var(--accent)]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-body)]"
-                }`}
-              >
-                Back
-              </button>
-            </div>
-
-          </div>
-
-          {/* Purchase */}
-          <div>
-            <span className="section-label mb-3">The Drop</span>
-            <h2 className="mb-6 text-4xl sm:text-5xl">Get Yours</h2>
-
-            <div className="mb-8 flex items-baseline gap-3">
-              <span className="text-4xl font-bold text-[var(--text-primary)]">
-                {formatPrice(PRODUCT.priceCents)}
-              </span>
-              <span className="text-sm text-[var(--text-muted)]">
-                + {formatPrice(PRODUCT.shippingCents)} shipping
-              </span>
-            </div>
-
-            <p className="section-label mb-3">Select Size</p>
-            <div className="mb-8 flex gap-2">
-              {PRODUCT.sizes.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setSize(s);
-                    setError(null);
-                  }}
-                  className={`h-12 w-12 border text-sm font-semibold transition-colors ${
-                    size === s
-                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
-                      : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-
-            {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
-
-            <button
-              onClick={handleAddToCart}
-              className="btn-primary w-full sm:w-auto"
-            >
-              Add to Cart
-            </button>
-          </div>
+          )}
         </div>
       </section>
 

@@ -29,7 +29,7 @@ export default function CartDrawer() {
         body: JSON.stringify({
           items: items.map((i) => ({
             productId: i.productId,
-            size: i.size,
+            variantId: i.variantId,
             quantity: i.quantity,
           })),
         }),
@@ -90,16 +90,18 @@ export default function CartDrawer() {
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {items.map((item) => (
                 <div
-                  key={`${item.productId}-${item.size}`}
+                  key={`${item.productId}-${item.variantId}`}
                   className="flex gap-4 border-b border-[var(--border)] py-5"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-[var(--text-primary)]">
                       {item.name}
                     </p>
-                    <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
-                      Size: {item.size}
-                    </p>
+                    {item.variantLabel && (
+                      <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                        {item.variantLabel}
+                      </p>
+                    )}
 
                     {/* Quantity stepper */}
                     <div className="mt-3 inline-flex items-center border border-[var(--border)]">
@@ -108,7 +110,7 @@ export default function CartDrawer() {
                         onClick={() =>
                           setQuantity(
                             item.productId,
-                            item.size,
+                            item.variantId,
                             item.quantity - 1,
                           )
                         }
@@ -124,7 +126,7 @@ export default function CartDrawer() {
                         onClick={() =>
                           setQuantity(
                             item.productId,
-                            item.size,
+                            item.variantId,
                             item.quantity + 1,
                           )
                         }
@@ -140,7 +142,7 @@ export default function CartDrawer() {
                       {formatPrice(item.priceCents * item.quantity)}
                     </span>
                     <button
-                      onClick={() => removeItem(item.productId, item.size)}
+                      onClick={() => removeItem(item.productId, item.variantId)}
                       className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
                     >
                       Remove

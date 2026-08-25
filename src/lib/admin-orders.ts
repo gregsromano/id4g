@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSupabaseAdmin } from "./supabase";
+import { assertServiceRoleConfigured, getSupabaseAdmin } from "./supabase";
 import { verifyAdminSession } from "./admin-dal";
 import {
   OPEN_STATUSES,
@@ -8,12 +8,12 @@ import {
   itemsSummaryFrom,
   orderUnitCount,
   parseItems,
-  sizeBreakdown,
+  variantBreakdown,
   type AdminOrder,
   type OrderStatus,
   type ShippingAddress,
+  type VariantBreakdownRow,
 } from "./fulfillment";
-import type { Size } from "./product";
 
 /**
  * Server-side reads and writes of the orders table for the admin dashboard.
@@ -91,20 +91,6 @@ function toAdminOrder(row: OrderRow): AdminOrder {
     createdAt: row.created_at,
     fulfilledAt: row.fulfilled_at,
   };
-}
-
-/**
- * A missing service-role key produces an empty result set rather than an
- * error, because RLS denies the anon role everything. Without this the
- * dashboard would render "no orders" for a config problem.
- */
-function assertServiceRoleConfigured() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error(
-      "[admin-orders] SUPABASE_SERVICE_ROLE_KEY is unset; every query will return no rows because RLS is forced on orders.",
-    );
-    throw new Error("Supabase service role key is not configured");
-  }
 }
 
 function fail(context: string, error: { code?: string; message?: string }): never {
@@ -185,7 +171,7 @@ export type FulfillmentSummary = {
   taxCollectedCents: number;
   /** Orders with no recorded tax — predate the amount_tax column. */
   ordersMissingTax: number;
-  sizes: Record<Size, number>;
+  variants: VariantBreakdownRow[];
 };
 
 export async function getFulfillmentSummary(): Promise<FulfillmentSummary> {
@@ -212,7 +198,7 @@ export async function getFulfillmentSummary(): Promise<FulfillmentSummary> {
     grossRevenueCents: rows.reduce((sum, row) => sum + (row.amount_total ?? 0), 0),
     taxCollectedCents: rows.reduce((sum, row) => sum + (row.amount_tax ?? 0), 0),
     ordersMissingTax: rows.filter((row) => row.amount_tax === null).length,
-    sizes: sizeBreakdown(parsed),
+    variants: variantBreakdown(parsed),
   };
 }
 

@@ -1,7 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { UNIT_WEIGHT_OZ, type OrderItem } from "@/lib/fulfillment";
 import Stripe from "stripe";
+
+/**
+ * Reconstructs the point-of-sale item snapshot from the session's line items,
+ * rather than from `session.metadata` (which has a ~500-char-per-value limit
+ * that a growing multi-line JSON blob would eventually hit). Each line's
+ * product was created ad-hoc by /api/checkout with the snapshot stamped into
+ * its own metadata, so it's durable on Stripe's side and immune to that
+ * per-session limit.
+ */
+function itemsFromLineItems(lineItems: Stripe.LineItem[]): OrderItem[] {
+  const items: OrderItem[] = [];
+
+  for (const line of lineItems) {
+    const product = line.price?.product;
+    if (!product || typeof product === "string" || product.deleted) continue;
+
+    const metadata = product.metadata ?? {};
+    if (metadata.kind !== "product") continue; // skips the shipping line
+
+    const quantity = line.quantity ?? 0;
+    if (quantity < 1) continue;
+
+    items.push({
+      productId: metadata.productId ?? "",
+      variantId: metadata.variantId ?? "",
+      name: metadata.name || product.name || "Unknown product",
+      variantLabel: metadata.variantLabel ?? "",
+      unitPriceCents: line.price?.unit_amount ?? null,
+      unitWeightOz: Number(metadata.weightOz) || UNIT_WEIGHT_OZ,
+      quantity,
+    });
+  }
+
+  return items;
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -26,14 +62,10 @@ export async function POST(req: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin();
     const shipping = session.collected_information?.shipping_details;
 
-    let items: unknown = null;
-    try {
-      items = session.metadata?.items
-        ? JSON.parse(session.metadata.items)
-        : null;
-    } catch {
-      items = null;
-    }
+    const expanded = await getStripe().checkout.sessions.retrieve(session.id, {
+      expand: ["line_items.data.price.product"],
+    });
+    const items = itemsFromLineItems(expanded.line_items?.data ?? []);
 
     // The customer has already paid at this point. If we cannot record the
     // order we must NOT return 2xx: Stripe treats that as delivered and never

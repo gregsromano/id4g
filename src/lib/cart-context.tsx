@@ -12,7 +12,6 @@ import {
   cartSubtotalCents,
   shippingForCents,
   type CartItem,
-  type Size,
 } from "@/lib/product";
 
 const STORAGE_KEY = "id4g_cart_v1";
@@ -27,17 +26,17 @@ type CartContextValue = {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  /** Add a size to the cart (merges quantity if that size is already present). */
+  /** Add a variant to the cart (merges quantity if that variant is already present). */
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  setQuantity: (productId: string, size: Size, quantity: number) => void;
-  removeItem: (productId: string, size: Size) => void;
+  setQuantity: (productId: string, variantId: string, quantity: number) => void;
+  removeItem: (productId: string, variantId: string) => void;
   clear: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function lineKey(productId: string, size: string) {
-  return `${productId}::${size}`;
+function lineKey(productId: string, variantId: string) {
+  return `${productId}::${variantId}`;
 }
 
 /** Guard against malformed data coming out of localStorage. */
@@ -50,7 +49,7 @@ function parseStored(raw: string | null): CartItem[] {
       (i): i is CartItem =>
         i &&
         typeof i.productId === "string" &&
-        typeof i.size === "string" &&
+        typeof i.variantId === "string" &&
         typeof i.priceCents === "number" &&
         typeof i.quantity === "number" &&
         i.quantity > 0,
@@ -108,13 +107,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem: (item, quantity = 1) => {
         if (quantity <= 0) return;
         setItems((prev) => {
-          const key = lineKey(item.productId, item.size);
+          const key = lineKey(item.productId, item.variantId);
           const existing = prev.find(
-            (i) => lineKey(i.productId, i.size) === key,
+            (i) => lineKey(i.productId, i.variantId) === key,
           );
           if (existing) {
             return prev.map((i) =>
-              lineKey(i.productId, i.size) === key
+              lineKey(i.productId, i.variantId) === key
                 ? { ...i, quantity: i.quantity + quantity }
                 : i,
             );
@@ -123,21 +122,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         });
         setIsOpen(true);
       },
-      setQuantity: (productId, size, quantity) => {
+      setQuantity: (productId, variantId, quantity) => {
         setItems((prev) => {
-          const key = lineKey(productId, size);
+          const key = lineKey(productId, variantId);
           if (quantity <= 0) {
-            return prev.filter((i) => lineKey(i.productId, i.size) !== key);
+            return prev.filter((i) => lineKey(i.productId, i.variantId) !== key);
           }
           return prev.map((i) =>
-            lineKey(i.productId, i.size) === key ? { ...i, quantity } : i,
+            lineKey(i.productId, i.variantId) === key ? { ...i, quantity } : i,
           );
         });
       },
-      removeItem: (productId, size) => {
-        const key = lineKey(productId, size);
+      removeItem: (productId, variantId) => {
+        const key = lineKey(productId, variantId);
         setItems((prev) =>
-          prev.filter((i) => lineKey(i.productId, i.size) !== key),
+          prev.filter((i) => lineKey(i.productId, i.variantId) !== key),
         );
       },
       clear: () => setItems([]),

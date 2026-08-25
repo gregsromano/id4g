@@ -9,7 +9,7 @@ import { useCart } from "@/lib/cart-context";
 const INSTAGRAM_URL = "https://instagram.com/id4gospel";
 const TIKTOK_URL = "https://tiktok.com/@id4gospel";
 
-type OrderItem = { size: string; quantity: number };
+type OrderItem = { productId: string; variantId: string; name: string; variantLabel: string; quantity: number };
 
 type Order = {
   email?: string;
@@ -84,10 +84,11 @@ function SuccessContent() {
               <ul className="mt-1 space-y-1">
                 {order.items.map((it) => (
                   <li
-                    key={it.size}
+                    key={`${it.productId}-${it.variantId}`}
                     className="text-sm text-[var(--text-body)]"
                   >
-                    Size {it.size} &times; {it.quantity}
+                    {it.name}
+                    {it.variantLabel ? ` — ${it.variantLabel}` : ""} &times; {it.quantity}
                   </li>
                 ))}
               </ul>

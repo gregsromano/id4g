@@ -1,21 +1,16 @@
-export const PRODUCT = {
-  id: "brok3n-tee",
-  name: "BROK3N Tee — I'll Die For The Gospel",
-  description: "Psalm 34:18 limited drop t-shirt",
-  priceCents: 4900,
-  shippingCents: 1500,
-  currency: "usd",
-  sizes: ["S", "M", "L", "XL", "2XL", "3XL"] as const,
-};
-
-export type Size = (typeof PRODUCT.sizes)[number];
-
-/** A single line in the cart: the product in a chosen size, with a quantity. */
+/**
+ * A single line in the cart: one variant of one product, with a quantity.
+ * `name`/`variantLabel`/`priceCents`/`shippingCents` are snapshots taken at
+ * add-to-cart time for display — the server always re-derives the real price
+ * from the catalog at checkout and never trusts these.
+ */
 export type CartItem = {
   productId: string;
+  variantId: string;
   name: string;
-  size: Size;
+  variantLabel: string;
   priceCents: number;
+  shippingCents: number;
   quantity: number;
 };
 
@@ -34,9 +29,13 @@ export function cartCount(items: CartItem[]) {
 }
 
 /**
- * Flat shipping: one shipping charge per order as long as there's at least
- * one item. Kept simple for a single-product drop.
+ * One flat shipping charge per order, sized to whichever distinct product in
+ * the cart costs the most to ship. This is a deliberate simplification (not
+ * a real per-carrier shipping-rate engine) — it matches today's behavior
+ * exactly when the cart holds a single product, and it's cosmetic-only here:
+ * the real charge is always re-derived server-side at checkout.
  */
 export function shippingForCents(items: CartItem[]) {
-  return items.length > 0 ? PRODUCT.shippingCents : 0;
+  if (items.length === 0) return 0;
+  return Math.max(...items.map((item) => item.shippingCents));
 }

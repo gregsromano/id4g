@@ -85,8 +85,14 @@ export default async function AdminOrderDetailPage({
           <ul className="text-sm text-[var(--text-body)]">
             {order.items.length > 0 ? (
               order.items.map((item) => (
-                <li key={item.size} className="flex justify-between py-1">
-                  <span>Size {item.size}</span>
+                <li
+                  key={`${item.productId}-${item.variantId}`}
+                  className="flex justify-between py-1"
+                >
+                  <span>
+                    {item.name}
+                    {item.variantLabel ? ` — ${item.variantLabel}` : ""}
+                  </span>
                   <span className="text-[var(--text-primary)]">&times;{item.quantity}</span>
                 </li>
               ))
