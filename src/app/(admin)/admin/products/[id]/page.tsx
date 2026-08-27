@@ -54,7 +54,7 @@ export default async function AdminProductEditPage({
           <div className="flex items-center gap-3">
             <SaveButton />
             <a
-              href={`/products/${product.slug}`}
+              href="/"
               target="_blank"
               rel="noopener noreferrer"
               className="btn-outline !py-2 !px-6"
