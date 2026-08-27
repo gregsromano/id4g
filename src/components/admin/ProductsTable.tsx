@@ -79,7 +79,7 @@ export default function ProductsTable({
               disabled={isPending}
               className="btn-outline !py-2 !px-6 disabled:opacity-40"
             >
-              {isPending ? "Saving..." : justSaved ? "Saved" : "Save order"}
+              {isPending ? "Saving..." : justSaved ? "Saved" : "Save"}
             </button>
           )}
           <Link href="/admin/products/new" className="btn-primary !py-2 !px-6">
