@@ -42,8 +42,6 @@ const MAX_NAME_LENGTH = 200;
 // of visible text.
 const MAX_DESCRIPTION_LENGTH = 20000;
 const MAX_IMAGE_ALT_LENGTH = 200;
-const MAX_META_TITLE_LENGTH = 70;
-const MAX_META_DESCRIPTION_LENGTH = 160;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
@@ -181,10 +179,6 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
   const taxCode = optionalText(formData.get("tax_code"), 60) ?? "txcd_30011000";
   const description = optionalText(formData.get("description"), MAX_DESCRIPTION_LENGTH);
   const category = optionalCategory(formData);
-  const metaTitle = optionalText(formData.get("meta_title"), MAX_META_TITLE_LENGTH);
-  const metaDescription = optionalText(formData.get("meta_description"), MAX_META_DESCRIPTION_LENGTH);
-
-  const options = parseOptionsText(String(formData.get("options") ?? ""));
 
   await updateProduct(id, {
     name,
@@ -195,33 +189,7 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
     weightOz,
     taxCode,
     category,
-    metaTitle,
-    metaDescription,
-    options,
   });
-
-  // Options/variants live in the same form now (no separate "Regenerate
-  // variants" button — that split was the actual bug behind "size pills
-  // aren't updating": picking sizes and clicking the top Save never touched
-  // them, because they were only ever submitted by a different form).
-  // Existing combos keep their current price (and their id, so cart lines /
-  // historical orders referencing them stay valid); brand-new combos start
-  // at the product's base price; removed combos are deleted.
-  const product = await getProductWithVariants(id);
-  if (product) {
-    const existingByKey = new Map(product.variants.map((v) => [v.optionKey, v]));
-    const combos = cartesianCombinations(options);
-    const desired: DesiredVariant[] =
-      combos.length > 0
-        ? combos.map((optionValues) => {
-            const key = variantOptionKey(optionValues);
-            const existing = existingByKey.get(key);
-            return { optionValues, priceCents: existing?.priceCents ?? priceCents };
-          })
-        : [{ optionValues: {}, priceCents }];
-
-    await replaceVariants(id, desired);
-  }
 
   // Image labels and drag order live in the same form (no separate save
   // button for them — see image_url/image_alt pairs in the edit page), so
@@ -237,6 +205,37 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
   }
 
   revalidateProduct(id, slug);
+}
+
+/**
+ * Regenerates variant rows from a freshly-edited options list. Existing
+ * combos keep their current price (and their id, so cart lines / historical
+ * orders referencing them stay valid); brand-new combos start at the
+ * product's base price; removed combos are deleted.
+ */
+export async function regenerateVariants(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = requireId(formData);
+
+  const options = parseOptionsText(String(formData.get("options") ?? ""));
+  const product = await getProductWithVariants(id);
+  if (!product) throw new Error("Product not found");
+
+  const existingByKey = new Map(product.variants.map((v) => [v.optionKey, v]));
+  const combos = cartesianCombinations(options);
+  const desired: DesiredVariant[] =
+    combos.length > 0
+      ? combos.map((optionValues) => {
+          const key = variantOptionKey(optionValues);
+          const existing = existingByKey.get(key);
+          return { optionValues, priceCents: existing?.priceCents ?? product.priceCents };
+        })
+      : [{ optionValues: {}, priceCents: product.priceCents }];
+
+  await updateProduct(id, { options });
+  await replaceVariants(id, desired);
+
+  revalidateProduct(id, product.slug);
 }
 
 /** Bulk price update for the existing variant table — one field per variant id. */

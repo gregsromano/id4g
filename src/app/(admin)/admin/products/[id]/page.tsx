@@ -6,10 +6,10 @@ import { optionsToText, PRODUCT_CATEGORIES } from "@/lib/product-options";
 import ImageReorderGrid from "@/components/admin/ImageReorderGrid";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import SaveButton from "@/components/admin/SaveButton";
-import SeoPreview from "@/components/admin/SeoPreview";
 import SizeOptionsField from "@/components/admin/SizeOptionsField";
 import UnsavedChangesForm, { GuardedLink } from "@/components/admin/UnsavedChangesForm";
 import {
+  regenerateVariants,
   removeProductImageAction,
   saveProductDetails,
   saveVariantPrices,
@@ -158,32 +158,6 @@ export default async function AdminProductEditPage({
           </div>
         </section>
 
-        {/* SEO — inside the same form, saves with the top Save button. */}
-        <section className="mt-6 border border-[var(--border)] p-6">
-          <SeoPreview
-            slug={product.slug}
-            fallbackTitle={product.name}
-            fallbackDescriptionHtml={product.description ?? ""}
-            defaultMetaTitle={product.metaTitle ?? ""}
-            defaultMetaDescription={product.metaDescription ?? ""}
-          />
-        </section>
-
-        {/* Options — inside the same form: picking sizes and clicking the
-            top Save now regenerates variants as part of the same submission.
-            (This used to be its own "Regenerate variants" form/button — that
-            split was the actual bug behind "size pills aren't updating":
-            picking sizes and clicking the top Save never touched them,
-            because they were only ever submitted by that other form.)
-            Existing combos keep their price; new ones start at the base
-            price; removed ones are deleted. */}
-        <section className="mt-6 border border-[var(--border)] p-6">
-          <span className="section-label">Options</span>
-          <div className="mt-4">
-            <SizeOptionsField name="options" defaultValue={optionsToText(product.options)} />
-          </div>
-        </section>
-
         {/* Images — inside the same form: labels and drag order save with
             the top button; Set as cover / Remove override to their own
             action per-click via formAction + a button-scoped name="url", so
@@ -203,12 +177,26 @@ export default async function AdminProductEditPage({
         </section>
       </UnsavedChangesForm>
 
-      {/* Variant prices — per-combo pricing after Options above has been
-          saved once (variants only exist once the top Save has run). */}
-      {product.variants.length > 0 && (
-        <section className="mt-6 border border-[var(--border)] p-6">
-          <span className="section-label">Variant prices</span>
-          <form action={saveVariantPrices} className="mt-4">
+      {/* Options -> variants */}
+      <section className="mt-6 border border-[var(--border)] p-6">
+        <span className="section-label">Options</span>
+        <form action={regenerateVariants} className="mt-4">
+          <input type="hidden" name="id" value={product.id} />
+          <SizeOptionsField name="options" defaultValue={optionsToText(product.options)} />
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            Changing this regenerates the variant list below — existing combinations keep their
+            price, new ones start at the base price, removed ones are deleted.
+          </p>
+          <button
+            type="submit"
+            className="mt-3 border border-[var(--border)] px-4 py-2 text-xs uppercase tracking-widest text-[var(--text-body)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          >
+            Regenerate variants
+          </button>
+        </form>
+
+        {product.variants.length > 0 && (
+          <form action={saveVariantPrices} className="mt-6 border-t border-[var(--border)] pt-6">
             <input type="hidden" name="id" value={product.id} />
             <table className="w-full border-collapse text-left text-sm">
               <thead>
@@ -258,8 +246,8 @@ export default async function AdminProductEditPage({
               Save variant prices
             </button>
           </form>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* Status */}
       <section className="mt-6 flex flex-wrap items-center justify-between gap-4 border border-[var(--border)] p-6">

@@ -1,45 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getProductBySlug } from "@/lib/products";
-import { stripHtmlToText } from "@/lib/rich-text";
 import DescriptionText from "@/components/DescriptionText";
 import ProductGallery from "@/components/ProductGallery";
 import ProductPurchasePanel from "@/components/ProductPurchasePanel";
 
 export const dynamic = "force-dynamic";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const product = await getProductBySlug(slug);
-  if (!product) return {};
-
-  const title = product.metaTitle?.trim() || product.name;
-  const description =
-    product.metaDescription?.trim() || stripHtmlToText(product.description ?? "", 160);
-  const image = [...product.images].sort((a, b) => a.position - b.position)[0];
-
-  return {
-    title,
-    description: description || undefined,
-    openGraph: {
-      title,
-      description: description || undefined,
-      images: image ? [{ url: image.url, alt: image.alt }] : undefined,
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description: description || undefined,
-      images: image ? [image.url] : undefined,
-    },
-  };
-}
 
 export default async function ProductDetailPage({
   params,
