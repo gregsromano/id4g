@@ -11,6 +11,7 @@ import {
   removeProductImageAction,
   saveProductDetails,
   saveVariantPrices,
+  setCoverImageAction,
   setProductStatusAction,
 } from "../actions";
 
@@ -212,11 +213,28 @@ export default async function AdminProductEditPage({
 
         {product.images.length > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-4 sm:grid-cols-4">
-            {product.images.map((image) => (
+            {product.images.map((image, index) => (
               <div key={image.url} className="relative">
                 <div className="relative aspect-square border border-[var(--border)]">
                   <Image src={image.url} alt={image.alt} fill className="object-cover" />
+                  {index === 0 && (
+                    <span className="absolute left-2 top-2 border border-[var(--accent)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--accent)]">
+                      Cover
+                    </span>
+                  )}
                 </div>
+                {index !== 0 && (
+                  <form action={setCoverImageAction} className="mt-2">
+                    <input type="hidden" name="id" value={product.id} />
+                    <input type="hidden" name="url" value={image.url} />
+                    <button
+                      type="submit"
+                      className="w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                    >
+                      Set as cover
+                    </button>
+                  </form>
+                )}
                 <form action={removeProductImageAction} className="mt-2">
                   <input type="hidden" name="id" value={product.id} />
                   <input type="hidden" name="url" value={image.url} />

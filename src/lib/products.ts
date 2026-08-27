@@ -34,6 +34,8 @@ export type Product = {
   taxCode: string;
   options: ProductOption[];
   images: ProductImage[];
+  /** Manual storefront display order — lower shows first. */
+  position: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -67,6 +69,7 @@ const PRODUCT_COLUMNS = [
   "tax_code",
   "options",
   "images",
+  "position",
   "created_at",
   "updated_at",
 ].join(", ");
@@ -94,6 +97,7 @@ type ProductRow = {
   tax_code: string;
   options: unknown;
   images: unknown;
+  position: number;
   created_at: string;
   updated_at: string;
 };
@@ -122,6 +126,7 @@ function toProduct(row: ProductRow): Product {
     taxCode: row.tax_code,
     options: Array.isArray(row.options) ? (row.options as ProductOption[]) : [],
     images: Array.isArray(row.images) ? (row.images as ProductImage[]) : [],
+    position: row.position,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -158,7 +163,7 @@ export async function listActiveProducts(): Promise<Product[]> {
     .from("products")
     .select(PRODUCT_COLUMNS)
     .eq("status", "active")
-    .order("created_at", { ascending: false });
+    .order("position", { ascending: true });
 
   if (error) fail("list active products", error);
 
@@ -212,7 +217,7 @@ export async function listAllProductsForAdmin(
   let query = getSupabaseAdmin()
     .from("products")
     .select(PRODUCT_COLUMNS)
-    .order("created_at", { ascending: false });
+    .order("position", { ascending: true });
 
   if (filter !== "all") query = query.eq("status", filter);
 
@@ -294,8 +299,20 @@ export type NewProductInput = {
 /** Creates the shell record. Images/variants are added afterward, once an id exists. */
 export async function createProduct(input: NewProductInput): Promise<string> {
   assertServiceRoleConfigured();
+  const supabase = getSupabaseAdmin();
 
-  const { data, error } = await getSupabaseAdmin()
+  // New products go to the end of the display order by default.
+  const { data: maxRow, error: maxError } = await supabase
+    .from("products")
+    .select("position")
+    .order("position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (maxError) fail("determine new product position", maxError);
+  const nextPosition = ((maxRow as { position: number } | null)?.position ?? -1) + 1;
+
+  const { data, error } = await supabase
     .from("products")
     .insert({
       slug: input.slug,
@@ -307,6 +324,7 @@ export async function createProduct(input: NewProductInput): Promise<string> {
       weight_oz: input.weightOz,
       tax_code: input.taxCode,
       options: input.options,
+      position: nextPosition,
     })
     .select("id")
     .single();
@@ -494,6 +512,88 @@ export async function removeProductImage(productId: string, url: string): Promis
     .eq("id", productId);
 
   if (updateError) fail("remove product image", updateError);
+}
+
+/**
+ * Moves an image to position 0 — the storefront grid and gallery both use
+ * `images[0]` as the cover/first-shown photo, so this is how an admin
+ * chooses which upload is "the" image without needing full drag-reorder.
+ */
+export async function setCoverImage(productId: string, url: string): Promise<void> {
+  assertServiceRoleConfigured();
+  const supabase = getSupabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("images")
+    .eq("id", productId)
+    .single();
+
+  if (error) fail("load product images", error);
+
+  const current = Array.isArray((data as { images: unknown }).images)
+    ? ((data as { images: ProductImage[] }).images)
+    : [];
+
+  const chosen = current.find((img) => img.url === url);
+  if (!chosen) return;
+
+  const images = [chosen, ...current.filter((img) => img.url !== url)].map(
+    (img, position) => ({ ...img, position }),
+  );
+
+  const { error: updateError } = await supabase
+    .from("products")
+    .update({ images, updated_at: new Date().toISOString() })
+    .eq("id", productId);
+
+  if (updateError) fail("set cover image", updateError);
+}
+
+/**
+ * Swaps a product's display position with its neighbor in the given filtered
+ * view (e.g. "active"), so an admin's up/down click always visibly swaps two
+ * adjacent rows in whatever list they're looking at, rather than jumping past
+ * a hidden draft/archived product in between.
+ */
+export async function moveProduct(
+  id: string,
+  direction: "up" | "down",
+  filter: ProductFilter,
+): Promise<void> {
+  assertServiceRoleConfigured();
+  const supabase = getSupabaseAdmin();
+
+  let query = supabase
+    .from("products")
+    .select("id, position")
+    .order("position", { ascending: true });
+  if (filter !== "all") query = query.eq("status", filter);
+
+  const { data, error } = await query;
+  if (error) fail("load products for reorder", error);
+
+  const rows = (data ?? []) as { id: string; position: number }[];
+  const index = rows.findIndex((row) => row.id === id);
+  if (index === -1) return;
+
+  const neighborIndex = direction === "up" ? index - 1 : index + 1;
+  if (neighborIndex < 0 || neighborIndex >= rows.length) return;
+
+  const current = rows[index];
+  const neighbor = rows[neighborIndex];
+
+  const { error: err1 } = await supabase
+    .from("products")
+    .update({ position: neighbor.position })
+    .eq("id", current.id);
+  if (err1) fail("reorder product", err1);
+
+  const { error: err2 } = await supabase
+    .from("products")
+    .update({ position: current.position })
+    .eq("id", neighbor.id);
+  if (err2) fail("reorder product", err2);
 }
 
 export type CheckoutVariant = {

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { listAllProductsForAdmin, type ProductFilter } from "@/lib/products";
 import { formatPrice } from "@/lib/product";
+import { reorderProductAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,7 @@ export default async function AdminProductsPage({
           <table className="w-full min-w-2xl border-collapse text-left">
             <thead>
               <tr className="bg-[var(--bg-section-alt)]">
+                <Th>Order</Th>
                 <Th>Name</Th>
                 <Th>Status</Th>
                 <Th>Price</Th>
@@ -70,11 +72,41 @@ export default async function AdminProductsPage({
               </tr>
             </thead>
             <tbody>
-              {products.map((product) => (
+              {products.map((product, index) => (
                 <tr
                   key={product.id}
                   className="border-b border-[var(--border)] transition-colors hover:bg-[var(--bg-section-alt)]"
                 >
+                  <Td>
+                    <div className="flex gap-1">
+                      <form action={reorderProductAction}>
+                        <input type="hidden" name="id" value={product.id} />
+                        <input type="hidden" name="direction" value="up" />
+                        <input type="hidden" name="filter" value={filter} />
+                        <button
+                          type="submit"
+                          disabled={index === 0}
+                          aria-label="Move up"
+                          className="h-6 w-6 border border-[var(--border)] text-xs text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-30"
+                        >
+                          &uarr;
+                        </button>
+                      </form>
+                      <form action={reorderProductAction}>
+                        <input type="hidden" name="id" value={product.id} />
+                        <input type="hidden" name="direction" value="down" />
+                        <input type="hidden" name="filter" value={filter} />
+                        <button
+                          type="submit"
+                          disabled={index === products.length - 1}
+                          aria-label="Move down"
+                          className="h-6 w-6 border border-[var(--border)] text-xs text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-30"
+                        >
+                          &darr;
+                        </button>
+                      </form>
+                    </div>
+                  </Td>
                   <Td>
                     <Link
                       href={`/admin/products/${product.id}`}

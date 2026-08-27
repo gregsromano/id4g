@@ -10,12 +10,15 @@ import {
   appendProductImages,
   createProduct,
   getProductWithVariants,
+  moveProduct,
   removeProductImage,
   replaceVariants,
+  setCoverImage,
   setProductStatus,
   updateProduct,
   variantOptionKey,
   type DesiredVariant,
+  type ProductFilter,
   type ProductStatus,
 } from "@/lib/products";
 
@@ -285,6 +288,16 @@ export async function removeProductImageAction(formData: FormData): Promise<void
   revalidateProduct(id);
 }
 
+export async function setCoverImageAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = requireId(formData);
+  const url = String(formData.get("url") ?? "");
+  if (!url) throw new Error("Missing image url");
+
+  await setCoverImage(id, url);
+  revalidateProduct(id);
+}
+
 function requireStatus(formData: FormData): ProductStatus {
   const status = String(formData.get("status") ?? "");
   if (status !== "draft" && status !== "active" && status !== "archived") {
@@ -300,4 +313,29 @@ export async function setProductStatusAction(formData: FormData): Promise<void> 
 
   await setProductStatus(id, status);
   revalidateProduct(id);
+}
+
+function requireFilter(formData: FormData): ProductFilter {
+  const filter = String(formData.get("filter") ?? "all");
+  if (filter !== "active" && filter !== "draft" && filter !== "archived" && filter !== "all") {
+    return "all";
+  }
+  return filter;
+}
+
+function requireDirection(formData: FormData): "up" | "down" {
+  const direction = String(formData.get("direction") ?? "");
+  if (direction !== "up" && direction !== "down") throw new Error("Invalid direction");
+  return direction;
+}
+
+export async function reorderProductAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = requireId(formData);
+  const direction = requireDirection(formData);
+  const filter = requireFilter(formData);
+
+  await moveProduct(id, direction, filter);
+  revalidatePath("/admin/products");
+  revalidatePath("/");
 }
