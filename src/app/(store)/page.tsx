@@ -130,7 +130,7 @@ export default async function Home() {
                     href={`/products/${product.slug}`}
                     className="group block"
                   >
-                    <div className="aspect-square w-full overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
+                    <div className="aspect-square w-full overflow-hidden">
                       {image ? (
                         <Image
                           src={image.url}

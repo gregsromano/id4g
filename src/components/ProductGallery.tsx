@@ -11,7 +11,7 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
 
   return (
     <div>
-      <div className="aspect-square w-full overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
+      <div className="aspect-square w-full overflow-hidden">
         {active ? (
           <Image
             src={active.url}
