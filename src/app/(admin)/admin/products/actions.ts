@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/admin-dal";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { cartesianCombinations, parseOptionsText } from "@/lib/product-options";
+import { cartesianCombinations, parseOptionsText, PRODUCT_CATEGORIES } from "@/lib/product-options";
 import {
   appendProductImages,
   createProduct,
@@ -14,7 +14,7 @@ import {
   removeProductImage,
   replaceVariants,
   setCoverImage,
-  setImageAlts,
+  setProductImages,
   setProductStatus,
   updateProduct,
   variantOptionKey,
@@ -37,7 +37,10 @@ const UUID_RE =
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const MAX_NAME_LENGTH = 200;
-const MAX_DESCRIPTION_LENGTH = 4000;
+// Generous headroom over the plain-text era's limit: this now stores HTML
+// from the rich-text editor, and tag markup adds real overhead per character
+// of visible text.
+const MAX_DESCRIPTION_LENGTH = 20000;
 const MAX_IMAGE_ALT_LENGTH = 200;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -69,6 +72,13 @@ function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   const n = Number(text);
   if (!Number.isFinite(n) || n < 0) return null;
   return Math.round(n);
+}
+
+/** Drops anything not in the fixed list (e.g. a forged POST) rather than throwing. */
+function optionalCategory(formData: FormData): string | null {
+  const value = String(formData.get("category") ?? "").trim();
+  if (!value) return null;
+  return (PRODUCT_CATEGORIES as readonly string[]).includes(value) ? value : null;
 }
 
 function revalidateProduct(id?: string, slug?: string) {
@@ -114,6 +124,7 @@ export async function createProductAction(
   const weightOz = parseOptionalInt(formData.get("weight_oz"));
   const taxCode = optionalText(formData.get("tax_code"), 60) ?? "txcd_30011000";
   const description = optionalText(formData.get("description"), MAX_DESCRIPTION_LENGTH);
+  const category = optionalCategory(formData);
 
   let id: string;
   try {
@@ -126,6 +137,7 @@ export async function createProductAction(
       shippingCents,
       weightOz,
       taxCode,
+      category,
       options,
     });
   } catch {
@@ -166,6 +178,7 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
   const weightOz = parseOptionalInt(formData.get("weight_oz"));
   const taxCode = optionalText(formData.get("tax_code"), 60) ?? "txcd_30011000";
   const description = optionalText(formData.get("description"), MAX_DESCRIPTION_LENGTH);
+  const category = optionalCategory(formData);
 
   await updateProduct(id, {
     name,
@@ -175,14 +188,17 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
     shippingCents,
     weightOz,
     taxCode,
+    category,
   });
 
-  // Image labels live in the same form (no separate save button for them —
-  // see image_url/image_alt pairs in the edit page), so persist them here too.
+  // Image labels and drag order live in the same form (no separate save
+  // button for them — see image_url/image_alt pairs in the edit page), so
+  // persist them here too. FormData.getAll() preserves DOM order, which is
+  // exactly the order the admin left the images in.
   const imageUrls = formData.getAll("image_url").map(String);
   const imageAlts = formData.getAll("image_alt").map((v) => String(v ?? "").trim());
   if (imageUrls.length > 0) {
-    await setImageAlts(
+    await setProductImages(
       id,
       imageUrls.map((url, i) => ({ url, alt: (imageAlts[i] ?? "").slice(0, MAX_IMAGE_ALT_LENGTH) })),
     );

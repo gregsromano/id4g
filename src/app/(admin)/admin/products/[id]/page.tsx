@@ -1,10 +1,10 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { getProductWithVariants } from "@/lib/products";
 import { formatPrice } from "@/lib/product";
-import { optionsToText } from "@/lib/product-options";
-import ProductImagesForm from "@/components/admin/ProductImagesForm";
+import { optionsToText, PRODUCT_CATEGORIES } from "@/lib/product-options";
+import ImageReorderGrid from "@/components/admin/ImageReorderGrid";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 import SaveButton from "@/components/admin/SaveButton";
 import UnsavedChangesForm, { GuardedLink } from "@/components/admin/UnsavedChangesForm";
 import {
@@ -89,15 +89,22 @@ export default async function AdminProductEditPage({
           </Field>
 
           <Field label="Description">
-            <textarea
-              name="description"
-              rows={3}
-              defaultValue={product.description ?? ""}
+            <RichTextEditor name="description" defaultValue={product.description ?? ""} />
+          </Field>
+
+          <Field label="Category">
+            <select
+              name="category"
+              defaultValue={product.category ?? ""}
               className="w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-            />
-            <span className="mt-1 block text-xs text-[var(--text-muted)]">
-              Blank line = new paragraph. **text** = bold.
-            </span>
+            >
+              <option value="">No category</option>
+              {PRODUCT_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
@@ -140,64 +147,24 @@ export default async function AdminProductEditPage({
           </div>
         </section>
 
-        {/* Images — inside the same form: labels save with the top button;
-            Set as cover / Remove override to their own action per-click via
-            formAction + a button-scoped name="url", so only the clicked
-            image's url is submitted for that specific action. */}
+        {/* Images — inside the same form: labels and drag order save with
+            the top button; Set as cover / Remove override to their own
+            action per-click via formAction + a button-scoped name="url", so
+            only the clicked image's url is submitted for that action. The
+            "+" upload tile is not part of this form — uploads are immediate,
+            not deferred to Save. */}
         <section className="mt-6 border border-[var(--border)] p-6">
           <span className="section-label">Images</span>
-
-          {product.images.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-4 sm:grid-cols-4">
-              {product.images.map((image, index) => (
-                <div key={image.url} className="relative">
-                  <div className="relative aspect-square border border-[var(--border)]">
-                    <Image src={image.url} alt={image.alt} fill className="object-cover" />
-                    {index === 0 && (
-                      <span className="absolute left-2 top-2 border border-[var(--accent)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--accent)]">
-                        Cover
-                      </span>
-                    )}
-                  </div>
-                  <input type="hidden" name="image_url" value={image.url} />
-                  <input
-                    name="image_alt"
-                    defaultValue={image.alt}
-                    placeholder="Label — Front, Back..."
-                    className="mt-2 w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-                  />
-                  {index !== 0 && (
-                    <button
-                      type="submit"
-                      formAction={setCoverImageAction}
-                      formNoValidate
-                      name="url"
-                      value={image.url}
-                      className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                    >
-                      Set as cover
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    formAction={removeProductImageAction}
-                    formNoValidate
-                    name="url"
-                    value={image.url}
-                    className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-red-400 hover:text-red-400"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="mt-4">
+            <ImageReorderGrid
+              productId={product.id}
+              images={product.images}
+              setCoverAction={setCoverImageAction}
+              removeAction={removeProductImageAction}
+            />
+          </div>
         </section>
       </UnsavedChangesForm>
-
-      <div className="mt-6 border border-[var(--border)] p-6">
-        <ProductImagesForm productId={product.id} />
-      </div>
 
       {/* Options -> variants */}
       <section className="mt-6 border border-[var(--border)] p-6">

@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 
 import { createProductAction, type CreateProductResult } from "@/app/(admin)/admin/products/actions";
+import { PRODUCT_CATEGORIES } from "@/lib/product-options";
+import RichTextEditor from "./RichTextEditor";
 
 export default function NewProductForm() {
   const [state, action, pending] = useActionState<CreateProductResult | null, FormData>(
@@ -30,12 +32,23 @@ export default function NewProductForm() {
         />
       </Field>
 
-      <Field label="Description" hint="Blank line = new paragraph. **text** = bold.">
-        <textarea
-          name="description"
-          rows={3}
+      <Field label="Description">
+        <RichTextEditor name="description" />
+      </Field>
+
+      <Field label="Category">
+        <select
+          name="category"
+          defaultValue=""
           className="w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-        />
+        >
+          <option value="">No category</option>
+          {PRODUCT_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <div className="grid grid-cols-2 gap-4">

@@ -66,6 +66,7 @@ export default async function AdminProductsPage({
               <tr className="bg-[var(--bg-section-alt)]">
                 <Th>Order</Th>
                 <Th>Name</Th>
+                <Th>Category</Th>
                 <Th>Status</Th>
                 <Th>Price</Th>
                 <Th>Variants</Th>
@@ -116,6 +117,11 @@ export default async function AdminProductsPage({
                     </Link>
                     <span className="block text-xs text-[var(--text-muted)]">
                       /{product.slug}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {product.category ?? "—"}
                     </span>
                   </Td>
                   <Td>

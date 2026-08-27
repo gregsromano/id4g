@@ -7,6 +7,21 @@ import type { ProductOption } from "./variant";
  * be an async server action.
  */
 
+/**
+ * Fixed category list the admin picks from. Deliberately code-controlled
+ * (not a DB-backed, self-service taxonomy) — adding a category is a one-line
+ * change here, not a new admin CRUD surface. Not enforced by the database;
+ * this is the single source of truth for what the <select> offers.
+ */
+export const PRODUCT_CATEGORIES = [
+  "T-Shirt",
+  "Hoodie",
+  "Sweatshirt",
+  "Tank Top",
+  "Long Sleeve",
+  "Other",
+] as const;
+
 export function parseOptionsText(text: string): ProductOption[] {
   return text
     .split("\n")

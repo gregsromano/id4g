@@ -32,6 +32,8 @@ export type Product = {
   shippingCents: number;
   weightOz: number | null;
   taxCode: string;
+  /** Free-standing label (T-Shirt, Hoodie, ...) — not enforced by the DB. */
+  category: string | null;
   options: ProductOption[];
   images: ProductImage[];
   /** Manual storefront display order — lower shows first. */
@@ -67,6 +69,7 @@ const PRODUCT_COLUMNS = [
   "shipping_cents",
   "weight_oz",
   "tax_code",
+  "category",
   "options",
   "images",
   "position",
@@ -95,6 +98,7 @@ type ProductRow = {
   shipping_cents: number;
   weight_oz: number | null;
   tax_code: string;
+  category: string | null;
   options: unknown;
   images: unknown;
   position: number;
@@ -124,6 +128,7 @@ function toProduct(row: ProductRow): Product {
     shippingCents: row.shipping_cents,
     weightOz: row.weight_oz,
     taxCode: row.tax_code,
+    category: row.category,
     options: Array.isArray(row.options) ? (row.options as ProductOption[]) : [],
     images: Array.isArray(row.images) ? (row.images as ProductImage[]) : [],
     position: row.position,
@@ -293,6 +298,7 @@ export type NewProductInput = {
   shippingCents: number;
   weightOz: number | null;
   taxCode: string;
+  category: string | null;
   options: ProductOption[];
 };
 
@@ -323,6 +329,7 @@ export async function createProduct(input: NewProductInput): Promise<string> {
       shipping_cents: input.shippingCents,
       weight_oz: input.weightOz,
       tax_code: input.taxCode,
+      category: input.category,
       options: input.options,
       position: nextPosition,
     })
@@ -343,6 +350,7 @@ export type ProductPatch = Partial<{
   shippingCents: number;
   weightOz: number | null;
   taxCode: string;
+  category: string | null;
   options: ProductOption[];
 }>;
 
@@ -358,6 +366,7 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.shippingCents !== undefined) row.shipping_cents = patch.shippingCents;
   if (patch.weightOz !== undefined) row.weight_oz = patch.weightOz;
   if (patch.taxCode !== undefined) row.tax_code = patch.taxCode;
+  if (patch.category !== undefined) row.category = patch.category;
   if (patch.options !== undefined) row.options = patch.options;
 
   const { error } = await getSupabaseAdmin().from("products").update(row).eq("id", id);
@@ -552,11 +561,15 @@ export async function setCoverImage(productId: string, url: string): Promise<voi
 
 /** Caption/alt text for one image, e.g. "Front", "Back", "Detail". */
 /**
- * Bulk-updates caption/alt text for whichever images are present in
- * `entries` — used when the image labels are edited alongside the rest of
- * the product details form and saved together in one submission.
+ * Reorders images to match `entries`' order and updates each one's caption —
+ * used when labels are edited and/or images are drag-reordered in the same
+ * form as the rest of the product details, saved together in one submission.
+ * `position` is reassigned sequentially from the submitted order; any
+ * current image not present in `entries` (shouldn't normally happen —
+ * removal is its own separate action) is kept, appended after the submitted
+ * ones, rather than silently dropped.
  */
-export async function setImageAlts(
+export async function setProductImages(
   productId: string,
   entries: { url: string; alt: string }[],
 ): Promise<void> {
@@ -574,18 +587,23 @@ export async function setImageAlts(
   const current = Array.isArray((data as { images: unknown }).images)
     ? ((data as { images: ProductImage[] }).images)
     : [];
+  const currentByUrl = new Map(current.map((img) => [img.url, img]));
 
-  const altByUrl = new Map(entries.map((e) => [e.url, e.alt]));
-  const images = current.map((img) =>
-    altByUrl.has(img.url) ? { ...img, alt: altByUrl.get(img.url)! } : img,
-  );
+  const reordered = entries
+    .filter((e) => currentByUrl.has(e.url))
+    .map((e) => ({ ...currentByUrl.get(e.url)!, alt: e.alt }));
+
+  const submittedUrls = new Set(entries.map((e) => e.url));
+  const leftover = current.filter((img) => !submittedUrls.has(img.url));
+
+  const images = [...reordered, ...leftover].map((img, position) => ({ ...img, position }));
 
   const { error: updateError } = await supabase
     .from("products")
     .update({ images, updated_at: new Date().toISOString() })
     .eq("id", productId);
 
-  if (updateError) fail("save image labels", updateError);
+  if (updateError) fail("save product images", updateError);
 }
 
 /**

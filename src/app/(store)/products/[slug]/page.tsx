@@ -53,7 +53,7 @@ export default async function ProductDetailPage({
         {product.description && (
           <div className="mx-auto max-w-6xl px-6 pb-16 sm:pb-24">
             <DescriptionText
-              text={product.description}
+              html={product.description}
               className="max-w-2xl text-lg text-[var(--text-body)]"
             />
           </div>
