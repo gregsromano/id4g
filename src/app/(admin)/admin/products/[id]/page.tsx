@@ -51,7 +51,7 @@ export default async function AdminProductEditPage({
           >
             &larr; Back to products
           </GuardedLink>
-          <SaveButton action={saveProductDetails} />
+          <SaveButton />
         </div>
 
         <div className="flex flex-wrap items-start justify-between gap-4">

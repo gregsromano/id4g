@@ -12,29 +12,27 @@ import { useDirty } from "./UnsavedChangesForm";
  * pending state from the nearest form ancestor in the React tree.
  *
  * When the surrounding form has other buttons that override the submission
- * with their own `formAction` (e.g. per-image "Remove"/"Set as cover"),
- * pass this button's own `action` so it only reports pending/success for
- * ITS submission — otherwise clicking an unrelated button would flash
- * "Saved" even though this action never ran, and would wrongly clear the
- * unsaved-changes flag for edits that button didn't persist.
+ * with their own `formAction` (e.g. per-image "Remove"/"Set as cover"), this
+ * button should only show pending/success for ITS OWN click — otherwise
+ * clicking an unrelated button would flash "Saved" even though this action
+ * never ran, and would wrongly clear the unsaved-changes flag for edits
+ * that button didn't persist. Comparing server action references
+ * (useFormStatus().action === thisAction) isn't reliable across the
+ * server/client boundary, so instead this just tracks whether ITS OWN click
+ * is what's currently in flight.
  */
-export default function SaveButton({
-  className,
-  action,
-}: {
-  className?: string;
-  action?: (formData: FormData) => void | Promise<void>;
-}) {
+export default function SaveButton({ className }: { className?: string }) {
   const status = useFormStatus();
   const dirtyCtx = useDirty();
+  const [clicked, setClicked] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const wasPending = useRef(false);
 
-  const isMine = action === undefined || status.action === action;
-  const pending = status.pending && isMine;
+  const pending = status.pending && clicked;
 
   useEffect(() => {
     if (wasPending.current && !pending) {
+      setClicked(false);
       setJustSaved(true);
       dirtyCtx?.setDirty(false);
       const timer = setTimeout(() => setJustSaved(false), 2000);
@@ -47,6 +45,7 @@ export default function SaveButton({
     <button
       type="submit"
       disabled={status.pending}
+      onClick={() => setClicked(true)}
       className={className ?? "btn-primary !py-2 !px-6"}
     >
       {pending ? (
