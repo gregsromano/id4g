@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { reorderProductsAction } from "@/app/(admin)/admin/products/actions";
 import { formatPrice } from "@/lib/product";
@@ -10,10 +10,10 @@ import type { AdminProductSummary, ProductFilter } from "@/lib/products";
 
 /**
  * Drag-and-drop reordering (native HTML5 DnD — desktop only, no touch
- * support) replacing the old up/down buttons. The new order is sent
- * straight to reorderProductsAction on drop — not a form; there's nothing
- * to submit, just a client callback — so the whole table has to be a client
- * component to hold drag state.
+ * support) replacing the old up/down buttons. Dragging only reorders local
+ * state — nothing is persisted until "Save order" is clicked, same pattern
+ * as the product edit page (edit, then an explicit Save), rather than firing
+ * a server action on every drop with no visible confirmation it worked.
  */
 export default function ProductsTable({
   products: initialProducts,
@@ -25,7 +25,20 @@ export default function ProductsTable({
   const [products, setProducts] = useState(initialProducts);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
+  const [justSaved, setJustSaved] = useState(false);
+  const wasPending = useRef(false);
+
+  const dirty = products.some((p, i) => p.id !== initialProducts[i]?.id);
+
+  useEffect(() => {
+    if (wasPending.current && !isPending) {
+      setJustSaved(true);
+      const timer = setTimeout(() => setJustSaved(false), 2000);
+      return () => clearTimeout(timer);
+    }
+    wasPending.current = isPending;
+  }, [isPending]);
 
   function handleDrop(targetIndex: number) {
     setOverIndex(null);
@@ -34,103 +47,125 @@ export default function ProductsTable({
       return;
     }
 
-    const next = [...products];
-    const [moved] = next.splice(dragIndex, 1);
-    next.splice(targetIndex, 0, moved);
-    setProducts(next);
+    setProducts((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
     setDragIndex(null);
+  }
 
+  function handleSave() {
     startTransition(async () => {
       await reorderProductsAction(
-        next.map((p) => p.id),
+        products.map((p) => p.id),
         filter,
       );
     });
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-2xl border-collapse text-left">
-        <thead>
-          <tr className="bg-[var(--bg-section-alt)]">
-            <Th>Order</Th>
-            <Th>Thumbnail</Th>
-            <Th>Name</Th>
-            <Th>Category</Th>
-            <Th>Status</Th>
-            <Th>Price</Th>
-            <Th>Variants</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product, index) => {
-            const cover = [...product.images].sort((a, b) => a.position - b.position)[0];
-            return (
-              <tr
-                key={product.id}
-                draggable
-                onDragStart={() => setDragIndex(index)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setOverIndex(index);
-                }}
-                onDragLeave={() => setOverIndex((i) => (i === index ? null : i))}
-                onDrop={() => handleDrop(index)}
-                onDragEnd={() => {
-                  setDragIndex(null);
-                  setOverIndex(null);
-                }}
-                className={`cursor-move border-b border-[var(--border)] transition-colors hover:bg-[var(--bg-section-alt)] ${
-                  overIndex === index && dragIndex !== null && dragIndex !== index
-                    ? "bg-[var(--bg-section-alt)] outline outline-1 outline-[var(--accent)]"
-                    : ""
-                }`}
-              >
-                <Td>
-                  <span
-                    aria-label="Drag to reorder"
-                    className="inline-block select-none text-sm text-[var(--text-muted)]"
-                  >
-                    &#8942;&#8942;
-                  </span>
-                </Td>
-                <Td>
-                  <div className="relative h-12 w-12 overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
-                    {cover ? (
-                      <Image src={cover.url} alt={cover.alt} fill className="object-cover" />
-                    ) : null}
-                  </div>
-                </Td>
-                <Td>
-                  <Link
-                    href={`/admin/products/${product.id}`}
-                    className="text-[var(--text-primary)] transition-colors hover:text-[var(--accent)]"
-                  >
-                    {product.name}
-                  </Link>
-                  <span className="block text-xs text-[var(--text-muted)]">/{product.slug}</span>
-                </Td>
-                <Td>
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {product.category ?? "—"}
-                  </span>
-                </Td>
-                <Td>
-                  <span className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
-                    {product.status}
-                  </span>
-                </Td>
-                <Td>
-                  {product.minPriceCents === product.maxPriceCents
-                    ? formatPrice(product.minPriceCents)
-                    : `${formatPrice(product.minPriceCents)} – ${formatPrice(product.maxPriceCents)}`}
-                </Td>
-                <Td>{product.variantCount}</Td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div>
+      <div className="mb-4 flex items-center justify-between gap-4">
+        <p className="text-xs text-[var(--text-muted)]">
+          Drag a row to reorder, then save.
+        </p>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!dirty || isPending}
+          className="btn-primary !py-2 !px-6 disabled:opacity-40"
+        >
+          {isPending ? "Saving..." : justSaved ? "Saved" : "Save order"}
+        </button>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-2xl border-collapse text-left">
+          <thead>
+            <tr className="bg-[var(--bg-section-alt)]">
+              <Th>Order</Th>
+              <Th>Thumbnail</Th>
+              <Th>Name</Th>
+              <Th>Category</Th>
+              <Th>Status</Th>
+              <Th>Price</Th>
+              <Th>Variants</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.map((product, index) => {
+              const cover = [...product.images].sort((a, b) => a.position - b.position)[0];
+              return (
+                <tr
+                  key={product.id}
+                  draggable
+                  onDragStart={() => setDragIndex(index)}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setOverIndex(index);
+                  }}
+                  onDragLeave={() => setOverIndex((i) => (i === index ? null : i))}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={() => {
+                    setDragIndex(null);
+                    setOverIndex(null);
+                  }}
+                  className={`cursor-move border-b border-[var(--border)] transition-colors hover:bg-[var(--bg-section-alt)] ${
+                    overIndex === index && dragIndex !== null && dragIndex !== index
+                      ? "bg-[var(--bg-section-alt)] outline outline-1 outline-[var(--accent)]"
+                      : ""
+                  }`}
+                >
+                  <Td>
+                    <span
+                      aria-label="Drag to reorder"
+                      className="inline-block select-none text-sm text-[var(--text-muted)]"
+                    >
+                      &#8942;&#8942;
+                    </span>
+                  </Td>
+                  <Td>
+                    <div className="relative h-12 w-12 overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
+                      {cover ? (
+                        <Image src={cover.url} alt={cover.alt} fill className="object-cover" />
+                      ) : null}
+                    </div>
+                  </Td>
+                  <Td>
+                    <Link
+                      href={`/admin/products/${product.id}`}
+                      className="text-[var(--text-primary)] transition-colors hover:text-[var(--accent)]"
+                    >
+                      {product.name}
+                    </Link>
+                    <span className="block text-xs text-[var(--text-muted)]">
+                      /{product.slug}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {product.category ?? "—"}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                      {product.status}
+                    </span>
+                  </Td>
+                  <Td>
+                    {product.minPriceCents === product.maxPriceCents
+                      ? formatPrice(product.minPriceCents)
+                      : `${formatPrice(product.minPriceCents)} – ${formatPrice(product.maxPriceCents)}`}
+                  </Td>
+                  <Td>{product.variantCount}</Td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
