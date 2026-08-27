@@ -26,19 +26,14 @@ export default async function Home() {
 
       {/* Full-bleed hero */}
       <section className="relative overflow-hidden bg-black">
-        {/* Paint splatter texture — top-right, mirrored to top-left, and
-            pooling bottom-left. These sit at z-[3] — ABOVE the gradient
-            scrim below (z-[2]), which is fully opaque black across the left
-            portion of the hero and would otherwise completely hide anything
-            left-side at a lower z-index (the original bug here: the drips
-            were rendering, just invisibly, underneath that scrim). */}
+        {/* Paint splatter texture — dripping from top-right, pooling bottom-left */}
         <Image
           src="/paint-drip.png"
           alt=""
           width={291}
           height={168}
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 z-[3] w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+          className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
         />
         <Image
           src="/paint-drip.png"
@@ -46,56 +41,8 @@ export default async function Home() {
           width={291}
           height={168}
           aria-hidden
-          className="pointer-events-none absolute left-0 top-0 z-[3] w-[240px] -scale-x-100 opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+          className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
         />
-        <Image
-          src="/paint-drip.png"
-          alt=""
-          width={291}
-          height={168}
-          aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 z-[3] hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
-        />
-
-        {/* Long neon drip streaks running down the left edge — hand-drawn
-            (not the splatter PNG above, which is a short wide splash, not a
-            long drip). Stroke fades via gradient + a blur glow for the neon
-            look; preserveAspectRatio="none" lets them stretch the full
-            height of the hero at any viewport. */}
-        <svg
-          aria-hidden
-          preserveAspectRatio="none"
-          viewBox="0 0 160 600"
-          className="pointer-events-none absolute inset-y-0 left-0 z-[3] h-full w-[110px] opacity-80 mix-blend-screen sm:w-[150px] lg:w-[180px]"
-        >
-          <defs>
-            <linearGradient id="heroDripFade" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.95" />
-              <stop offset="75%" stopColor="var(--accent)" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
-            </linearGradient>
-            <filter id="heroDripGlow" x="-60%" y="-10%" width="220%" height="130%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <g
-            stroke="url(#heroDripFade)"
-            strokeLinecap="round"
-            fill="none"
-            filter="url(#heroDripGlow)"
-          >
-            <line x1="14" y1="0" x2="14" y2="330" strokeWidth="4" />
-            <line x1="38" y1="0" x2="38" y2="520" strokeWidth="3" />
-            <line x1="64" y1="0" x2="64" y2="230" strokeWidth="5" />
-            <line x1="92" y1="0" x2="92" y2="440" strokeWidth="3" />
-            <line x1="122" y1="0" x2="122" y2="300" strokeWidth="4" />
-            <line x1="146" y1="0" x2="146" y2="380" strokeWidth="2" />
-          </g>
-        </svg>
 
         {/* Desktop: oversized background photo, pulled in from the right edge */}
         <div className="absolute inset-y-0 right-[2%] z-[1] hidden w-[60%] sm:block lg:right-[4%] lg:w-[56%]">
