@@ -51,7 +51,17 @@ export default async function AdminProductEditPage({
           >
             &larr; Back to products
           </GuardedLink>
-          <SaveButton />
+          <div className="flex items-center gap-3">
+            <SaveButton />
+            <a
+              href={`/products/${product.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-outline !py-2 !px-6"
+            >
+              View in Store
+            </a>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
