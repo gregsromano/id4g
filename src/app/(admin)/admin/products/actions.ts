@@ -14,7 +14,7 @@ import {
   removeProductImage,
   replaceVariants,
   setCoverImage,
-  setImageAlt,
+  setImageAlts,
   setProductStatus,
   updateProduct,
   variantOptionKey,
@@ -38,6 +38,7 @@ const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 4000;
+const MAX_IMAGE_ALT_LENGTH = 200;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 
@@ -176,6 +177,17 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
     taxCode,
   });
 
+  // Image labels live in the same form (no separate save button for them —
+  // see image_url/image_alt pairs in the edit page), so persist them here too.
+  const imageUrls = formData.getAll("image_url").map(String);
+  const imageAlts = formData.getAll("image_alt").map((v) => String(v ?? "").trim());
+  if (imageUrls.length > 0) {
+    await setImageAlts(
+      id,
+      imageUrls.map((url, i) => ({ url, alt: (imageAlts[i] ?? "").slice(0, MAX_IMAGE_ALT_LENGTH) })),
+    );
+  }
+
   revalidateProduct(id, slug);
 }
 
@@ -296,19 +308,6 @@ export async function setCoverImageAction(formData: FormData): Promise<void> {
   if (!url) throw new Error("Missing image url");
 
   await setCoverImage(id, url);
-  revalidateProduct(id);
-}
-
-const MAX_IMAGE_ALT_LENGTH = 200;
-
-export async function setImageAltAction(formData: FormData): Promise<void> {
-  await requireAdmin();
-  const id = requireId(formData);
-  const url = String(formData.get("url") ?? "");
-  if (!url) throw new Error("Missing image url");
-  const alt = optionalText(formData.get("alt"), MAX_IMAGE_ALT_LENGTH) ?? "";
-
-  await setImageAlt(id, url, alt);
   revalidateProduct(id);
 }
 

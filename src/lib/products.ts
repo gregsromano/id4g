@@ -551,7 +551,15 @@ export async function setCoverImage(productId: string, url: string): Promise<voi
 }
 
 /** Caption/alt text for one image, e.g. "Front", "Back", "Detail". */
-export async function setImageAlt(productId: string, url: string, alt: string): Promise<void> {
+/**
+ * Bulk-updates caption/alt text for whichever images are present in
+ * `entries` — used when the image labels are edited alongside the rest of
+ * the product details form and saved together in one submission.
+ */
+export async function setImageAlts(
+  productId: string,
+  entries: { url: string; alt: string }[],
+): Promise<void> {
   assertServiceRoleConfigured();
   const supabase = getSupabaseAdmin();
 
@@ -567,14 +575,17 @@ export async function setImageAlt(productId: string, url: string, alt: string): 
     ? ((data as { images: ProductImage[] }).images)
     : [];
 
-  const images = current.map((img) => (img.url === url ? { ...img, alt } : img));
+  const altByUrl = new Map(entries.map((e) => [e.url, e.alt]));
+  const images = current.map((img) =>
+    altByUrl.has(img.url) ? { ...img, alt: altByUrl.get(img.url)! } : img,
+  );
 
   const { error: updateError } = await supabase
     .from("products")
     .update({ images, updated_at: new Date().toISOString() })
     .eq("id", productId);
 
-  if (updateError) fail("save image label", updateError);
+  if (updateError) fail("save image labels", updateError);
 }
 
 /**

@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getProductWithVariants } from "@/lib/products";
@@ -7,13 +6,13 @@ import { formatPrice } from "@/lib/product";
 import { optionsToText } from "@/lib/product-options";
 import ProductImagesForm from "@/components/admin/ProductImagesForm";
 import SaveButton from "@/components/admin/SaveButton";
+import UnsavedChangesForm, { GuardedLink } from "@/components/admin/UnsavedChangesForm";
 import {
   regenerateVariants,
   removeProductImageAction,
   saveProductDetails,
   saveVariantPrices,
   setCoverImageAction,
-  setImageAltAction,
   setProductStatusAction,
 } from "../actions";
 
@@ -31,25 +30,28 @@ export default async function AdminProductEditPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      {/* The Details form wraps everything down through its own section
+      {/* The Details form wraps everything down through the images grid
           (using `contents` so it doesn't affect layout) so the save button
           in the sticky bar is a true descendant — useFormStatus() only
           reports pending state for a form's own descendants, not an element
-          merely associated via the HTML `form` attribute. Other sections
-          (options/variants, images, status) are distinct actions and keep
-          their own forms/buttons below. */}
-      <form action={saveProductDetails} className="contents">
+          merely associated via the HTML `form` attribute. Image labels are
+          plain fields in this same form (no separate save button); "Set as
+          cover" and "Remove" override the submission to their own action via
+          `formAction` + a per-button `name="url"`, so they stay independent,
+          immediate actions within the one form. Options/variants and status
+          are distinct concerns and keep their own forms below. */}
+      <UnsavedChangesForm action={saveProductDetails} className="contents">
         <input type="hidden" name="id" value={product.id} />
 
         {/* Sticky save bar */}
         <div className="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg-primary)] px-6 py-4 sm:-mx-10 sm:px-10">
-          <Link
+          <GuardedLink
             href="/admin/products"
             className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
           >
             &larr; Back to products
-          </Link>
-          <SaveButton />
+          </GuardedLink>
+          <SaveButton action={saveProductDetails} />
         </div>
 
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -137,7 +139,65 @@ export default async function AdminProductEditPage({
           </div>
           </div>
         </section>
-      </form>
+
+        {/* Images — inside the same form: labels save with the top button;
+            Set as cover / Remove override to their own action per-click via
+            formAction + a button-scoped name="url", so only the clicked
+            image's url is submitted for that specific action. */}
+        <section className="mt-6 border border-[var(--border)] p-6">
+          <span className="section-label">Images</span>
+
+          {product.images.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-4 sm:grid-cols-4">
+              {product.images.map((image, index) => (
+                <div key={image.url} className="relative">
+                  <div className="relative aspect-square border border-[var(--border)]">
+                    <Image src={image.url} alt={image.alt} fill className="object-cover" />
+                    {index === 0 && (
+                      <span className="absolute left-2 top-2 border border-[var(--accent)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--accent)]">
+                        Cover
+                      </span>
+                    )}
+                  </div>
+                  <input type="hidden" name="image_url" value={image.url} />
+                  <input
+                    name="image_alt"
+                    defaultValue={image.alt}
+                    placeholder="Label — Front, Back..."
+                    className="mt-2 w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+                  />
+                  {index !== 0 && (
+                    <button
+                      type="submit"
+                      formAction={setCoverImageAction}
+                      formNoValidate
+                      name="url"
+                      value={image.url}
+                      className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                    >
+                      Set as cover
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    formAction={removeProductImageAction}
+                    formNoValidate
+                    name="url"
+                    value={image.url}
+                    className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-red-400 hover:text-red-400"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </UnsavedChangesForm>
+
+      <div className="mt-6 border border-[var(--border)] p-6">
+        <ProductImagesForm productId={product.id} />
+      </div>
 
       {/* Options -> variants */}
       <section className="mt-6 border border-[var(--border)] p-6">
@@ -216,70 +276,6 @@ export default async function AdminProductEditPage({
             </button>
           </form>
         )}
-      </section>
-
-      {/* Images */}
-      <section className="mt-6 border border-[var(--border)] p-6">
-        <span className="section-label">Images</span>
-
-        {product.images.length > 0 && (
-          <div className="mt-4 grid grid-cols-3 gap-4 sm:grid-cols-4">
-            {product.images.map((image, index) => (
-              <div key={image.url} className="relative">
-                <div className="relative aspect-square border border-[var(--border)]">
-                  <Image src={image.url} alt={image.alt} fill className="object-cover" />
-                  {index === 0 && (
-                    <span className="absolute left-2 top-2 border border-[var(--accent)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--accent)]">
-                      Cover
-                    </span>
-                  )}
-                </div>
-                <form action={setImageAltAction} className="mt-2 flex gap-1">
-                  <input type="hidden" name="id" value={product.id} />
-                  <input type="hidden" name="url" value={image.url} />
-                  <input
-                    name="alt"
-                    defaultValue={image.alt}
-                    placeholder="Label — Front, Back..."
-                    className="w-full min-w-0 border border-[var(--border)] bg-[var(--bg-section-alt)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-                  />
-                  <button
-                    type="submit"
-                    className="shrink-0 border border-[var(--border)] px-2 py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                  >
-                    Save
-                  </button>
-                </form>
-                {index !== 0 && (
-                  <form action={setCoverImageAction} className="mt-2">
-                    <input type="hidden" name="id" value={product.id} />
-                    <input type="hidden" name="url" value={image.url} />
-                    <button
-                      type="submit"
-                      className="w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-                    >
-                      Set as cover
-                    </button>
-                  </form>
-                )}
-                <form action={removeProductImageAction} className="mt-2">
-                  <input type="hidden" name="id" value={product.id} />
-                  <input type="hidden" name="url" value={image.url} />
-                  <button
-                    type="submit"
-                    className="w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-red-400 hover:text-red-400"
-                  >
-                    Remove
-                  </button>
-                </form>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-6 border-t border-[var(--border)] pt-6">
-          <ProductImagesForm productId={product.id} />
-        </div>
       </section>
 
       {/* Status */}
