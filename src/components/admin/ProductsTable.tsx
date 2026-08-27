@@ -67,21 +67,33 @@ export default function ProductsTable({
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <p className="text-xs text-[var(--text-muted)]">
-          Drag a row to reorder, then save.
+          {products.length > 1 ? "Drag a row to reorder, then save." : ""}
         </p>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!dirty || isPending}
-          className="btn-primary !py-2 !px-6 disabled:opacity-40"
-        >
-          {isPending ? "Saving..." : justSaved ? "Saved" : "Save order"}
-        </button>
+        <div className="flex items-center gap-3">
+          {dirty && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isPending}
+              className="btn-outline !py-2 !px-6 disabled:opacity-40"
+            >
+              {isPending ? "Saving..." : justSaved ? "Saved" : "Save order"}
+            </button>
+          )}
+          <Link href="/admin/products/new" className="btn-primary !py-2 !px-6">
+            New product
+          </Link>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {products.length === 0 ? (
+        <p className="py-16 text-center text-sm text-[var(--text-muted)]">
+          No products in this view.
+        </p>
+      ) : (
+      <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-2xl border-collapse text-left">
           <thead>
             <tr className="bg-[var(--bg-section-alt)]">
@@ -166,6 +178,7 @@ export default function ProductsTable({
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 }

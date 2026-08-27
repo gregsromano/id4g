@@ -28,14 +28,9 @@ export default async function AdminProductsPage({
 
   return (
     <div className="mx-auto w-full max-w-6xl">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <span className="section-label">Catalog</span>
-          <h1 className="!text-4xl mt-1 text-[var(--text-primary)]">Products</h1>
-        </div>
-        <Link href="/admin/products/new" className="btn-primary !py-3 !px-6">
-          New product
-        </Link>
+      <div>
+        <span className="section-label">Catalog</span>
+        <h1 className="!text-4xl mt-1 text-[var(--text-primary)]">Products</h1>
       </div>
 
       <nav className="mt-8 flex gap-6 border-b border-[var(--border)] pb-4">
@@ -54,13 +49,7 @@ export default async function AdminProductsPage({
         ))}
       </nav>
 
-      {products.length === 0 ? (
-        <p className="py-16 text-center text-sm text-[var(--text-muted)]">
-          No products in this view.
-        </p>
-      ) : (
-        <ProductsTable key={filter} products={products} filter={filter} />
-      )}
+      <ProductsTable key={filter} products={products} filter={filter} />
     </div>
   );
 }
