@@ -612,9 +612,17 @@ export async function setProductImages(
  * adjacent rows in whatever list they're looking at, rather than jumping past
  * a hidden draft/archived product in between.
  */
-export async function moveProduct(
-  id: string,
-  direction: "up" | "down",
+/**
+ * Reassigns positions to match `orderedIds` (drag-and-drop's resulting
+ * order) within the given filtered view. Reuses that same filtered set's
+ * OWN current position values (just permuted to the new id order) rather
+ * than fresh sequential integers, so products outside this filter (e.g.
+ * drafts interleaved with an "active" reorder) keep their correct relative
+ * placement — the same principle a pairwise swap would preserve, generalized
+ * to an arbitrary permutation.
+ */
+export async function reorderProducts(
+  orderedIds: string[],
   filter: ProductFilter,
 ): Promise<void> {
   assertServiceRoleConfigured();
@@ -630,26 +638,24 @@ export async function moveProduct(
   if (error) fail("load products for reorder", error);
 
   const rows = (data ?? []) as { id: string; position: number }[];
-  const index = rows.findIndex((row) => row.id === id);
-  if (index === -1) return;
+  const rowIds = new Set(rows.map((row) => row.id));
+  const finalOrder = orderedIds.filter((id) => rowIds.has(id));
 
-  const neighborIndex = direction === "up" ? index - 1 : index + 1;
-  if (neighborIndex < 0 || neighborIndex >= rows.length) return;
+  // A mismatch means the client's view was stale (e.g. a product was
+  // added/removed from this filter elsewhere between load and drop) — bail
+  // rather than risk assigning positions from a set that doesn't match.
+  if (finalOrder.length !== rows.length) {
+    fail("reorder products", { message: "Reorder set did not match current products" });
+  }
 
-  const current = rows[index];
-  const neighbor = rows[neighborIndex];
-
-  const { error: err1 } = await supabase
-    .from("products")
-    .update({ position: neighbor.position })
-    .eq("id", current.id);
-  if (err1) fail("reorder product", err1);
-
-  const { error: err2 } = await supabase
-    .from("products")
-    .update({ position: current.position })
-    .eq("id", neighbor.id);
-  if (err2) fail("reorder product", err2);
+  const positions = rows.map((row) => row.position);
+  for (let i = 0; i < finalOrder.length; i++) {
+    const { error: updateError } = await supabase
+      .from("products")
+      .update({ position: positions[i] })
+      .eq("id", finalOrder[i]);
+    if (updateError) fail("reorder product", updateError);
+  }
 }
 
 export type CheckoutVariant = {

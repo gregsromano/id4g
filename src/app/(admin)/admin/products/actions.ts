@@ -10,8 +10,8 @@ import {
   appendProductImages,
   createProduct,
   getProductWithVariants,
-  moveProduct,
   removeProductImage,
+  reorderProducts,
   replaceVariants,
   setCoverImage,
   setProductImages,
@@ -344,27 +344,23 @@ export async function setProductStatusAction(formData: FormData): Promise<void> 
   revalidateProduct(id);
 }
 
-function requireFilter(formData: FormData): ProductFilter {
-  const filter = String(formData.get("filter") ?? "all");
-  if (filter !== "active" && filter !== "draft" && filter !== "archived" && filter !== "all") {
-    return "all";
-  }
-  return filter;
+function isProductFilter(value: unknown): value is ProductFilter {
+  return value === "active" || value === "draft" || value === "archived" || value === "all";
 }
 
-function requireDirection(formData: FormData): "up" | "down" {
-  const direction = String(formData.get("direction") ?? "");
-  if (direction !== "up" && direction !== "down") throw new Error("Invalid direction");
-  return direction;
-}
-
-export async function reorderProductAction(formData: FormData): Promise<void> {
+/**
+ * Called directly from the products list's drag-and-drop handler (not bound
+ * to a <form> — there's no form submission here, just a client callback), so
+ * this takes plain arguments rather than FormData.
+ */
+export async function reorderProductsAction(ids: string[], filter: ProductFilter): Promise<void> {
   await requireAdmin();
-  const id = requireId(formData);
-  const direction = requireDirection(formData);
-  const filter = requireFilter(formData);
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !UUID_RE.test(id))) {
+    throw new Error("Invalid product ids");
+  }
+  if (!isProductFilter(filter)) throw new Error("Invalid filter");
 
-  await moveProduct(id, direction, filter);
+  await reorderProducts(ids, filter);
   revalidatePath("/admin/products");
   revalidatePath("/");
 }
