@@ -30,7 +30,7 @@ export default function NewProductForm() {
         />
       </Field>
 
-      <Field label="Description">
+      <Field label="Description" hint="Blank line = new paragraph. **text** = bold.">
         <textarea
           name="description"
           rows={3}

@@ -6,6 +6,7 @@ import { getProductWithVariants } from "@/lib/products";
 import { formatPrice } from "@/lib/product";
 import { optionsToText } from "@/lib/product-options";
 import ProductImagesForm from "@/components/admin/ProductImagesForm";
+import SaveButton from "@/components/admin/SaveButton";
 import {
   regenerateVariants,
   removeProductImageAction,
@@ -30,42 +31,43 @@ export default async function AdminProductEditPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      {/* Sticky save bar — the Details form's submit button lives here (via
-          the `form` attribute) so the primary save action stays visible
-          while scrolling, instead of being buried at the bottom of the
-          section. Other sections (options/variants, images, status) are
-          distinct actions with their own effects and keep their own buttons
-          in place. */}
-      <div className="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg-primary)] px-6 py-4 sm:-mx-10 sm:px-10">
-        <Link
-          href="/admin/products"
-          className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-        >
-          &larr; Back to products
-        </Link>
-        <button type="submit" form="details-form" className="btn-primary !py-2 !px-6">
-          Save
-        </button>
-      </div>
+      {/* The Details form wraps everything down through its own section
+          (using `contents` so it doesn't affect layout) so the save button
+          in the sticky bar is a true descendant — useFormStatus() only
+          reports pending state for a form's own descendants, not an element
+          merely associated via the HTML `form` attribute. Other sections
+          (options/variants, images, status) are distinct actions and keep
+          their own forms/buttons below. */}
+      <form action={saveProductDetails} className="contents">
+        <input type="hidden" name="id" value={product.id} />
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <span className="section-label">Product</span>
-          <h1 className="!text-3xl mt-1 text-[var(--text-primary)]">{product.name}</h1>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">/{product.slug}</p>
+        {/* Sticky save bar */}
+        <div className="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg-primary)] px-6 py-4 sm:-mx-10 sm:px-10">
+          <Link
+            href="/admin/products"
+            className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+          >
+            &larr; Back to products
+          </Link>
+          <SaveButton />
         </div>
-        <span className="border border-[var(--border)] px-3 py-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
-          {product.status}
-        </span>
-      </div>
 
-      {/* Core details */}
-      <section className="mt-8 border border-[var(--border)] p-6">
-        <span className="section-label">Details</span>
-        <form id="details-form" action={saveProductDetails} className="mt-4">
-          <input type="hidden" name="id" value={product.id} />
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <span className="section-label">Product</span>
+            <h1 className="!text-3xl mt-1 text-[var(--text-primary)]">{product.name}</h1>
+            <p className="mt-1 text-sm text-[var(--text-muted)]">/{product.slug}</p>
+          </div>
+          <span className="border border-[var(--border)] px-3 py-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+            {product.status}
+          </span>
+        </div>
 
-          <Field label="Name">
+        {/* Core details */}
+        <section className="mt-8 border border-[var(--border)] p-6">
+          <span className="section-label">Details</span>
+          <div className="mt-4">
+            <Field label="Name">
             <input
               name="name"
               defaultValue={product.name}
@@ -91,6 +93,9 @@ export default async function AdminProductEditPage({
               defaultValue={product.description ?? ""}
               className="w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
             />
+            <span className="mt-1 block text-xs text-[var(--text-muted)]">
+              Blank line = new paragraph. **text** = bold.
+            </span>
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
@@ -130,8 +135,9 @@ export default async function AdminProductEditPage({
               />
             </Field>
           </div>
-        </form>
-      </section>
+          </div>
+        </section>
+      </form>
 
       {/* Options -> variants */}
       <section className="mt-6 border border-[var(--border)] p-6">

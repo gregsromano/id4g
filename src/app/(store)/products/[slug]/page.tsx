@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getProductBySlug } from "@/lib/products";
+import DescriptionText from "@/components/DescriptionText";
 import ProductGallery from "@/components/ProductGallery";
 import ProductPurchasePanel from "@/components/ProductPurchasePanel";
 
@@ -51,7 +52,10 @@ export default async function ProductDetailPage({
 
         {product.description && (
           <div className="mx-auto max-w-6xl px-6 pb-16 sm:pb-24">
-            <p className="max-w-2xl text-lg text-[var(--text-body)]">{product.description}</p>
+            <DescriptionText
+              text={product.description}
+              className="max-w-2xl text-lg text-[var(--text-body)]"
+            />
           </div>
         )}
       </section>
