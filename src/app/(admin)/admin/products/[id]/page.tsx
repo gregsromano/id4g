@@ -59,7 +59,7 @@ export default async function AdminProductEditPage({
               rel="noopener noreferrer"
               className="btn-outline !py-2 !px-6"
             >
-              View in Store
+              Live Site
             </a>
           </div>
         </div>
