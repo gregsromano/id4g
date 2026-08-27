@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin-dal";
-import { applyTrackingImport, updateOrder } from "@/lib/admin-orders";
+import { applyTrackingImport, deleteOrder, updateOrder } from "@/lib/admin-orders";
 import { parseCsv } from "@/lib/csv";
 
 /**
@@ -91,6 +91,20 @@ export async function unfulfill(formData: FormData) {
   await updateOrder(id, { status: "paid", fulfilled_at: null });
 
   revalidateOrder(id);
+}
+
+/**
+ * Permanently removes an order — for cleaning up test/junk orders, not real
+ * customer ones (see deleteOrder's own doc comment). The confirm() prompt
+ * lives client-side (RemoveOrderButton) since this can't be undone.
+ */
+export async function removeOrder(formData: FormData) {
+  await requireAdmin();
+  const id = requireId(formData);
+
+  await deleteOrder(id);
+
+  revalidatePath("/admin");
 }
 
 export type ImportResult = {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getFulfillmentSummary, listOrders, type OrderFilter } from "@/lib/admin-orders";
 import { formatPrice } from "@/lib/product";
 import { orderUnitCount } from "@/lib/fulfillment";
+import RemoveOrderButton from "@/components/admin/RemoveOrderButton";
 import StatusPill from "@/components/admin/StatusPill";
 
 // Order data must never be prerendered or cached between requests.
@@ -183,6 +184,12 @@ export default async function AdminOrdersPage({
                     <span className="text-xs text-[var(--text-muted)]">
                       {order.customerEmail ?? "—"}
                     </span>
+                    <div className="mt-1">
+                      <RemoveOrderButton
+                        id={order.id}
+                        customerLabel={order.shippingName ?? order.customerName ?? "this customer"}
+                      />
+                    </div>
                   </Td>
                   <Td>{order.itemsSummary || "—"}</Td>
                   <Td>{orderUnitCount(order.items)}</Td>

@@ -229,6 +229,21 @@ export async function updateOrder(id: string, patch: OrderUpdate): Promise<void>
 }
 
 /**
+ * Permanently deletes an order row. Unlike products (archive-only, since
+ * historical orders may reference a variant id), there's no snapshot
+ * anywhere ELSE that depends on an order row continuing to exist — so a
+ * genuine delete is safe here. Meant for cleaning up test/junk orders, not
+ * for real customer orders (a real paid order should stay as a permanent
+ * record — cancel it via status instead of deleting it).
+ */
+export async function deleteOrder(id: string): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin().from("orders").delete().eq("id", id);
+  if (error) fail("delete order", error);
+}
+
+/**
  * Bulk-apply tracking numbers from a Pirate Ship export.
  *
  * `fulfilled_at` is only stamped on orders that are not already fulfilled, so
