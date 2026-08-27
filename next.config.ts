@@ -22,6 +22,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverActions: {
+      // Product image uploads (uploadProductImages in
+      // admin/products/actions.ts) allow multiple files up to 8MB each; the
+      // framework default of 1MB rejects any real product photo before our
+      // own per-file validation ever runs.
+      bodySizeLimit: "25mb",
+    },
+  },
 };
 
 export default nextConfig;
