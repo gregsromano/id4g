@@ -26,14 +26,19 @@ export default async function Home() {
 
       {/* Full-bleed hero */}
       <section className="relative overflow-hidden bg-black">
-        {/* Paint splatter texture — dripping from top-right, pooling bottom-left */}
+        {/* Paint splatter texture — top-right, mirrored to top-left, and
+            pooling bottom-left. These sit at z-[3] — ABOVE the gradient
+            scrim below (z-[2]), which is fully opaque black across the left
+            portion of the hero and would otherwise completely hide anything
+            left-side at a lower z-index (the original bug here: the drips
+            were rendering, just invisibly, underneath that scrim). */}
         <Image
           src="/paint-drip.png"
           alt=""
           width={291}
           height={168}
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+          className="pointer-events-none absolute right-0 top-0 z-[3] w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
         />
         <Image
           src="/paint-drip.png"
@@ -41,7 +46,15 @@ export default async function Home() {
           width={291}
           height={168}
           aria-hidden
-          className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
+          className="pointer-events-none absolute left-0 top-0 z-[3] w-[240px] -scale-x-100 opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+        />
+        <Image
+          src="/paint-drip.png"
+          alt=""
+          width={291}
+          height={168}
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 left-0 z-[3] hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
         />
 
         {/* Long neon drip streaks running down the left edge — hand-drawn
@@ -53,7 +66,7 @@ export default async function Home() {
           aria-hidden
           preserveAspectRatio="none"
           viewBox="0 0 160 600"
-          className="pointer-events-none absolute inset-y-0 left-0 z-0 h-full w-[110px] opacity-80 mix-blend-screen sm:w-[150px] lg:w-[180px]"
+          className="pointer-events-none absolute inset-y-0 left-0 z-[3] h-full w-[110px] opacity-80 mix-blend-screen sm:w-[150px] lg:w-[180px]"
         >
           <defs>
             <linearGradient id="heroDripFade" x1="0" y1="0" x2="0" y2="1">
