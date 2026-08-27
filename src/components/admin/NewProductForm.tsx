@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { createProductAction, type CreateProductResult } from "@/app/(admin)/admin/products/actions";
 import { PRODUCT_CATEGORIES } from "@/lib/product-options";
 import RichTextEditor from "./RichTextEditor";
+import SizeOptionsField from "./SizeOptionsField";
 
 export default function NewProductForm() {
   const [state, action, pending] = useActionState<CreateProductResult | null, FormData>(
@@ -90,14 +91,9 @@ export default function NewProductForm() {
 
       <Field
         label="Options"
-        hint={'One option per line: "Size: S, M, L, XL". Leave blank for a single, size-less product. Every combination becomes a variant at this base price — adjust individual variant prices after creating.'}
+        hint="Every selected size becomes a variant at the base price above — adjust individual variant prices after creating."
       >
-        <textarea
-          name="options"
-          rows={3}
-          placeholder={"Size: S, M, L, XL\nColor: Black, White"}
-          className="w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-        />
+        <SizeOptionsField name="options" />
       </Field>
 
       <button type="submit" disabled={pending} className="btn-primary mt-6">

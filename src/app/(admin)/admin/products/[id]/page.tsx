@@ -6,6 +6,7 @@ import { optionsToText, PRODUCT_CATEGORIES } from "@/lib/product-options";
 import ImageReorderGrid from "@/components/admin/ImageReorderGrid";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import SaveButton from "@/components/admin/SaveButton";
+import SizeOptionsField from "@/components/admin/SizeOptionsField";
 import UnsavedChangesForm, { GuardedLink } from "@/components/admin/UnsavedChangesForm";
 import {
   regenerateVariants,
@@ -181,17 +182,10 @@ export default async function AdminProductEditPage({
         <span className="section-label">Options</span>
         <form action={regenerateVariants} className="mt-4">
           <input type="hidden" name="id" value={product.id} />
-          <textarea
-            name="options"
-            rows={3}
-            defaultValue={optionsToText(product.options)}
-            placeholder={"Size: S, M, L, XL\nColor: Black, White"}
-            className="w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 font-mono text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
-          />
+          <SizeOptionsField name="options" defaultValue={optionsToText(product.options)} />
           <p className="mt-2 text-xs text-[var(--text-muted)]">
-            One option per line: &quot;Size: S, M, L&quot;. Changing this regenerates the variant
-            list below — existing combinations keep their price, new ones start at the base
-            price, removed ones are deleted.
+            Changing this regenerates the variant list below — existing combinations keep their
+            price, new ones start at the base price, removed ones are deleted.
           </p>
           <button
             type="submit"

@@ -22,6 +22,21 @@ export const PRODUCT_CATEGORIES = [
   "Other",
 ] as const;
 
+/**
+ * Standard size codes offered as a pick-list in SizeOptionsField, instead of
+ * typing "Size: S, M, L" by hand. The stored value is still the short code
+ * (matches sizes already used across cart/checkout/orders) — the label is
+ * just friendlier in the UI.
+ */
+export const STANDARD_SIZES = [
+  { value: "S", label: "S — Small" },
+  { value: "M", label: "M — Medium" },
+  { value: "L", label: "L — Large" },
+  { value: "XL", label: "XL" },
+  { value: "2XL", label: "2XL" },
+  { value: "3XL", label: "3XL" },
+] as const;
+
 export function parseOptionsText(text: string): ProductOption[] {
   return text
     .split("\n")
