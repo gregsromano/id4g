@@ -30,14 +30,25 @@ export default async function AdminProductEditPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <Link
-        href="/admin/products"
-        className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-      >
-        &larr; Back to products
-      </Link>
+      {/* Sticky save bar — the Details form's submit button lives here (via
+          the `form` attribute) so the primary save action stays visible
+          while scrolling, instead of being buried at the bottom of the
+          section. Other sections (options/variants, images, status) are
+          distinct actions with their own effects and keep their own buttons
+          in place. */}
+      <div className="sticky top-0 z-10 -mx-6 mb-6 flex items-center justify-between gap-4 border-b border-[var(--border)] bg-[var(--bg-primary)] px-6 py-4 sm:-mx-10 sm:px-10">
+        <Link
+          href="/admin/products"
+          className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+        >
+          &larr; Back to products
+        </Link>
+        <button type="submit" form="details-form" className="btn-primary !py-2 !px-6">
+          Save
+        </button>
+      </div>
 
-      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <span className="section-label">Product</span>
           <h1 className="!text-3xl mt-1 text-[var(--text-primary)]">{product.name}</h1>
@@ -51,7 +62,7 @@ export default async function AdminProductEditPage({
       {/* Core details */}
       <section className="mt-8 border border-[var(--border)] p-6">
         <span className="section-label">Details</span>
-        <form action={saveProductDetails} className="mt-4">
+        <form id="details-form" action={saveProductDetails} className="mt-4">
           <input type="hidden" name="id" value={product.id} />
 
           <Field label="Name">
@@ -119,13 +130,6 @@ export default async function AdminProductEditPage({
               />
             </Field>
           </div>
-
-          <button
-            type="submit"
-            className="mt-2 border border-[var(--border)] px-4 py-2 text-xs uppercase tracking-widest text-[var(--text-body)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-          >
-            Save details
-          </button>
         </form>
       </section>
 
