@@ -73,7 +73,7 @@ export default function ProductsTable({
           {products.length > 1 ? "Drag a row to reorder, then save." : ""}
         </p>
         <div className="flex items-center gap-3">
-          {dirty && (
+          {(dirty || justSaved) && (
             <button
               type="button"
               onClick={handleSave}
