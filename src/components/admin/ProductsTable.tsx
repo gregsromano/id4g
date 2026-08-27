@@ -31,11 +31,11 @@ export default function ProductsTable({
 
   const dirty = products.some((p, i) => p.id !== initialProducts[i]?.id);
 
+  // "Saved" stays put once a save completes — no auto-revert timer — until
+  // the next drag creates a fresh unsaved change.
   useEffect(() => {
     if (wasPending.current && !isPending) {
       setJustSaved(true);
-      const timer = setTimeout(() => setJustSaved(false), 2000);
-      return () => clearTimeout(timer);
     }
     wasPending.current = isPending;
   }, [isPending]);
@@ -54,6 +54,7 @@ export default function ProductsTable({
       return next;
     });
     setDragIndex(null);
+    setJustSaved(false);
   }
 
   function handleSave() {
