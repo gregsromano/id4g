@@ -12,6 +12,7 @@ import {
   saveProductDetails,
   saveVariantPrices,
   setCoverImageAction,
+  setImageAltAction,
   setProductStatusAction,
 } from "../actions";
 
@@ -223,6 +224,22 @@ export default async function AdminProductEditPage({
                     </span>
                   )}
                 </div>
+                <form action={setImageAltAction} className="mt-2 flex gap-1">
+                  <input type="hidden" name="id" value={product.id} />
+                  <input type="hidden" name="url" value={image.url} />
+                  <input
+                    name="alt"
+                    defaultValue={image.alt}
+                    placeholder="Label — Front, Back..."
+                    className="w-full min-w-0 border border-[var(--border)] bg-[var(--bg-section-alt)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+                  />
+                  <button
+                    type="submit"
+                    className="shrink-0 border border-[var(--border)] px-2 py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                  >
+                    Save
+                  </button>
+                </form>
                 {index !== 0 && (
                   <form action={setCoverImageAction} className="mt-2">
                     <input type="hidden" name="id" value={product.id} />

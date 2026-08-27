@@ -33,6 +33,7 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
             <button
               key={image.url}
               onClick={() => setIndex(i)}
+              title={image.alt || undefined}
               className={`h-16 w-16 overflow-hidden border transition-colors ${
                 i === index ? "border-[var(--accent)]" : "border-[var(--border)]"
               }`}
@@ -47,6 +48,12 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
             </button>
           ))}
         </div>
+      )}
+
+      {active?.alt && (
+        <p className="mt-2 text-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
+          {active.alt}
+        </p>
       )}
     </div>
   );

@@ -14,6 +14,7 @@ import {
   removeProductImage,
   replaceVariants,
   setCoverImage,
+  setImageAlt,
   setProductStatus,
   updateProduct,
   variantOptionKey,
@@ -295,6 +296,19 @@ export async function setCoverImageAction(formData: FormData): Promise<void> {
   if (!url) throw new Error("Missing image url");
 
   await setCoverImage(id, url);
+  revalidateProduct(id);
+}
+
+const MAX_IMAGE_ALT_LENGTH = 200;
+
+export async function setImageAltAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = requireId(formData);
+  const url = String(formData.get("url") ?? "");
+  if (!url) throw new Error("Missing image url");
+  const alt = optionalText(formData.get("alt"), MAX_IMAGE_ALT_LENGTH) ?? "";
+
+  await setImageAlt(id, url, alt);
   revalidateProduct(id);
 }
 

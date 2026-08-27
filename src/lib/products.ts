@@ -550,6 +550,33 @@ export async function setCoverImage(productId: string, url: string): Promise<voi
   if (updateError) fail("set cover image", updateError);
 }
 
+/** Caption/alt text for one image, e.g. "Front", "Back", "Detail". */
+export async function setImageAlt(productId: string, url: string, alt: string): Promise<void> {
+  assertServiceRoleConfigured();
+  const supabase = getSupabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("images")
+    .eq("id", productId)
+    .single();
+
+  if (error) fail("load product images", error);
+
+  const current = Array.isArray((data as { images: unknown }).images)
+    ? ((data as { images: ProductImage[] }).images)
+    : [];
+
+  const images = current.map((img) => (img.url === url ? { ...img, alt } : img));
+
+  const { error: updateError } = await supabase
+    .from("products")
+    .update({ images, updated_at: new Date().toISOString() })
+    .eq("id", productId);
+
+  if (updateError) fail("save image label", updateError);
+}
+
 /**
  * Swaps a product's display position with its neighbor in the given filtered
  * view (e.g. "active"), so an admin's up/down click always visibly swaps two
