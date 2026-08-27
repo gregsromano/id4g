@@ -1,6 +1,6 @@
 import { CartProvider } from "@/lib/cart-context";
-import CartButton from "@/components/CartButton";
 import CartDrawer from "@/components/CartDrawer";
+import SiteHeader from "@/components/SiteHeader";
 
 /**
  * Storefront chrome.
@@ -17,7 +17,7 @@ export default function StoreLayout({
 }>) {
   return (
     <CartProvider>
-      <CartButton />
+      <SiteHeader />
       {children}
       <CartDrawer />
     </CartProvider>

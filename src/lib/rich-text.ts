@@ -16,3 +16,24 @@ export const RICH_TEXT_CLASSES =
   "[&_a]:text-[var(--accent)] [&_a]:underline " +
   "[&_strong]:font-bold [&_em]:italic [&_u]:underline [&_s]:line-through " +
   "[&_hr]:my-4 [&_hr]:border-[var(--border)]";
+
+/**
+ * Plain-text excerpt of a rich-text HTML description, for contexts that
+ * can't render HTML: the meta description fallback (generateMetadata) and
+ * the admin's SEO preview when no explicit meta description is set. A crude
+ * regex strip is fine here — this never needs to be safe to re-render as
+ * HTML, only readable as text.
+ */
+export function stripHtmlToText(html: string, maxLength = 300): string {
+  const text = html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trimEnd()}…` : text;
+}

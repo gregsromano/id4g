@@ -34,6 +34,10 @@ export type Product = {
   taxCode: string;
   /** Free-standing label (T-Shirt, Hoodie, ...) — not enforced by the DB. */
   category: string | null;
+  /** Null means "fall back to name" at render time, not "empty title." */
+  metaTitle: string | null;
+  /** Null means "fall back to description" at render time. */
+  metaDescription: string | null;
   options: ProductOption[];
   images: ProductImage[];
   /** Manual storefront display order — lower shows first. */
@@ -70,6 +74,8 @@ const PRODUCT_COLUMNS = [
   "weight_oz",
   "tax_code",
   "category",
+  "meta_title",
+  "meta_description",
   "options",
   "images",
   "position",
@@ -99,6 +105,8 @@ type ProductRow = {
   weight_oz: number | null;
   tax_code: string;
   category: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
   options: unknown;
   images: unknown;
   position: number;
@@ -129,6 +137,8 @@ function toProduct(row: ProductRow): Product {
     weightOz: row.weight_oz,
     taxCode: row.tax_code,
     category: row.category,
+    metaTitle: row.meta_title,
+    metaDescription: row.meta_description,
     options: Array.isArray(row.options) ? (row.options as ProductOption[]) : [],
     images: Array.isArray(row.images) ? (row.images as ProductImage[]) : [],
     position: row.position,
@@ -351,6 +361,8 @@ export type ProductPatch = Partial<{
   weightOz: number | null;
   taxCode: string;
   category: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
   options: ProductOption[];
 }>;
 
@@ -367,6 +379,8 @@ export async function updateProduct(id: string, patch: ProductPatch): Promise<vo
   if (patch.weightOz !== undefined) row.weight_oz = patch.weightOz;
   if (patch.taxCode !== undefined) row.tax_code = patch.taxCode;
   if (patch.category !== undefined) row.category = patch.category;
+  if (patch.metaTitle !== undefined) row.meta_title = patch.metaTitle;
+  if (patch.metaDescription !== undefined) row.meta_description = patch.metaDescription;
   if (patch.options !== undefined) row.options = patch.options;
 
   const { error } = await getSupabaseAdmin().from("products").update(row).eq("id", id);

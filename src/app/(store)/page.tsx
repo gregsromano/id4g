@@ -6,24 +6,68 @@ import { formatPrice } from "@/lib/product";
 
 export const dynamic = "force-dynamic";
 
+const ICON_PROPS = {
+  width: 28,
+  height: 28,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+const PROCESS_STEPS = [
+  {
+    title: "Design",
+    description:
+      "Every drop starts as original art — faith, graffiti, and streetwear worked into one design.",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+    ),
+  },
+  {
+    title: "Limited Print Run",
+    description: "Each design prints in a small, numbered run. Once it's gone, it's gone.",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M20.59 13.41 12 22l-9-9V2h11l6.59 6.59a2 2 0 0 1 0 2.82Z" />
+        <circle cx="7.5" cy="7.5" r="1.5" />
+      </svg>
+    ),
+  },
+  {
+    title: "Hand-Finished",
+    description:
+      "Bleaching, rhinestones, and hand-applied details make every piece one of a kind.",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="m12 2 2.09 6.26L20 10l-5.91 1.74L12 18l-2.09-6.26L4 10l5.91-1.74L12 2Z" />
+      </svg>
+    ),
+  },
+  {
+    title: "Shipped To You",
+    description: "Packed with care and shipped straight to your door.",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+        <path d="m3.27 6.96 8.73 5.05 8.73-5.05" />
+        <path d="M12 22.08V12" />
+      </svg>
+    ),
+  },
+];
+
 export default async function Home() {
   const products = await listActiveProducts();
 
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
-      {/* Top nav — logo mark */}
-      <header className="absolute inset-x-0 top-0 z-20 py-6">
-        <div className="mx-auto w-full max-w-6xl px-6">
-          <Image
-            src="/idfg-logo.webp"
-            alt="ID4G — I'll Die For The Gospel"
-            width={653}
-            height={633}
-            className="w-full max-w-[72px]"
-          />
-        </div>
-      </header>
-
       {/* Full-bleed hero */}
       <section className="relative overflow-hidden bg-black">
         {/* Paint splatter texture — dripping from top-right, pooling bottom-left */}
@@ -64,7 +108,7 @@ export default async function Home() {
           }}
         />
 
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-32 sm:min-h-[92vh] sm:flex sm:items-center sm:py-24">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-16 sm:min-h-[80vh] sm:flex sm:items-center sm:py-24">
           <div className="max-w-xl">
             <span className="section-label mb-4">Greg Romano Presents</span>
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
@@ -152,10 +196,15 @@ export default async function Home() {
                         </div>
                       )}
                     </div>
-                    <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
+                    <h3 className="mt-4 text-base font-bold uppercase tracking-wide text-[var(--text-primary)]">
                       {product.name}
                     </h3>
-                    <p className="mt-1 text-sm text-[var(--text-muted)]">
+                    {product.category && (
+                      <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                        {product.category}
+                      </p>
+                    )}
+                    <p className="mt-2 text-sm text-[var(--text-body)]">
                       {formatPrice(product.priceCents)}
                     </p>
                   </Link>
@@ -163,6 +212,33 @@ export default async function Home() {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* From Idea to Wearable Art — process steps */}
+      <section id="process" className="border-b border-[var(--border)]" style={{ background: "var(--bg-cream)" }}>
+        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
+          <span className="section-label mb-3 text-black/60">The Process</span>
+          <h2 className="mb-12 text-4xl text-black sm:text-5xl">
+            From Idea to <span className="text-[var(--accent)]">Wearable Art</span>
+          </h2>
+
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+            {PROCESS_STEPS.map((step, i) => (
+              <div key={step.title} className="relative">
+                <div className="flex h-14 w-14 items-center justify-center border-2 border-black text-black">
+                  {step.icon}
+                </div>
+                <span className="mt-4 block text-xs font-bold uppercase tracking-widest text-black/50">
+                  Step {i + 1}
+                </span>
+                <h3 className="mt-1 text-lg font-bold uppercase tracking-wide text-black">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm text-black/70">{step.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
