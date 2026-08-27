@@ -42,7 +42,7 @@ export default function RichTextEditor({
     onUpdate: ({ editor }) => setHtml(editor.getHTML()),
     editorProps: {
       attributes: {
-        class: `min-h-[160px] px-3 py-2 text-sm text-[var(--text-primary)] outline-none ${RICH_TEXT_CLASSES}`,
+        class: `h-full px-3 py-2 text-sm text-[var(--text-primary)] outline-none ${RICH_TEXT_CLASSES}`,
       },
     },
   });
@@ -51,7 +51,10 @@ export default function RichTextEditor({
     <div className="border border-[var(--border)] bg-[var(--bg-section-alt)]">
       <Toolbar editor={editor} />
       <input type="hidden" name={name} value={html} />
-      <EditorContent editor={editor} />
+      {/* Drag the bottom-right corner to resize, same as a native textarea. */}
+      <div className="h-[200px] min-h-[120px] max-h-[70vh] resize-y overflow-y-auto">
+        <EditorContent editor={editor} className="h-full" />
+      </div>
     </div>
   );
 }
