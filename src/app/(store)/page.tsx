@@ -1,8 +1,8 @@
 import Image from "next/image";
-import Link from "next/link";
 
 import { listActiveProducts } from "@/lib/products";
 import { formatPrice } from "@/lib/product";
+import ProductQuickView from "@/components/ProductQuickView";
 
 export const dynamic = "force-dynamic";
 
@@ -109,45 +109,15 @@ export default async function Home() {
             <p className="text-sm text-[var(--text-muted)]">Nothing in stock right now.</p>
           ) : (
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-16 lg:grid-cols-3">
-              {products.map((product) => {
-                const image = product.images[0];
-                return (
-                  <Link
-                    key={product.id}
-                    href={`/products/${product.slug}`}
-                    className="group block"
-                  >
-                    <div className="relative aspect-square w-full">
-                      {image ? (
-                        <>
-                          <Image
-                            src={image.url}
-                            alt={image.alt}
-                            width={800}
-                            height={800}
-                            className="h-full w-full scale-[1.2] object-contain transition-transform duration-500 group-hover:scale-[1.26]"
-                          />
-                          {image.alt && (
-                            <span className="absolute bottom-2 left-2 border border-[var(--border)] bg-[var(--bg-primary)]/80 px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
-                              {image.alt}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
-                          No image
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
-                      {product.name}
-                    </h3>
-                    <p className="mt-1 text-sm text-[var(--text-muted)]">
-                      {formatPrice(product.priceCents)}
-                    </p>
-                  </Link>
-                );
-              })}
+              {products.map((product) => (
+                <ProductQuickView
+                  key={product.id}
+                  href={`/products/${product.slug}`}
+                  name={product.name}
+                  priceLabel={formatPrice(product.priceCents)}
+                  image={product.images[0]}
+                />
+              ))}
             </div>
           )}
         </div>
