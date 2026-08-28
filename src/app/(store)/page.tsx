@@ -125,7 +125,7 @@ export default async function Home() {
                             alt={image.alt}
                             width={800}
                             height={800}
-                            className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
+                            className="h-full w-full scale-[1.15] object-contain transition-transform duration-500 group-hover:scale-[1.2075]"
                           />
                           {image.alt && (
                             <span className="absolute bottom-2 left-2 border border-[var(--border)] bg-[var(--bg-primary)]/80 px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
