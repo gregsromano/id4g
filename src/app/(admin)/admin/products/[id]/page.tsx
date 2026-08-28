@@ -9,7 +9,6 @@ import SaveButton from "@/components/admin/SaveButton";
 import SizeOptionsField from "@/components/admin/SizeOptionsField";
 import UnsavedChangesForm, { GuardedLink } from "@/components/admin/UnsavedChangesForm";
 import {
-  regenerateVariants,
   removeProductImageAction,
   saveProductDetails,
   saveVariantPrices,
@@ -31,16 +30,20 @@ export default async function AdminProductEditPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl">
-      {/* The Details form wraps everything down through the images grid
-          (using `contents` so it doesn't affect layout) so the save button
-          in the sticky bar is a true descendant — useFormStatus() only
-          reports pending state for a form's own descendants, not an element
-          merely associated via the HTML `form` attribute. Image labels are
-          plain fields in this same form (no separate save button); "Set as
-          cover" and "Remove" override the submission to their own action via
-          `formAction` + a per-button `name="url"`, so they stay independent,
-          immediate actions within the one form. Options/variants and status
-          are distinct concerns and keep their own forms below. */}
+      {/* The Details form wraps everything down through the images grid and
+          the size picker (using `contents` so it doesn't affect layout) so
+          the save button in the sticky bar is a true descendant —
+          useFormStatus() only reports pending state for a form's own
+          descendants, not an element merely associated via the HTML `form`
+          attribute. Image labels are plain fields in this same form (no
+          separate save button); "Set as cover" and "Remove" override the
+          submission to their own action via `formAction` + a per-button
+          `name="url"`, so they stay independent, immediate actions within
+          the one form. The size picker's hidden "options" input lives here
+          too, so one Save persists both details and sizes — see
+          saveProductDetails' handling of the "options" field. Per-variant
+          price editing and status are distinct concerns and keep their own
+          forms below. */}
       <UnsavedChangesForm action={saveProductDetails} className="contents">
         <input type="hidden" name="id" value={product.id} />
 
@@ -175,28 +178,26 @@ export default async function AdminProductEditPage({
             />
           </div>
         </section>
+
+        {/* Options -> variants. Saved by the same top Save button as
+            everything else above — see saveProductDetails' handling of the
+            "options" field. */}
+        <section className="mt-6 border border-[var(--border)] p-6">
+          <span className="section-label">Options</span>
+          <div className="mt-4">
+            <SizeOptionsField name="options" defaultValue={optionsToText(product.options)} />
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
+              Changing this regenerates the variant list below — existing combinations keep their
+              price, new ones start at the base price, removed ones are deleted.
+            </p>
+          </div>
+        </section>
       </UnsavedChangesForm>
 
-      {/* Options -> variants */}
-      <section className="mt-6 border border-[var(--border)] p-6">
-        <span className="section-label">Options</span>
-        <form action={regenerateVariants} className="mt-4">
-          <input type="hidden" name="id" value={product.id} />
-          <SizeOptionsField name="options" defaultValue={optionsToText(product.options)} />
-          <p className="mt-2 text-xs text-[var(--text-muted)]">
-            Changing this regenerates the variant list below — existing combinations keep their
-            price, new ones start at the base price, removed ones are deleted.
-          </p>
-          <button
-            type="submit"
-            className="mt-3 border border-[var(--border)] px-4 py-2 text-xs uppercase tracking-widest text-[var(--text-body)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
-          >
-            Regenerate variants
-          </button>
-        </form>
-
-        {product.variants.length > 0 && (
-          <form action={saveVariantPrices} className="mt-6 border-t border-[var(--border)] pt-6">
+      {product.variants.length > 0 && (
+        <section className="mt-6 border border-[var(--border)] p-6">
+          <span className="section-label">Variant Prices</span>
+          <form action={saveVariantPrices} className="mt-4">
             <input type="hidden" name="id" value={product.id} />
             <table className="w-full border-collapse text-left text-sm">
               <thead>
@@ -246,8 +247,8 @@ export default async function AdminProductEditPage({
               Save variant prices
             </button>
           </form>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Status */}
       <section className="mt-6 flex flex-wrap items-center justify-between gap-4 border border-[var(--border)] p-6">

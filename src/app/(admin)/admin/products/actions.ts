@@ -204,38 +204,33 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
     );
   }
 
+  // Options/variants live in this same form too — see SizeOptionsField's
+  // hidden "options" input — so the one Save button persists the size
+  // picker instead of silently leaving it unsaved until a second button
+  // is clicked. Existing combos keep their current price (and their id, so
+  // cart lines / historical orders referencing them stay valid); brand-new
+  // combos start at the product's base price; removed combos are deleted.
+  if (formData.has("options")) {
+    const options = parseOptionsText(String(formData.get("options") ?? ""));
+    const product = await getProductWithVariants(id);
+    if (!product) throw new Error("Product not found");
+
+    const existingByKey = new Map(product.variants.map((v) => [v.optionKey, v]));
+    const combos = cartesianCombinations(options);
+    const desired: DesiredVariant[] =
+      combos.length > 0
+        ? combos.map((optionValues) => {
+            const key = variantOptionKey(optionValues);
+            const existing = existingByKey.get(key);
+            return { optionValues, priceCents: existing?.priceCents ?? priceCents };
+          })
+        : [{ optionValues: {}, priceCents }];
+
+    await updateProduct(id, { options });
+    await replaceVariants(id, desired);
+  }
+
   revalidateProduct(id, slug);
-}
-
-/**
- * Regenerates variant rows from a freshly-edited options list. Existing
- * combos keep their current price (and their id, so cart lines / historical
- * orders referencing them stay valid); brand-new combos start at the
- * product's base price; removed combos are deleted.
- */
-export async function regenerateVariants(formData: FormData): Promise<void> {
-  await requireAdmin();
-  const id = requireId(formData);
-
-  const options = parseOptionsText(String(formData.get("options") ?? ""));
-  const product = await getProductWithVariants(id);
-  if (!product) throw new Error("Product not found");
-
-  const existingByKey = new Map(product.variants.map((v) => [v.optionKey, v]));
-  const combos = cartesianCombinations(options);
-  const desired: DesiredVariant[] =
-    combos.length > 0
-      ? combos.map((optionValues) => {
-          const key = variantOptionKey(optionValues);
-          const existing = existingByKey.get(key);
-          return { optionValues, priceCents: existing?.priceCents ?? product.priceCents };
-        })
-      : [{ optionValues: {}, priceCents: product.priceCents }];
-
-  await updateProduct(id, { options });
-  await replaceVariants(id, desired);
-
-  revalidateProduct(id, product.slug);
 }
 
 /** Bulk price update for the existing variant table — one field per variant id. */
