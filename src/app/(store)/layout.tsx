@@ -1,5 +1,6 @@
 import { CartProvider } from "@/lib/cart-context";
 import CartDrawer from "@/components/CartDrawer";
+import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
 /**
@@ -19,6 +20,7 @@ export default function StoreLayout({
     <CartProvider>
       <SiteHeader />
       {children}
+      <SiteFooter />
       <CartDrawer />
     </CartProvider>
   );
