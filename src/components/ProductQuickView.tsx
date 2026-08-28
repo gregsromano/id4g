@@ -10,33 +10,24 @@ export default function ProductQuickView({
   href,
   name,
   priceLabel,
-  images,
+  image,
 }: {
   href: string;
   name: string;
   priceLabel: string;
-  images: QuickViewImage[];
+  image: QuickViewImage | undefined;
 }) {
   const [open, setOpen] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const image = images[0];
-  const active = images[activeIndex] ?? image;
 
   useEffect(() => {
     if (!open) return;
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
-      if (e.key === "ArrowRight") {
-        setActiveIndex((i) => (i + 1) % images.length);
-      }
-      if (e.key === "ArrowLeft") {
-        setActiveIndex((i) => (i - 1 + images.length) % images.length);
-      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open, images.length]);
+  }, [open]);
 
   return (
     <>
@@ -74,10 +65,7 @@ export default function ProductQuickView({
           <button
             type="button"
             aria-label={`View larger image of ${name}`}
-            onClick={() => {
-              setActiveIndex(0);
-              setOpen(true);
-            }}
+            onClick={() => setOpen(true)}
             className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-[var(--border)] bg-[var(--bg-primary)]/80 text-[var(--text-primary)] opacity-0 transition-opacity duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)] group-hover:opacity-100"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
@@ -88,13 +76,13 @@ export default function ProductQuickView({
         )}
       </div>
 
-      {open && active && (
+      {open && image && (
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`${name} — larger image`}
           onClick={() => setOpen(false)}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-black/85 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
         >
           <button
             type="button"
@@ -107,73 +95,16 @@ export default function ProductQuickView({
 
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative flex w-full max-w-3xl flex-1 items-center justify-center"
+            className="relative h-full max-h-[85vh] w-full max-w-3xl"
           >
-            {images.length > 1 && (
-              <button
-                type="button"
-                aria-label="Previous image"
-                onClick={() =>
-                  setActiveIndex((i) => (i - 1 + images.length) % images.length)
-                }
-                className="absolute left-0 z-10 flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <path d="M12 4 6 10l6 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
-              </button>
-            )}
-
-            <div className="relative h-full max-h-[75vh] w-full">
-              <Image
-                src={active.url}
-                alt={active.alt}
-                width={1400}
-                height={1400}
-                className="h-full w-full object-contain"
-              />
-            </div>
-
-            {images.length > 1 && (
-              <button
-                type="button"
-                aria-label="Next image"
-                onClick={() => setActiveIndex((i) => (i + 1) % images.length)}
-                className="absolute right-0 z-10 flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
-              >
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
-                  <path d="m8 4 6 6-6 6" stroke="currentColor" strokeWidth="2" fill="none" />
-                </svg>
-              </button>
-            )}
+            <Image
+              src={image.url}
+              alt={image.alt}
+              width={1400}
+              height={1400}
+              className="h-full w-full object-contain"
+            />
           </div>
-
-          {images.length > 1 && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="flex gap-3"
-            >
-              {images.map((img, i) => (
-                <button
-                  key={img.url}
-                  type="button"
-                  onClick={() => setActiveIndex(i)}
-                  title={img.alt || undefined}
-                  className={`h-14 w-14 overflow-hidden border transition-colors ${
-                    i === activeIndex ? "border-[var(--accent)]" : "border-white/20"
-                  }`}
-                >
-                  <Image
-                    src={img.url}
-                    alt={img.alt}
-                    width={56}
-                    height={56}
-                    className="h-full w-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </>
