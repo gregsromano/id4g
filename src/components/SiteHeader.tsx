@@ -7,9 +7,9 @@ import { useState } from "react";
 import CartButton from "./CartButton";
 
 /**
- * No dedicated Contact or Custom Orders page/flow exists yet — both route to
- * the one real, already-used channel (see success page's social links)
- * rather than a dead link or a fabricated email address.
+ * No dedicated Custom Orders page/flow exists yet, so it routes to the one
+ * real, already-used channel (see success page's social links) rather than
+ * a dead link or a fabricated email address.
  */
 const CONTACT_URL = "https://instagram.com/id4gospel";
 
@@ -18,7 +18,7 @@ const NAV_LINKS: { label: string; href: string; external?: boolean }[] = [
   { label: "Drops", href: "/#shop" },
   { label: "Custom Orders", href: CONTACT_URL, external: true },
   { label: "About Greg", href: "/about" },
-  { label: "Contact", href: CONTACT_URL, external: true },
+  { label: "Contact", href: "/contact" },
 ];
 
 export default function SiteHeader() {
