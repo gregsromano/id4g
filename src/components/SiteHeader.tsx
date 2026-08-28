@@ -86,7 +86,7 @@ function NavLink({
   onClick?: () => void;
 }) {
   const className = `font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)] ${
-    mobile ? "text-sm" : "text-xs"
+    mobile ? "text-base" : "text-sm"
   }`;
 
   if (external) {
