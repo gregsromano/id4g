@@ -43,6 +43,7 @@ export default function ContactPage() {
         width={291}
         height={168}
         aria-hidden
+        unoptimized
         className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
       />
       <Image
@@ -51,6 +52,7 @@ export default function ContactPage() {
         width={291}
         height={168}
         aria-hidden
+        unoptimized
         className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
       />
 
