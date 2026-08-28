@@ -23,9 +23,16 @@ export default function SizeOptionsField({
   /** Omit entirely (new product) to default to Small selected. */
   defaultValue?: string;
 }) {
+  // Matches "Size" or "Sizes" — some products have a legacy "Sizes" (plural)
+  // line saved from before this pill picker existed. Folding both spellings
+  // in here (instead of just "size") keeps that legacy data from silently
+  // surviving as a second, uncontrolled "other" option — it would otherwise
+  // pass straight through and render as a duplicate size group on the
+  // storefront the next time this form is saved.
+  const isSizeOption = (name: string) => /^sizes?$/.test(name.trim().toLowerCase());
   const initialOptions = parseOptionsText(defaultValue ?? "");
-  const sizeOption = initialOptions.find((o) => o.name.toLowerCase() === "size");
-  const otherOptions = initialOptions.filter((o) => o.name.toLowerCase() !== "size");
+  const sizeOption = initialOptions.find((o) => isSizeOption(o.name));
+  const otherOptions = initialOptions.filter((o) => !isSizeOption(o.name));
 
   const [selectedSizes, setSelectedSizes] = useState<string[]>(() => {
     if (sizeOption) return sizeOption.values;
