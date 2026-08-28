@@ -17,7 +17,7 @@ const NAV_LINKS: { label: string; href: string; external?: boolean }[] = [
   { label: "Home", href: "/" },
   { label: "Drops", href: "/#shop" },
   { label: "Custom Orders", href: CONTACT_URL, external: true },
-  { label: "About Greg", href: "/#the-story" },
+  { label: "About Greg", href: "/about" },
   { label: "Contact", href: CONTACT_URL, external: true },
 ];
 
