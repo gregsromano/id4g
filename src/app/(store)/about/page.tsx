@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,28 +13,48 @@ export default function AboutPage() {
       {/* The story behind the shirt */}
       <section style={{ background: "var(--bg-section-alt)" }}>
         {/* Opening: headline + the origin line as a pull quote */}
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 pt-16 sm:pt-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
-          <div>
-            <span className="section-label mb-4 !text-base sm:!text-lg">
-              The Story
-            </span>
-            <h1 className="!text-5xl sm:!text-6xl lg:!text-7xl">
-              Behind
-              <br />
-              The Shirt
-            </h1>
-            <span className="mt-8 block h-[4px] w-24 bg-[var(--accent)]" />
-          </div>
+        <div className="relative overflow-hidden">
+          {/* Paint splatter texture — matches the homepage hero */}
+          <Image
+            src="/paint-drip.png"
+            alt=""
+            width={291}
+            height={168}
+            aria-hidden
+            className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+          />
+          <Image
+            src="/paint-drip.png"
+            alt=""
+            width={291}
+            height={168}
+            aria-hidden
+            className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
+          />
 
-          <div>
-            <p className="border-l-2 border-[var(--accent)] pl-6 text-3xl leading-snug text-[var(--text-primary)] sm:text-4xl">
-              I&rsquo;ll Die for the Gospel was born from my love for God,
-              clothing, and art.
-            </p>
-            <p className="mt-6 pl-6 text-lg text-[var(--text-body)] sm:text-xl">
-              I wanted to create something that represents my faith without
-              losing the creativity and individuality of streetwear.
-            </p>
+          <div className="relative z-10 mx-auto grid max-w-6xl gap-10 px-6 pt-16 sm:pt-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
+            <div>
+              <span className="section-label mb-4 !text-base sm:!text-lg">
+                The Story
+              </span>
+              <h1 className="!text-5xl sm:!text-6xl lg:!text-7xl">
+                Behind
+                <br />
+                The Shirt
+              </h1>
+              <span className="mt-8 block h-[4px] w-24 bg-[var(--accent)]" />
+            </div>
+
+            <div>
+              <p className="border-l-2 border-[var(--accent)] pl-6 text-3xl leading-snug text-[var(--text-primary)] sm:text-4xl">
+                I&rsquo;ll Die for the Gospel was born from my love for God,
+                clothing, and art.
+              </p>
+              <p className="mt-6 pl-6 text-lg text-[var(--text-body)] sm:text-xl">
+                I wanted to create something that represents my faith without
+                losing the creativity and individuality of streetwear.
+              </p>
+            </div>
           </div>
         </div>
 

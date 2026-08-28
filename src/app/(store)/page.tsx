@@ -109,15 +109,20 @@ export default async function Home() {
             <p className="text-sm text-[var(--text-muted)]">Nothing in stock right now.</p>
           ) : (
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-16 lg:grid-cols-3">
-              {products.map((product) => (
-                <ProductQuickView
-                  key={product.id}
-                  href={`/products/${product.slug}`}
-                  name={product.name}
-                  priceLabel={formatPrice(product.priceCents)}
-                  image={product.images[0]}
-                />
-              ))}
+              {products.map((product) => {
+                const images = [...product.images].sort(
+                  (a, b) => a.position - b.position
+                );
+                return (
+                  <ProductQuickView
+                    key={product.id}
+                    href={`/products/${product.slug}`}
+                    name={product.name}
+                    priceLabel={formatPrice(product.priceCents)}
+                    images={images}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
