@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -17,7 +18,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
       if (res.ok) {
         router.replace("/admin");
@@ -25,7 +26,7 @@ export default function AdminLoginPage() {
         return;
       }
       const data = await res.json().catch(() => null);
-      setError(data?.error ?? "Incorrect password");
+      setError(data?.error ?? "Incorrect email or password");
     } catch {
       setError("Something went wrong. Try again.");
     } finally {
@@ -41,6 +42,22 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="mt-8">
           <label
+            htmlFor="email"
+            className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="username"
+            autoFocus
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="mb-5 w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+          />
+
+          <label
             htmlFor="password"
             className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]"
           >
@@ -50,7 +67,6 @@ export default function AdminLoginPage() {
             id="password"
             type="password"
             autoComplete="current-password"
-            autoFocus
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             className="w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
@@ -60,7 +76,7 @@ export default function AdminLoginPage() {
 
           <button
             type="submit"
-            disabled={loading || password.length === 0}
+            disabled={loading || email.length === 0 || password.length === 0}
             className="btn-primary mt-6 w-full"
           >
             {loading ? "Signing in..." : "Sign in"}

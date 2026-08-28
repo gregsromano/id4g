@@ -5,11 +5,16 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 /**
  * Signed session tokens for the admin dashboard.
  *
- * A single shared password guards a solo-operator back office, so there is no
- * user table — a valid session just means "whoever this is knew the password".
- * Tokens are HMAC-signed with Node's built-in crypto: no new dependencies, and
- * nothing here ever runs in the browser (`server-only` makes that a build
- * error rather than a runtime surprise).
+ * Sessions are tied to a real admin user account (see admin-users.ts) — the
+ * token carries the account id (`sub`) so a page/action can look up which
+ * admin is signed in. ADMIN_PASSWORD still exists as a one-time bootstrap
+ * key (see /api/admin/login): the very first login, while the admin_users
+ * table is empty, creates the first account from whatever email/password are
+ * submitted, gated on that password matching ADMIN_PASSWORD. Every login
+ * after that checks the submitted password against the account's stored hash
+ * instead. Tokens are HMAC-signed with Node's built-in crypto: no new
+ * dependencies, and nothing here ever runs in the browser (`server-only`
+ * makes that a build error rather than a runtime surprise).
  */
 
 export const ADMIN_COOKIE = "id4g_admin";
@@ -19,57 +24,47 @@ export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
 
 /** Bump to invalidate every token already issued. */
-const TOKEN_VERSION = 1;
+const TOKEN_VERSION = 2;
 
-const MIN_PASSWORD_LENGTH = 12;
+const MIN_BOOTSTRAP_PASSWORD_LENGTH = 12;
 const MIN_SECRET_LENGTH = 32;
 
 type SessionPayload = {
   /** Absolute expiry, ms since epoch. Verified server-side. */
   exp: number;
   v: number;
+  /** admin_users.id this session belongs to. */
+  sub: string;
   /** Random per-token id, so two logins never produce identical cookies. */
   jti: string;
 };
 
 export type VerifyResult =
-  | { valid: true; exp: number }
+  | { valid: true; exp: number; sub: string }
   | { valid: false; reason: "malformed" | "bad-signature" | "expired" | "unconfigured" };
 
 /**
- * Read and validate the two required secrets.
+ * Read and validate the session-signing secret.
  *
- * Throws when either is missing or too short. This is deliberately the INVERSE
- * of the fail-open check in `api/keepalive/route.ts` (`if (secret && ...)`,
- * which skips the check entirely when the env var is unset). That is fine for
- * a keepalive counter; it would be indefensible here, where the protected
- * resource is every customer's email and shipping address.
- *
- * The failure mode is that a misconfigured deployment locks the operator OUT
- * of /admin rather than letting the world in. That is the correct trade.
- * Do not "fix" this toward consistency with keepalive.
+ * Throws when missing or too short. The failure mode is that a misconfigured
+ * deployment locks the operator OUT of /admin rather than letting the world
+ * in — the protected resource is every customer's email and shipping
+ * address, so fail-closed is the correct trade here.
  */
-function requireSecrets(): { password: string; secret: string } {
-  const password = process.env.ADMIN_PASSWORD ?? "";
+function requireSessionSecret(): string {
   const secret = process.env.ADMIN_SESSION_SECRET ?? "";
-
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    throw new Error(
-      `ADMIN_PASSWORD is unset or shorter than ${MIN_PASSWORD_LENGTH} characters; admin access is disabled.`,
-    );
-  }
   if (secret.length < MIN_SECRET_LENGTH) {
     throw new Error(
       `ADMIN_SESSION_SECRET is unset or shorter than ${MIN_SECRET_LENGTH} characters; admin access is disabled.`,
     );
   }
-  return { password, secret };
+  return secret;
 }
 
-/** True when both secrets are present and long enough. Never throws. */
+/** True when the session secret is present and long enough. Never throws. */
 export function isAdminConfigured(): boolean {
   try {
-    requireSecrets();
+    requireSessionSecret();
     return true;
   } catch (error) {
     console.error("[admin-auth]", (error as Error).message);
@@ -99,24 +94,28 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(digestA, digestB);
 }
 
-/** Constant-time password check. Returns false (never true) if unconfigured. */
-export function verifyPassword(candidate: string): boolean {
-  let password: string;
-  try {
-    ({ password } = requireSecrets());
-  } catch (error) {
-    console.error("[admin-auth]", (error as Error).message);
+/**
+ * Constant-time check against ADMIN_PASSWORD — the one-time bootstrap key,
+ * not a per-account password. Returns false (never true) if unconfigured.
+ */
+export function verifyBootstrapPassword(candidate: string): boolean {
+  const password = process.env.ADMIN_PASSWORD ?? "";
+  if (password.length < MIN_BOOTSTRAP_PASSWORD_LENGTH) {
+    console.error(
+      `[admin-auth] ADMIN_PASSWORD is unset or shorter than ${MIN_BOOTSTRAP_PASSWORD_LENGTH} characters; bootstrap login is disabled.`,
+    );
     return false;
   }
   return safeEqual(candidate, password);
 }
 
-/** Mint a signed session token. Throws if the secrets are not configured. */
-export function createSessionToken(): string {
-  const { secret } = requireSecrets();
+/** Mint a signed session token for the given admin user. Throws if the secret is not configured. */
+export function createSessionToken(userId: string): string {
+  const secret = requireSessionSecret();
   const payload: SessionPayload = {
     exp: Date.now() + SESSION_MAX_AGE_MS,
     v: TOKEN_VERSION,
+    sub: userId,
     jti: randomBytes(16).toString("hex"),
   };
   const payloadB64 = base64url(JSON.stringify(payload));
@@ -135,7 +134,7 @@ export function verifySessionToken(token: string | undefined): VerifyResult {
 
   let secret: string;
   try {
-    ({ secret } = requireSecrets());
+    secret = requireSessionSecret();
   } catch (error) {
     console.error("[admin-auth]", (error as Error).message);
     return { valid: false, reason: "unconfigured" };
@@ -166,6 +165,9 @@ export function verifySessionToken(token: string | undefined): VerifyResult {
   }
 
   if (payload.v !== TOKEN_VERSION) return { valid: false, reason: "expired" };
+  if (typeof payload.sub !== "string" || payload.sub.length === 0) {
+    return { valid: false, reason: "malformed" };
+  }
 
   // Expiry is checked here, not left to the cookie's maxAge: a client is free
   // to keep sending a cookie the browser should have dropped.
@@ -173,7 +175,7 @@ export function verifySessionToken(token: string | undefined): VerifyResult {
     return { valid: false, reason: "expired" };
   }
 
-  return { valid: true, exp: payload.exp };
+  return { valid: true, exp: payload.exp, sub: payload.sub };
 }
 
 /** Cookie options shared by the login and logout routes. */

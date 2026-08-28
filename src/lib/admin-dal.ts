@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ADMIN_COOKIE, verifySessionToken } from "./admin-session";
+import { getAdminUserById, type AdminUser } from "./admin-users";
 
 /**
  * The admin data access layer — the ACTUAL security boundary.
@@ -26,7 +27,7 @@ import { ADMIN_COOKIE, verifySessionToken } from "./admin-session";
  * Wrapped in React's `cache` so a layout, a page, and three data functions in
  * the same render verify once rather than five times.
  */
-export const verifyAdminSession = cache(async (): Promise<{ exp: number }> => {
+export const verifyAdminSession = cache(async (): Promise<{ exp: number; sub: string }> => {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
   const result = verifySessionToken(token);
 
@@ -34,7 +35,21 @@ export const verifyAdminSession = cache(async (): Promise<{ exp: number }> => {
     redirect("/admin/login");
   }
 
-  return { exp: result.exp };
+  return { exp: result.exp, sub: result.sub };
+});
+
+/**
+ * The signed-in admin's account (id + email), for the profile page and
+ * anywhere else that needs to show/act on which admin this is. Redirects to
+ * login the same way `verifyAdminSession` does if the session is invalid,
+ * and again if the session is valid but the account it points to no longer
+ * exists (e.g. deleted directly in the database).
+ */
+export const requireAdminUser = cache(async (): Promise<AdminUser> => {
+  const { sub } = await verifyAdminSession();
+  const user = await getAdminUserById(sub);
+  if (!user) redirect("/admin/login");
+  return user;
 });
 
 /** Non-redirecting variant, for the login page (which must render logged out). */
