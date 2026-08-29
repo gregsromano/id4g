@@ -36,7 +36,7 @@ export default function ContactPage() {
 
   return (
     <main className="relative flex-1 overflow-hidden bg-black">
-      {/* Paint splatter texture — matches the homepage hero */}
+      {/* Paint splatter texture — top-right only on this page */}
       <Image
         src="/paint-drip.png"
         alt=""
@@ -46,16 +46,6 @@ export default function ContactPage() {
         unoptimized
         className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
       />
-      <Image
-        src="/paint-drip.png"
-        alt=""
-        width={291}
-        height={168}
-        aria-hidden
-        unoptimized
-        className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
-      />
-
       <section className="relative z-10 mx-auto max-w-2xl px-6 py-16 sm:py-24">
         <span className="section-label mb-4 !text-base sm:!text-lg">
           Get In Touch
