@@ -44,7 +44,7 @@ export default function ContactPage() {
         height={168}
         aria-hidden
         unoptimized
-        className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+        className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen [mask-image:radial-gradient(120%_100%_at_85%_0%,#000_35%,transparent_78%)] [mask-repeat:no-repeat] [mask-size:100%_100%] sm:w-[340px] lg:w-[420px]"
       />
       <section className="relative z-10 mx-auto max-w-2xl px-6 py-16 sm:py-24">
         <span className="section-label mb-4 !text-base sm:!text-lg">

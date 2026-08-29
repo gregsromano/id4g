@@ -22,7 +22,7 @@ export default function AboutPage() {
             height={168}
             aria-hidden
             unoptimized
-            className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
+            className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen [mask-image:radial-gradient(120%_100%_at_85%_0%,#000_35%,transparent_78%)] [mask-repeat:no-repeat] [mask-size:100%_100%] sm:w-[340px] lg:w-[420px]"
           />
           <div className="relative z-10 mx-auto grid max-w-6xl gap-10 px-6 pt-16 sm:pt-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
             <div>
