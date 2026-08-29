@@ -1,13 +1,20 @@
 import Image from "next/image";
 
 import { listActiveProducts } from "@/lib/products";
+import { listLifestyleImages } from "@/lib/lifestyle";
 import { formatPrice } from "@/lib/product";
+import LifestyleGallery from "@/components/LifestyleGallery";
 import ProductQuickView from "@/components/ProductQuickView";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const products = await listActiveProducts();
+  // Both reads are independent, so run them concurrently rather than
+  // serializing two round trips on every render of a force-dynamic page.
+  const [products, lifestyleImages] = await Promise.all([
+    listActiveProducts(),
+    listLifestyleImages(),
+  ]);
 
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
@@ -134,61 +141,7 @@ export default async function Home() {
             </div>
           </div>
 
-          {/* Mosaic: tall hero left, stacked pair right, two wide below */}
-          <div className="grid gap-3 sm:gap-4 lg:grid-cols-12">
-            {/* Hero portrait */}
-            <figure className="group relative overflow-hidden lg:col-span-7 lg:row-span-2">
-              <Image
-                src="/lifestyle-alleyway.png"
-                alt="BROK3N tee worn in a city alleyway at night"
-                width={800}
-                height={1000}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            </figure>
-
-            {/* Stacked pair */}
-            <figure className="group relative overflow-hidden lg:col-span-5">
-              <Image
-                src="/lifestyle-studio-seated.png"
-                alt="BROK3N tee in a studio portrait"
-                width={800}
-                height={1000}
-                className="h-full w-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-              />
-            </figure>
-
-            <figure className="group relative overflow-hidden lg:col-span-5">
-              <Image
-                src="/lifestyle-escalade.png"
-                alt="BROK3N tee worn against a city skyline"
-                width={800}
-                height={600}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            </figure>
-
-            {/* Wide pair */}
-            <figure className="group relative overflow-hidden lg:col-span-7">
-              <Image
-                src="/lifestyle-street-race.png"
-                alt="BROK3N tee worn on the street at night"
-                width={800}
-                height={640}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            </figure>
-
-            <figure className="group relative overflow-hidden lg:col-span-5">
-              <Image
-                src="/lifestyle-studio-full.png"
-                alt="BROK3N tee, full-length studio shot"
-                width={800}
-                height={1000}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            </figure>
-          </div>
+          <LifestyleGallery images={lifestyleImages} />
         </div>
       </section>
 
