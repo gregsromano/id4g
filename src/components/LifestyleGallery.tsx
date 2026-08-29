@@ -148,7 +148,7 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
           aria-modal="true"
           aria-label="Lifestyle photo"
           onClick={() => setLightbox(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 sm:p-6"
         >
           <button
             type="button"
@@ -188,17 +188,22 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
 
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative flex h-full max-h-[85vh] w-full max-w-4xl flex-col items-center justify-center"
+            className="relative flex max-h-full w-full flex-col items-center justify-center gap-3"
           >
             <Image
               src={open.url}
               alt={open.alt}
-              width={1400}
-              height={1400}
-              className="max-h-full w-auto max-w-full object-contain"
+              width={1600}
+              height={1600}
+              // The lightbox is the one place these photos are shown at full
+              // size, so serve the original bytes rather than a re-encode:
+              // the sources are only 800px wide, and the optimizer's next
+              // bucket down (640px) visibly softens them on a large screen.
+              unoptimized
+              className="h-auto max-h-[calc(100vh-6rem)] w-auto max-w-full object-contain"
             />
             {open.alt && (
-              <p className="mt-4 text-center text-xs uppercase tracking-widest text-white/60">
+              <p className="shrink-0 text-center text-xs uppercase tracking-widest text-white/60">
                 {open.alt}
               </p>
             )}
