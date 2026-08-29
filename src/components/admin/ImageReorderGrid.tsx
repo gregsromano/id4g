@@ -24,8 +24,8 @@ export default function ImageReorderGrid({
 }: {
   productId: string;
   images: ImageItem[];
-  setCoverAction: (formData: FormData) => void | Promise<void>;
-  removeAction: (formData: FormData) => void | Promise<void>;
+  setCoverAction: (url: string, formData: FormData) => void | Promise<void>;
+  removeAction: (url: string, formData: FormData) => void | Promise<void>;
 }) {
   const byUrl = new Map(images.map((img) => [img.url, img]));
   const [order, setOrder] = useState(images.map((img) => img.url));
@@ -101,21 +101,21 @@ export default function ImageReorderGrid({
               {index !== 0 && (
                 <button
                   type="submit"
-                  formAction={setCoverAction}
+                  formAction={setCoverAction.bind(null, url)}
                   formNoValidate
-                  name="url"
-                  value={url}
                   className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
                 >
                   Set as cover
                 </button>
               )}
+              {/* url is bound into the action, not carried by name/value:
+                  React overwrites a submit button's `name` with its own
+                  $ACTION_ID_… when the button has a `formAction` server
+                  action, so name/value never reaches the server. */}
               <button
                 type="submit"
-                formAction={removeAction}
+                formAction={removeAction.bind(null, url)}
                 formNoValidate
-                name="url"
-                value={url}
                 className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-red-400 hover:text-red-400"
               >
                 Remove

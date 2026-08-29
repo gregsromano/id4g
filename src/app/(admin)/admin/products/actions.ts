@@ -302,20 +302,25 @@ export async function uploadProductImages(
   return { ok: true, message: `Uploaded ${uploaded.length} image${uploaded.length === 1 ? "" : "s"}.` };
 }
 
-export async function removeProductImageAction(formData: FormData): Promise<void> {
+/**
+ * The image url arrives as a BOUND argument, not a form field, for both of
+ * these: React replaces a submit button's `name` with its own $ACTION_ID_…
+ * when that button carries a `formAction` server action, so name/value never
+ * survives the round trip. The product id still comes from the form, where a
+ * hidden input carries it.
+ */
+export async function removeProductImageAction(url: string, formData: FormData): Promise<void> {
   await requireAdmin();
   const id = requireId(formData);
-  const url = String(formData.get("url") ?? "");
   if (!url) throw new Error("Missing image url");
 
   await removeProductImage(id, url);
   revalidateProduct(id);
 }
 
-export async function setCoverImageAction(formData: FormData): Promise<void> {
+export async function setCoverImageAction(url: string, formData: FormData): Promise<void> {
   await requireAdmin();
   const id = requireId(formData);
-  const url = String(formData.get("url") ?? "");
   if (!url) throw new Error("Missing image url");
 
   await setCoverImage(id, url);

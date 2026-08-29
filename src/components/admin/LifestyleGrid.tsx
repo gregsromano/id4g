@@ -24,7 +24,7 @@ export default function LifestyleGrid({
   removeAction,
 }: {
   images: Item[];
-  removeAction: (formData: FormData) => void | Promise<void>;
+  removeAction: (id: string, formData: FormData) => void | Promise<void>;
 }) {
   const byId = new Map(images.map((img) => [img.id, img]));
   const [order, setOrder] = useState(images.map((img) => img.id));
@@ -126,12 +126,15 @@ export default function LifestyleGrid({
                 placeholder="Describe the photo"
                 className="mt-2 w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
               />
+              {/* The id is bound into the action rather than carried by
+                  name/value on the button: React overwrites a submit button's
+                  `name` with its own $ACTION_ID_… when that button has a
+                  `formAction` server action, so name/value never reaches the
+                  server and formData.get("id") comes back empty. */}
               <button
                 type="submit"
-                formAction={removeAction}
+                formAction={removeAction.bind(null, id)}
                 formNoValidate
-                name="id"
-                value={id}
                 className="mt-2 w-full border border-[var(--border)] py-1 text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-red-400 hover:text-red-400"
               >
                 Remove

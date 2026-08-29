@@ -26,12 +26,6 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_ALT_LENGTH = 300;
 
-function requireId(formData: FormData, field = "id"): string {
-  const id = String(formData.get(field) ?? "");
-  if (!UUID_RE.test(id)) throw new Error("Invalid lifestyle image id");
-  return id;
-}
-
 /**
  * The gallery renders on the homepage and on its own admin page, so both are
  * revalidated after every mutation.
@@ -121,9 +115,18 @@ export async function saveLifestyleGallery(formData: FormData): Promise<void> {
   revalidateLifestyle();
 }
 
-export async function removeLifestyleImageAction(formData: FormData): Promise<void> {
+/**
+ * Remove one image.
+ *
+ * The id arrives as a BOUND argument, not a form field: React replaces a
+ * submit button's `name` with its own $ACTION_ID_… when the button carries a
+ * `formAction` server action, so name/value never survives the round trip.
+ * Binding is also stricter — the id is fixed when the button renders rather
+ * than read from whatever the submitted form happened to contain.
+ */
+export async function removeLifestyleImageAction(id: string): Promise<void> {
   await requireAdmin();
-  const id = requireId(formData);
+  if (!UUID_RE.test(id)) throw new Error("Invalid lifestyle image id");
 
   await removeLifestyleImage(id);
   revalidateLifestyle();
