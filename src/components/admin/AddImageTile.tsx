@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 import { uploadProductImages } from "@/app/(admin)/admin/products/actions";
@@ -11,8 +12,14 @@ import { uploadProductImages } from "@/app/(admin)/admin/products/actions";
  * server action directly (a plain async function call, not a form binding),
  * which is what the "+" tap actually triggers: an immediate upload, not
  * something deferred to the top Save button.
+ *
+ * That direct call is also why `router.refresh()` is required: the action's
+ * revalidatePath only invalidates the server cache, and re-renders the route
+ * on a FORM submission, not on a plain async call like this one. Without it
+ * the upload succeeds while the grid keeps showing the old list.
  */
 export default function AddImageTile({ productId }: { productId: string }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +36,7 @@ export default function AddImageTile({ productId }: { productId: string }) {
       setError(null);
       const result = await uploadProductImages(null, formData);
       if (!result.ok) setError(result.message);
+      else router.refresh();
       if (inputRef.current) inputRef.current.value = "";
     });
   }

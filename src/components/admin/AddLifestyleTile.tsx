@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
 import { uploadLifestyleImages } from "@/app/(admin)/admin/lifestyle/actions";
@@ -11,8 +12,16 @@ import { uploadLifestyleImages } from "@/app/(admin)/admin/lifestyle/actions";
  * must stay independent of that form's submit lifecycle. Calls the upload
  * server action directly, because that is what the "+" tap actually triggers
  * — an immediate upload, not something deferred to the Save button.
+ *
+ * That direct call is also why `router.refresh()` is required. The action
+ * calls revalidatePath, but that only invalidates the server cache; it
+ * re-renders the route on a FORM submission, not on a plain async call like
+ * this one. Without the refresh the upload really did succeed — row written,
+ * file stored — while the grid kept showing the old list, which reads as
+ * "the button did nothing" and invites uploading the same photo again.
  */
 export default function AddLifestyleTile() {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,6 +37,7 @@ export default function AddLifestyleTile() {
       setError(null);
       const result = await uploadLifestyleImages(null, formData);
       if (!result.ok) setError(result.message);
+      else router.refresh();
       if (inputRef.current) inputRef.current.value = "";
     });
   }

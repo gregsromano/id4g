@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import AddLifestyleTile from "./AddLifestyleTile";
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
@@ -30,6 +30,25 @@ export default function LifestyleGrid({
   const [order, setOrder] = useState(images.map((img) => img.id));
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+
+  // `order` is local state so a drag can reorder without a server round trip,
+  // but that means it is seeded ONCE and would otherwise ignore every later
+  // server render — an upload would write its row and store its file while
+  // this grid kept showing the old list, which reads as "the + button did
+  // nothing". Re-seed whenever the set of ids from the server actually
+  // changes (added or removed), comparing as a set so a pure reorder the
+  // admin just made by dragging is not clobbered.
+  const serverIds = images.map((img) => img.id);
+  const serverKey = [...serverIds].sort().join(",");
+  const lastServerKey = useRef(serverKey);
+  useEffect(() => {
+    if (lastServerKey.current === serverKey) return;
+    lastServerKey.current = serverKey;
+    setOrder(serverIds);
+    // serverIds is derived from serverKey; depending on the string keeps this
+    // from firing on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverKey]);
 
   function handleDrop(targetIndex: number) {
     setOverIndex(null);
