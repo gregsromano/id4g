@@ -2,135 +2,136 @@
 
 ## Where things stand
 
-**id4g ("I'll Die For The Gospel")** is a single-product streetwear drop store — the
-BROK3N tee ($49 + $15 flat shipping, sizes S–3XL), deployed on Vercel and
-git-connected so every push to `main` auto-deploys.
+**id4g ("I'll Die For The Gospel")** is a streetwear store deployed on Vercel and
+git-connected, so **every push to `main` auto-deploys to production**. There is no
+staging gate.
 
 **Live at https://www.id4g.com** — `www` is canonical; the apex `id4g.com` 308-redirects
 to it. The original `id4g.vercel.app` still resolves as a fallback.
 
 **🔴 STRIPE IS IN LIVE MODE. The site charges real cards as of 2026-08-14.**
 
-### Done this session (2026-08-19)
+No longer a single-product store: it now runs a **real multi-product catalog** with
+Shopify-like admin management. Two products are live (`brok3n-tee`, `jesus-john-316`).
 
-**1. Fixed a critical security hole — RLS on `orders` (`227c1b8`).**
-Supabase emailed a `rls_disabled_in_public` alert. It was real and live: the anon key
-ships to the browser via `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and with RLS off, anyone with
-the project URL could read/edit/delete every order — customer emails, names, shipping
-addresses. **Confirmed the exposure before fixing** (an anon-key select returned real
-rows), then enabled RLS with **zero policies** (deny-by-default) plus `force row level
-security`. Verified after: reads return `[]`, inserts rejected `42501`, deletes affect
-0 rows. Nothing broke — both consumers (Stripe webhook, keepalive cron) use the
-service-role key, which bypasses RLS.
+### Done this session (2026-08-29)
 
-**2. Re-enabled Stripe Tax (`85e6ee1`).** State registration is now active, so restored
-what `a7369c4` had removed. The checkout route is byte-identical to `03f2aa1`, the
-version that previously worked. Verified against the live account: Tax status `active`,
-**one active registration, US/CA**. A CA address returns 423¢ tax on a 6400¢ order
-(8.625%); Texas (no registration) returns 0. Added a "Sales tax calculated at checkout"
-note to the cart, since the cart can't compute tax (needs the shipping address Stripe
-collects later) and its "Total" would otherwise understate the real charge.
+Housekeeping only — **no feature work, no schema change, no deploy.**
 
-**3. Built the admin fulfillment dashboard (`51b8c8c`) — the big one.**
-Private back office at `/admin` for a solo operator. **Deployed and verified live on
-www.id4g.com.**
+**1. Installed missing dependencies (`63961a4`).** The local checkout was 49 commits
+behind; after pulling, `npm install` had never been run against the new lockfile, so
+`node_modules/@tiptap/` did not exist at all. `tsc --noEmit` failed with 8 errors
+(three unresolvable tiptap imports + five downstream property errors in
+`RichTextEditor.tsx`). Installing fixed all eight — **no source change was needed**.
+If those errors reappear on another machine, run `npm install` before believing them.
 
-- **Auth**: single shared password, HMAC-signed session cookie via Node `crypto`.
-  **No new dependencies** anywhere in this feature. **Fails CLOSED** — if
-  `ADMIN_PASSWORD` or `ADMIN_SESSION_SECRET` is unset/short, every login is rejected.
-  This is deliberately the INVERSE of the fail-open `CRON_SECRET` check in
-  `api/keepalive` — do not "fix" it toward consistency.
-- **Two-layer boundary**: `src/proxy.ts` (Next 16 renamed `middleware`) does a
-  cookie-PRESENCE check only, per the framework docs' warning that proxy must not be
-  the authorization boundary. Real signature+expiry verification lives in
-  `src/lib/admin-dal.ts`, which every page, action, and route handler calls. Server
-  actions are reachable by direct POST regardless of which page declared them, so each
-  one calls `requireAdmin()` first.
-- **Features**: unfulfilled queue (default view), summary tiles, size breakdown for
-  pulling inventory, order detail, tracking + carrier, internal notes, mark
-  fulfilled/unfulfill, printable packing slips (light-on-white), CSV export, tracking
-  import.
-- **Pirate Ship**: researched and confirmed — **no public API exists**. Integration is
-  a CSV round-trip: export carries our order id as a **Passthrough** column, which
-  Pirate Ship returns in its own export, so tracking matches back exactly rather than
-  by fuzzy name/address join. Re-import is idempotent (ship dates are not rewritten).
-  `/admin/import` documents the click-path in-app.
-- **Route groups**: cart moved from the root layout into `(store)` so it no longer
-  renders on `/admin`. `/` and `/success` URLs unchanged.
+**2. Patched 6 high-severity advisories (same commit).** `next 16.2.10 → 16.3.3`, plus
+sharp/postcss/nanoid/js-yaml/brace-expansion transitively. `npm audit` now reports 0.
 
-**Migrations applied to production** (`20260819000002`, `20260819000003`):
-`tracking_number`, `tracking_carrier`, `fulfilled_at`, `admin_notes`, `amount_tax`,
-`amount_subtotal`, a `status` CHECK constraint, a `fulfilled_at` consistency
-constraint, and a `(status, created_at desc)` index. The webhook now records
-`amount_tax`/`amount_subtotal` going forward.
+Two Next advisories were **checked against this app rather than taken at face value**:
+the proxy/middleware auth bypass needs a single-locale i18n config (this app has no
+i18n), and the rewrites SSRF needs a custom server plus an attacker-controlled rewrite
+destination (Vercel-managed, no rewrites declared). **Neither was exploitable here.**
+The rest (Server Action DoS, image-optimizer DoS, cache confusion) do apply.
+
+`npm audit fix --force` relaxed the next pin to `^16.3.3`; it was **re-pinned to exact
+`16.3.3`** on purpose — a floating range on an auto-deploying live payment site could
+ship an unreviewed minor on any redeploy. Keep it exact.
+
+`AGENTS.md` is regenerated by `next dev` and is committed deliberately; the framework
+writes a note into the block saying so. Reverting it only re-creates the dirty file.
 
 ### How it was verified (not assumed)
 
-- **18 auth tests** against the real crypto logic: fail-closed when unconfigured,
-  forged signatures rejected, **expired-but-validly-signed tokens rejected**,
-  `timingSafeEqual` length guard doesn't throw, two logins produce different tokens.
-- **16 CSV tests**: RFC-4180 quoting, formula-injection escaping (`=+-@`), UTF-8 BOM,
-  and parsing a realistic Pirate Ship export with flexible header detection.
-- **Live production checks** on www.id4g.com: storefront 200; `/admin` redirects when
-  unauthenticated; wrong password 401; export rejected without a cookie; **correct
-  password 200 with a Secure session cookie**; dashboard renders the real open order;
-  no cart on `/admin`.
-- **Live round-trip against the real order** (then restored to its original `paid`
-  state, tracking cleared): fulfilled → tracking recorded → **re-import idempotent** →
-  both CHECK constraints reject invalid data → queue empties → storefront unaffected.
-- A **forged cookie passes the proxy but is rejected by the DAL** — confirms the
-  layering is doing what it claims.
-- `tsc --noEmit`, `eslint`, and `next build` all clean.
+- `tsc --noEmit` clean, `eslint` clean, `next build` clean **with an identical route
+  table** before and after the upgrade.
+- `npm audit`: 6 high → **0**.
+- Ran the dev server: `/`, `/about`, `/contact`, `/products/brok3n-tee` all 200;
+  `/admin` still 307-redirects unauthenticated; **a forged session cookie still passes
+  the proxy and is rejected by the DAL** — the two-layer boundary still holds under the
+  new Next version.
+- Confirmed against production Supabase that the `20260828000001_admin_users` migration
+  **is applied** and holds one account. The commit message for `febc907` says it still
+  needs running — **that is now out of date; it has been run.**
+- Confirmed the newest commit is actually deployed (the `unoptimized` paint-drip fix is
+  serving on the live `/about`).
+
+### Catalog + admin accounts (2026-08-25 → 08-28, 49 commits, not previously logged)
+
+This work landed on `main` and deployed, but no `/end` ran, so it was missing from this
+file until now. Reconstructed from commits — **treat the commit messages as the
+authority, not this summary.**
+
+- **Multi-product catalog (`cb64d49`)** — replaced the hardcoded `PRODUCT` constant with
+  `products`/`product_variants` tables (RLS forced, service-role only) plus admin CRUD at
+  `/admin/products`. `/api/checkout` now looks up variants **server-side** (still never
+  trusting client-submitted price) and stamps a point-of-sale snapshot into each Stripe
+  line item's metadata, which the webhook and `/api/order` read back. This also fixed a
+  latent bug where packing slips rendered the *current* product name instead of what was
+  actually ordered. Legacy pre-catalog orders render via a fallback in `parseItems()`.
+- **Real admin accounts (`febc907`)** — `admin_users` table, scrypt hashes, **no new
+  dependency**. `ADMIN_PASSWORD` is now only a **one-time bootstrap key**: while the
+  table is empty, the first login creates the account. It is already bootstrapped, so
+  that path is spent — logins now check the stored hash.
+- **Storefront**: `/about`, `/contact`, site header/footer, image galleries with zoom,
+  rich-text descriptions (tiptap), drag-to-reorder images.
+- **Two notable bug fixes** worth remembering: sizes silently not saving (`a7aa5c2` — the
+  picker was in a separate form from the Save button), and a duplicate size group from a
+  legacy plural `"Sizes"` option (`c1d9e15`).
 
 ### NOT done / known gaps
 
 - **No real-money order has ever been placed.** The LIVE webhook has never fired. All
-  end-to-end proof to date is sandbox. This is still the #1 unverified link.
+  end-to-end proof to date is sandbox. **Still the #1 unverified link.**
+- **`/api/admin/export` returns 500, not 401, when unauthenticated.** `requireAdmin()`
+  throws and nothing catches it. **The security property holds — no data is returned** —
+  so this is cosmetic, and it is **pre-existing** (the route is untouched since
+  `51b8c8c`), not a regression from the Next upgrade. An earlier note in this file
+  claimed a 401 here; that was wrong.
+- **An unmerged remote branch `origin/products-dashboard` (`3cfd6a6`,
+  "fixture-backed")** appears **superseded** by the real catalog in `cb64d49`. Confirm,
+  then delete it — it is a trap for a future session.
 - **Tax on historical orders is unknowable.** `amount_tax` is nullable with no default
-  *deliberately* — a `default 0` would make old rows claim "$0 tax collected" when the
-  truth is "unknown", under-reporting liability. The dashboard shows "—" and a
-  "N orders predate tax tracking" caveat. Backfilling would mean re-fetching each
-  session from Stripe by `stripe_session_id`.
-- **Only California is registered for tax.** Every other state gets $0. Correct if CA
-  is the only nexus, but if an economic-nexus threshold is crossed elsewhere, this
-  will quietly under-collect. Stripe's Tax → Monitoring page tracks it; adding a
-  registration needs no code change.
-- **Rate limiting is per-instance.** Vercel serverless instances don't share memory, so
-  spreading attempts across cold instances beats the 5-per-15-min budget. Password
-  entropy is the real defense. Upgrade path if abuse appears: move counters into
-  Postgres.
+  *deliberately* — `default 0` would make old rows claim "$0 collected" when the truth is
+  "unknown". Backfilling means re-fetching each session from Stripe.
+- **Only California is registered for tax.** Every other state gets $0. Correct if CA is
+  the only nexus; Stripe's Tax → Monitoring page tracks threshold crossings.
+- **Rate limiting is per-instance.** Vercel instances don't share memory, so spreading
+  attempts across cold instances beats the 5-per-15-min budget. Password entropy is the
+  real defense; move counters to Postgres if abuse appears.
 - **Shipping weight is an ESTIMATE** — `UNIT_WEIGHT_OZ = 6` + `PACKAGING_WEIGHT_OZ = 2`
-  in `src/lib/fulfillment.ts`. Weigh a real package and true it up; under-declaring
-  gets USPS postage-due charges.
-- **`getSupabase()` (anon client) in `src/lib/supabase.ts` is dead code.** Now that RLS
-  denies by default, any future use against `orders` returns empty rather than
-  erroring — an easy thing to lose time debugging. Delete it or add policies
-  deliberately.
-- **No batch packing-slip view.** Printing 30 slips one at a time is the real
-  bottleneck for a solo operator; `/admin/slips?ids=…` with `break-after-page` is the
-  highest-value follow-on.
+  in `src/lib/fulfillment.ts`. Weigh a real package; under-declaring gets postage-due.
+- **`getSupabase()` (anon client) in `src/lib/supabase.ts` is dead code.** With RLS
+  denying by default it now returns empty rather than erroring — easy to lose time
+  debugging. Delete it or add policies deliberately.
+- **No batch packing-slip view.** Printing 30 slips one at a time is the real bottleneck;
+  `/admin/slips?ids=…` with `break-after-page` is the highest-value follow-on.
 - Supabase still free tier; no branded confirmation email; live Stripe branding empty;
   no MX records on id4g.com.
 
 ## Next step(s)
 
-1. **Place one real order on a real card** at https://www.id4g.com, confirm the row
-   lands in `orders`, watch it appear in `/admin`, then refund it from Stripe. This is
-   the last unverified link — launch day should not be the live webhook's first firing.
-   It would also produce the first order with real `amount_tax` data.
-2. **Save the admin password in a password manager** if not already done. There is no
-   reset flow: rotating means updating `ADMIN_PASSWORD` in Vercel and redeploying.
-   Changing `ADMIN_SESSION_SECRET` instead invalidates all sessions ("log out
-   everywhere").
-3. **Consider rotating `SUPABASE_SERVICE_ROLE_KEY`** — it was read from `.env.local`
-   during verification work. Local file, likely fine; cheap insurance if it has ever
-   traveled anywhere less private.
-4. Optional: upgrade Supabase to paid; delete the dead `getSupabase()`; add the batch
-   slip view; live Stripe branding.
+1. **Place one real order on a real card** at https://www.id4g.com, confirm the row lands
+   in `orders`, watch it appear in `/admin`, then refund it from Stripe. The live webhook
+   has never fired; launch day should not be its first firing. Also produces the first
+   order with real `amount_tax`. **Needs a real card — only Greg can do this.**
+2. **Deploy the dependency patch.** `63961a4` is committed but **not yet pushed**.
+   Pushing auto-deploys to the live store, so push when there's time to watch it.
+   Everything is verified locally (build, typecheck, lint, auth boundary, 0 vulns).
+3. **Save the admin password in a password manager** if not already done. There is no
+   reset flow; rotating means updating `ADMIN_PASSWORD` in Vercel and redeploying —
+   though note it is now only the spent bootstrap key. Real logins check `admin_users`,
+   and the password is changed at `/admin/profile`. Changing `ADMIN_SESSION_SECRET`
+   invalidates all sessions ("log out everywhere").
+4. **Consider rotating `SUPABASE_SERVICE_ROLE_KEY`** — read from `.env.local` during
+   verification work. Local file, likely fine; cheap insurance.
+5. Optional: delete `origin/products-dashboard`; batch slip view; delete dead
+   `getSupabase()`; upgrade Supabase to paid; live Stripe branding.
 
 **Active plan:** `~/.claude/plans/i-want-to-build-keen-lollipop.md` — the fulfillment
 dashboard plan. **Fully implemented and deployed**; keep only as a design-rationale
-record.
+record. Note it predates the multi-product catalog, so its single-product assumptions
+no longer describe the app.
 
 ## Notes / gotchas
 
@@ -138,7 +139,7 @@ record.
   own git repo (github.com/gregsromano/id4g) and its own Vercel project
   (`greg-romano-art/id4g`, Hobby plan). The parent `.gitignore` ignores `id4g/`.
   **Commits for id4g work belong in the nested repo, not the outer one.**
-- **This is Next.js 16.2.10 — read `node_modules/next/dist/docs/` before writing code.**
+- **This is Next.js 16.3.3 — read `node_modules/next/dist/docs/` before writing code.**
   Verified this session: `middleware.ts` → **`proxy.ts`** (named `proxy` export, Node
   runtime, not configurable); `cookies()`/`params`/`searchParams` are **async-only**
   (sync access removed); cookies can only be `.set()` in route handlers or server
@@ -170,6 +171,18 @@ record.
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-08-29: Housekeeping. Ran the missing `npm install` (49 pulled commits had added
+  tiptap but node_modules was never updated, so `tsc` reported 8 phantom errors), then
+  patched 6 high-severity advisories to 0 (`next 16.2.10 -> 16.3.3` + transitives),
+  checking the two scariest Next advisories against this app's actual config rather than
+  assuming they applied — neither was exploitable here. Re-pinned next to an exact
+  version. Rewrote this file, which was 3 weeks and 49 commits stale.
+- 2026-08-25 to 08-28: **Multi-product catalog + real admin accounts** (49 commits, not
+  logged at the time). Replaced the hardcoded single product with `products`/
+  `product_variants` and admin CRUD; rebuilt checkout to resolve variants server-side
+  with a point-of-sale metadata snapshot; added `/about`, `/contact`, footer, galleries,
+  rich-text descriptions; replaced the shared admin password with an `admin_users` table
+  + `/admin/profile`.
 - 2026-08-19: **Fixed live RLS exposure on `orders`** (confirmed exploitable before
   fixing), **re-enabled Stripe Tax** now that CA registration is active, and **built +
   deployed the admin fulfillment dashboard** at `/admin` — password auth that fails
