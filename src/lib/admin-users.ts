@@ -20,6 +20,8 @@ const MIN_PASSWORD_LENGTH = 8;
 export type AdminUser = {
   id: string;
   email: string;
+  /** Public URL of the profile photo, or null when none has been uploaded. */
+  avatarUrl: string | null;
   createdAt: string;
 };
 
@@ -27,6 +29,7 @@ type AdminUserRow = {
   id: string;
   email: string;
   password_hash: string;
+  avatar_url: string | null;
   created_at: string;
 };
 
@@ -60,7 +63,12 @@ export function isValidNewPassword(password: string): boolean {
 }
 
 function toAdminUser(row: AdminUserRow): AdminUser {
-  return { id: row.id, email: row.email, createdAt: row.created_at };
+  return {
+    id: row.id,
+    email: row.email,
+    avatarUrl: row.avatar_url ?? null,
+    createdAt: row.created_at,
+  };
 }
 
 /** Used only to decide whether the login route should offer the one-time bootstrap path. */
@@ -77,7 +85,7 @@ export async function getAdminUserByEmailWithHash(
 ): Promise<(AdminUser & { passwordHash: string }) | null> {
   const { data, error } = await getSupabaseAdmin()
     .from("admin_users")
-    .select("id, email, password_hash, created_at")
+    .select("id, email, password_hash, avatar_url, created_at")
     .eq("email", email.toLowerCase())
     .maybeSingle();
   if (error) throw error;
@@ -89,7 +97,7 @@ export async function getAdminUserByEmailWithHash(
 export async function getAdminUserById(id: string): Promise<AdminUser | null> {
   const { data, error } = await getSupabaseAdmin()
     .from("admin_users")
-    .select("id, email, password_hash, created_at")
+    .select("id, email, password_hash, avatar_url, created_at")
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
@@ -100,7 +108,7 @@ export async function createAdminUser(email: string, password: string): Promise<
   const { data, error } = await getSupabaseAdmin()
     .from("admin_users")
     .insert({ email: email.toLowerCase(), password_hash: hashPassword(password) })
-    .select("id, email, password_hash, created_at")
+    .select("id, email, password_hash, avatar_url, created_at")
     .single();
   if (error) throw error;
   return toAdminUser(data as AdminUserRow);
@@ -110,6 +118,15 @@ export async function updateAdminEmail(id: string, email: string): Promise<void>
   const { error } = await getSupabaseAdmin()
     .from("admin_users")
     .update({ email: email.toLowerCase(), updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+/** Set or clear the profile photo. Passing null removes it. */
+export async function updateAdminAvatar(id: string, avatarUrl: string | null): Promise<void> {
+  const { error } = await getSupabaseAdmin()
+    .from("admin_users")
+    .update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
 }

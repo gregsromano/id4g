@@ -6,10 +6,12 @@ import { requireAdminUser } from "@/lib/admin-dal";
 import {
   getAdminUserByEmailWithHash,
   isValidNewPassword,
+  updateAdminAvatar,
   updateAdminEmail,
   updateAdminPassword,
   verifyPasswordHash,
 } from "@/lib/admin-users";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 /**
  * Profile mutations for the signed-in admin's own account.
@@ -82,4 +84,63 @@ export async function updatePasswordAction(
   await updateAdminPassword(user.id, newPassword);
   revalidatePath("/admin/profile");
   return { ok: true };
+}
+
+const MAX_AVATAR_BYTES = 4 * 1024 * 1024;
+const ALLOWED_AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+/**
+ * Upload a new profile photo.
+ *
+ * Unlike the email/password actions this does NOT re-ask for the current
+ * password: a photo is cosmetic and reversible, so the session cookie is
+ * proportionate here, whereas changing the credentials themselves is what an
+ * attacker on an unlocked machine would actually want.
+ *
+ * The old file is deliberately left in Storage — same reasoning as the
+ * lifestyle images: it is cheap, and a stale URL may still sit in a cached
+ * page. The row always points at the current one.
+ */
+export async function uploadAvatarAction(
+  _prev: ProfileActionResult | null,
+  formData: FormData,
+): Promise<ProfileActionResult> {
+  const user = await requireAdminUser();
+
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose an image file." };
+  }
+  if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
+    return { error: "Only PNG, JPEG, or WEBP images are allowed." };
+  }
+  if (file.size > MAX_AVATAR_BYTES) {
+    return { error: "Image is larger than 4MB." };
+  }
+
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+  const path = `avatars/${user.id}/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await getSupabaseAdmin()
+    .storage.from("images")
+    .upload(path, file, { contentType: file.type });
+
+  if (error) {
+    console.error("[profile] avatar upload failed", { message: error.message });
+    return { error: "Upload failed. Try again." };
+  }
+
+  const { data } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
+  await updateAdminAvatar(user.id, data.publicUrl);
+
+  // The photo renders in the admin header, which is part of every admin page,
+  // so revalidate the layout's routes rather than just this one.
+  revalidatePath("/admin", "layout");
+  return { ok: true };
+}
+
+export async function removeAvatarAction(): Promise<void> {
+  const user = await requireAdminUser();
+  await updateAdminAvatar(user.id, null);
+  revalidatePath("/admin", "layout");
 }

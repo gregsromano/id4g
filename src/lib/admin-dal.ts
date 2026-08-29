@@ -52,6 +52,22 @@ export const requireAdminUser = cache(async (): Promise<AdminUser> => {
   return user;
 });
 
+/**
+ * The signed-in account, or null — never redirects.
+ *
+ * For chrome that renders on BOTH signed-in pages and the login page (the
+ * admin header), where `requireAdminUser`'s redirect would bounce the login
+ * page to itself. Callers must treat null as "show the logged-out state",
+ * never as an authorization result: this is for display only, and every page
+ * and action still gates on requireAdmin/requireAdminUser.
+ */
+export const getAdminUserOrNull = cache(async (): Promise<AdminUser | null> => {
+  const token = (await cookies()).get(ADMIN_COOKIE)?.value;
+  const result = verifySessionToken(token);
+  if (!result.valid) return null;
+  return await getAdminUserById(result.sub);
+});
+
 /** Non-redirecting variant, for the login page (which must render logged out). */
 export const isAdminAuthenticated = cache(async (): Promise<boolean> => {
   const token = (await cookies()).get(ADMIN_COOKIE)?.value;
