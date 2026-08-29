@@ -116,6 +116,27 @@ export async function saveLifestyleGallery(formData: FormData): Promise<void> {
 }
 
 /**
+ * Persist ONLY the display order, for the reorder controls to call
+ * immediately after a move.
+ *
+ * Deliberately does not touch alt text, even though saveLifestyleGallery
+ * writes both: a reorder is one unambiguous action the admin just took, while
+ * the alt fields may hold half-typed captions. Auto-committing those on an
+ * arrow tap would save work the admin had not finished. Alt text stays on the
+ * explicit Save button.
+ */
+export async function reorderLifestyleAction(orderedIds: string[]): Promise<void> {
+  await requireAdmin();
+
+  for (const id of orderedIds) {
+    if (!UUID_RE.test(id)) throw new Error("Invalid lifestyle image id");
+  }
+
+  await reorderLifestyleImages(orderedIds);
+  revalidateLifestyle();
+}
+
+/**
  * Remove one image.
  *
  * The id arrives as a BOUND argument, not a form field: React replaces a

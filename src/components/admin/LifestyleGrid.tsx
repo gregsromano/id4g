@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import AddLifestyleTile from "./AddLifestyleTile";
 import MoveButtons from "./MoveButtons";
@@ -23,14 +23,31 @@ type Item = { id: string; url: string; alt: string };
 export default function LifestyleGrid({
   images,
   removeAction,
+  reorderAction,
 }: {
   images: Item[];
   removeAction: (id: string, formData: FormData) => void | Promise<void>;
+  reorderAction: (orderedIds: string[]) => Promise<void>;
 }) {
   const byId = new Map(images.map((img) => [img.id, img]));
   const [order, setOrder] = useState(images.map((img) => img.id));
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
+  const [isSaving, startSaving] = useTransition();
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  /**
+   * Persist a new order as soon as it is made, so a move is never silently
+   * lost by navigating away. Only the ORDER is written — alt text stays on
+   * the Save button, since those fields may hold half-typed captions that
+   * an arrow tap should not commit.
+   */
+  function persist(nextOrder: string[]) {
+    startSaving(async () => {
+      await reorderAction(nextOrder);
+      setSavedAt(Date.now());
+    });
+  }
 
   // `order` is local state so a drag can reorder without a server round trip,
   // but that means it is seeded ONCE and would otherwise ignore every later
@@ -53,12 +70,11 @@ export default function LifestyleGrid({
 
   function move(from: number, to: number) {
     if (to < 0 || to >= order.length) return;
-    setOrder((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(from, 1);
-      next.splice(to, 0, moved);
-      return next;
-    });
+    const next = [...order];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setOrder(next);
+    persist(next);
   }
 
   function handleDrop(targetIndex: number) {
@@ -67,12 +83,11 @@ export default function LifestyleGrid({
       setDragIndex(null);
       return;
     }
-    setOrder((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(dragIndex, 1);
-      next.splice(targetIndex, 0, moved);
-      return next;
-    });
+    const next = [...order];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(targetIndex, 0, moved);
+    setOrder(next);
+    persist(next);
     setDragIndex(null);
   }
 
@@ -81,8 +96,13 @@ export default function LifestyleGrid({
       {order.length > 1 && (
         <p className="mb-2 text-xs text-[var(--text-muted)]">
           <span className="hidden sm:inline">Drag to reorder.</span>
-          <span className="sm:hidden">Use the arrows to reorder.</span> The first
-          image is the large one in each row of the storefront mosaic.
+          <span className="sm:hidden">Use the arrows to reorder.</span> Order
+          saves on its own. The first image is the large one in each row of the
+          storefront mosaic.
+          {isSaving && <span className="ml-2 text-[var(--text-body)]">Saving order…</span>}
+          {!isSaving && savedAt !== null && (
+            <span className="ml-2 text-[var(--accent)]">Order saved.</span>
+          )}
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">

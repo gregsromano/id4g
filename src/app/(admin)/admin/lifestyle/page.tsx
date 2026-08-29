@@ -4,7 +4,11 @@ import UnsavedChangesForm from "@/components/admin/UnsavedChangesForm";
 import { listLifestyleImages } from "@/lib/lifestyle";
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
 
-import { removeLifestyleImageAction, saveLifestyleGallery } from "./actions";
+import {
+  removeLifestyleImageAction,
+  reorderLifestyleAction,
+  saveLifestyleGallery,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +51,8 @@ export default async function AdminLifestylePage() {
       <UnsavedChangesForm action={saveLifestyleGallery} className="mt-8 block">
         <div className="mb-4 flex items-center justify-between gap-4">
           <span className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
-            {images.length} image{images.length === 1 ? "" : "s"}
+            {images.length} image{images.length === 1 ? "" : "s"} · Save applies
+            caption edits
           </span>
           <SaveButton />
         </div>
@@ -55,6 +60,7 @@ export default async function AdminLifestylePage() {
         <LifestyleGrid
           images={images.map((img) => ({ id: img.id, url: img.url, alt: img.alt }))}
           removeAction={removeLifestyleImageAction}
+          reorderAction={reorderLifestyleAction}
         />
       </UnsavedChangesForm>
     </div>
