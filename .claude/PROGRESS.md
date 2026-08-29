@@ -101,8 +101,10 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
    both from Stripe. The live webhook has never fired once; launch day should not be its
    first firing. **Needs a real card — only Greg can do this.**
 2. **Click through `/admin/lifestyle` and `/admin/products` on a phone.** The mobile
-   work was verified in an emulator, not on a real device, and Greg's real-device use
-   has already caught three bugs an emulator did not.
+   work was verified in a mobile-emulating browser, never on real hardware. (Note: the
+   three bugs Greg found were NOT device-specific — all three reproduced at desktop
+   width once located. The gap was browser-vs-database verification, not
+   emulator-vs-device.)
 3. Optional: delete `origin/products-dashboard`; batch slip view; rotate
    `SUPABASE_SERVICE_ROLE_KEY`; delete dead `getSupabase()`.
 
