@@ -85,7 +85,9 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
   is cosmetic and pre-existing.
 - **Admin UI on production was never driven by Claude** — the live session secret
   differs from local, so all admin verification was done locally against the real
-  database. Greg's click-throughs are the only production UI coverage.
+  database. Greg's click-throughs are the only production UI coverage. **He confirmed
+  on 2026-08-29 that everything looks to be working**, including on a phone, after the
+  three bugs below were fixed.
 - Unmerged `origin/products-dashboard` (`3cfd6a6`) looks superseded by `cb64d49`.
 - Tax: only California is registered; every other state gets $0. Historical `amount_tax`
   is null (unknown, deliberately not 0).
@@ -95,17 +97,28 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 
 ## Next step(s)
 
-1. **Place one real order on a real card** at https://www.id4g.com — ideally **one of
-   each**: a shipped order and a local pickup. Confirm both rows land in `orders` with
-   the right `delivery_method`, that pickup shows its badge in `/admin`, then refund
-   both from Stripe. The live webhook has never fired once; launch day should not be its
-   first firing. **Needs a real card — only Greg can do this.**
-2. **Click through `/admin/lifestyle` and `/admin/products` on a phone.** The mobile
-   work was verified in a mobile-emulating browser, never on real hardware. (Note: the
-   three bugs Greg found were NOT device-specific — all three reproduced at desktop
-   width once located. The gap was browser-vs-database verification, not
-   emulator-vs-device.)
-3. Optional: delete `origin/products-dashboard`; batch slip view; rotate
+1. **WAITING ON A REAL ORDER.** As of 2026-08-29 Greg is waiting for a friend to place a
+   genuine order rather than testing it himself — a better test, since a fresh buyer
+   exercises the whole flow. **Nothing to build; this is the open item.**
+
+   When it lands, verify:
+   - The row appears in `orders` at all — that alone proves the live webhook fired for
+     the first time ever.
+   - `delivery_method` matches what they picked (shipping / pickup), and a pickup shows
+     its badge in the `/admin` queue.
+   - `amount_tax` — the first real tax data. CA buyer should see tax; outside CA is $0
+     and correct, since CA is the only registration.
+
+   Baseline at the end of this session: **`orders` was empty (0 rows)**, so anything
+   appearing is definitively that test. If it does NOT appear within a couple of
+   minutes, the money still reached Stripe — the handler fails loudly (500 + retry) by
+   design, so Stripe will retry; trace it by the payment id rather than assuming it was
+   lost.
+
+   Decide before refunding whether it is a real sale (fulfill it) or a favour (refund
+   from Stripe's Payments page).
+
+2. Optional: delete `origin/products-dashboard`; batch slip view; rotate
    `SUPABASE_SERVICE_ROLE_KEY`; delete dead `getSupabase()`.
 
 **Active plan:** none in progress. `~/.claude/plans/i-want-to-build-keen-lollipop.md` is
@@ -165,10 +178,19 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   INACTIVE and has no keepalive.
 - **DNS: id4g.com is registered at GoDaddy**, not Vercel DNS. The local resolver cache
   lies — verify with `dig +short @ns39.domaincontrol.com id4g.com`.
+- **Verified 2026-08-29 against the live Stripe API**: the LIVE webhook endpoint is
+  `enabled`, pointed at `https://www.id4g.com/api/webhooks/stripe`, subscribed to
+  `checkout.session.completed`, and the key in `.env.local` is `sk_live_`. So if a real
+  order does NOT record, the endpoint config is not the cause — look at the handler or
+  the Supabase insert.
 - Stripe webhooks: LIVE `we_1U4SQlQzBlVRwUbhVr44MJKp` → `https://www.id4g.com/api/webhooks/stripe`.
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-08-29 (later): Session wrap-up. Greg confirmed the site and admin are working,
+  phone included. Verified the LIVE Stripe webhook endpoint is enabled and correctly
+  subscribed, and that `orders` is empty — a clean baseline for the pending first real
+  order, which he is waiting on a friend to place.
 - 2026-08-29: **Large session, 27 commits.** Fixed a broken checkout (missing deps) and
   patched 6 advisories to 0. Built the admin-managed lifestyle gallery (upload,
   drag-reorder, alt text, pagination, lightbox, auto-save order). Added admin profile
