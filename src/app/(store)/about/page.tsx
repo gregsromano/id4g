@@ -14,7 +14,7 @@ export default function AboutPage() {
       <section className="bg-black">
         {/* Opening: headline + the origin line as a pull quote */}
         <div className="relative overflow-hidden">
-          {/* Paint splatter texture — matches the homepage hero */}
+          {/* Paint splatter texture — top-right only on this page */}
           <Image
             src="/paint-drip.png"
             alt=""
@@ -24,16 +24,6 @@ export default function AboutPage() {
             unoptimized
             className="pointer-events-none absolute right-0 top-0 z-0 w-[240px] opacity-90 mix-blend-screen sm:w-[340px] lg:w-[420px]"
           />
-          <Image
-            src="/paint-drip.png"
-            alt=""
-            width={291}
-            height={168}
-            aria-hidden
-            unoptimized
-            className="pointer-events-none absolute bottom-0 left-0 z-0 hidden w-[220px] rotate-180 opacity-60 mix-blend-screen sm:block sm:w-[300px]"
-          />
-
           <div className="relative z-10 mx-auto grid max-w-6xl gap-10 px-6 pt-16 sm:pt-24 lg:grid-cols-[1fr_1.25fr] lg:items-start lg:gap-16">
             <div>
               <span className="section-label mb-4 !text-base sm:!text-lg">
