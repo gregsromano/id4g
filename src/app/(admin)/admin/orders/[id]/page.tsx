@@ -61,7 +61,12 @@ export default async function AdminOrderDetailPage({
       </div>
 
       <div className="mt-8 grid gap-px bg-[var(--border)] md:grid-cols-2">
-        <Panel title="Ship to">
+        <Panel title={order.deliveryMethod === "pickup" ? "Local pickup" : "Ship to"}>
+          {order.deliveryMethod === "pickup" && (
+            <p className="mb-3 border border-[var(--accent)] px-3 py-2 text-xs uppercase tracking-widest text-[var(--accent)]">
+              Customer collects in person — no label needed
+            </p>
+          )}
           {addressLines.length > 0 ? (
             <address className="not-italic text-sm leading-relaxed text-[var(--text-body)]">
               {order.shippingName && (
@@ -73,7 +78,9 @@ export default async function AdminOrderDetailPage({
             </address>
           ) : (
             <p className="text-sm text-red-400">
-              No shipping address on this order — it cannot be exported to Pirate Ship.
+              {order.deliveryMethod === "pickup"
+                ? "No address on this order."
+                : "No shipping address on this order — it cannot be exported to Pirate Ship."}
             </p>
           )}
           <p className="mt-3 text-xs text-[var(--text-muted)]">

@@ -35,6 +35,7 @@ const ORDER_COLUMNS = [
   "customer_name",
   "shipping_name",
   "shipping_address",
+  "delivery_method",
   "amount_total",
   "amount_tax",
   "amount_subtotal",
@@ -56,6 +57,7 @@ type OrderRow = {
   customer_name: string | null;
   shipping_name: string | null;
   shipping_address: ShippingAddress | null;
+  delivery_method: string | null;
   amount_total: number | null;
   amount_tax: number | null;
   amount_subtotal: number | null;
@@ -79,6 +81,7 @@ function toAdminOrder(row: OrderRow): AdminOrder {
     customerName: row.customer_name,
     shippingName: row.shipping_name,
     shippingAddress: row.shipping_address,
+    deliveryMethod: row.delivery_method,
     amountTotal: row.amount_total,
     amountTax: row.amount_tax,
     amountSubtotal: row.amount_subtotal,

@@ -204,6 +204,12 @@ export type AdminOrder = {
   customerName: string | null;
   shippingName: string | null;
   shippingAddress: ShippingAddress | null;
+  /**
+   * "shipping" | "pickup", or null on orders placed before local pickup
+   * existed — not a default of "shipping", since that would state as fact
+   * something the row never recorded.
+   */
+  deliveryMethod: string | null;
   amountTotal: number | null;
   /** Null on orders recorded before tax was stored separately — not zero. */
   amountTax: number | null;

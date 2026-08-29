@@ -124,21 +124,6 @@ export async function POST(req: NextRequest) {
   // One flat shipping charge for the order, sized to whichever distinct
   // product costs the most to ship — same simplification as the cart preview.
   const shippingCents = Math.max(...normalized.map((line) => line.shippingCents));
-  line_items.push({
-    price_data: {
-      currency,
-      unit_amount: shippingCents,
-      tax_behavior: "exclusive" as const,
-      product_data: {
-        name: "Shipping",
-        description: undefined,
-        // Shipping tax category.
-        tax_code: "txcd_92010001",
-        metadata: { kind: "shipping" },
-      },
-    },
-    quantity: 1,
-  });
 
   // Compact summary stored on the session for a quick read on the success
   // page before the webhook's authoritative expand-based reconstruction.
@@ -151,6 +136,35 @@ export async function POST(req: NextRequest) {
     // Stripe Tax computes sales tax from the shipping address, and only
     // charges in states where you've added a tax registration.
     automatic_tax: { enabled: true },
+    // Shipping is a choice, not a fixed charge: some buyers collect in
+    // person. Stripe renders these as radio buttons and records which one
+    // was picked on the session, so the fulfillment queue can tell a pickup
+    // from a shipment without a separate field.
+    shipping_options: [
+      {
+        shipping_rate_data: {
+          type: "fixed_amount" as const,
+          fixed_amount: { amount: shippingCents, currency },
+          display_name: "Standard shipping",
+          tax_behavior: "exclusive" as const,
+          // Shipping tax category.
+          tax_code: "txcd_92010001",
+        },
+      },
+      {
+        shipping_rate_data: {
+          type: "fixed_amount" as const,
+          fixed_amount: { amount: 0, currency },
+          display_name: "Local pickup — free",
+          tax_behavior: "exclusive" as const,
+          tax_code: "txcd_92010001",
+        },
+      },
+    ],
+    // Still collected even for pickup: Stripe Tax computes sales tax from
+    // this address, so dropping it on pickup orders would silently
+    // under-collect CA tax. It doubles as contact detail for arranging the
+    // handover.
     shipping_address_collection: {
       allowed_countries: ["US"],
     },

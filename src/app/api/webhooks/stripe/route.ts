@@ -63,8 +63,25 @@ export async function POST(req: NextRequest) {
     const shipping = session.collected_information?.shipping_details;
 
     const expanded = await getStripe().checkout.sessions.retrieve(session.id, {
-      expand: ["line_items.data.price.product"],
+      expand: ["line_items.data.price.product", "shipping_cost.shipping_rate"],
     });
+
+    /**
+     * Which delivery option the customer picked.
+     *
+     * Read from the chosen shipping rate's display_name rather than from a
+     * $0 amount: comping shipping on a normal order would otherwise look
+     * identical to a pickup. Falls back to "shipping" when the rate is
+     * missing, which is the safe default — it keeps the order in the
+     * shipping queue rather than silently dropping it from the list of
+     * things to post.
+     */
+    const shippingRate = expanded.shipping_cost?.shipping_rate;
+    const rateName =
+      typeof shippingRate === "string" ? undefined : shippingRate?.display_name;
+    const deliveryMethod = rateName?.toLowerCase().includes("pickup")
+      ? "pickup"
+      : "shipping";
     const items = itemsFromLineItems(expanded.line_items?.data ?? []);
 
     // The customer has already paid at this point. If we cannot record the
@@ -86,6 +103,7 @@ export async function POST(req: NextRequest) {
       items_summary: session.metadata?.items_summary,
       shipping_name: shipping?.name,
       shipping_address: shipping?.address,
+      delivery_method: deliveryMethod,
       status: "paid",
     });
 

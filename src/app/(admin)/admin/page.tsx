@@ -184,6 +184,14 @@ export default async function AdminOrdersPage({
                     <span className="text-xs text-[var(--text-muted)]">
                       {order.customerEmail ?? "—"}
                     </span>
+                    {/* A pickup needs no label and no postage, so it has to be
+                        obvious in the queue rather than only on the detail
+                        page. Shipments are the norm and stay unlabelled. */}
+                    {order.deliveryMethod === "pickup" && (
+                      <span className="mt-1 block w-fit border border-[var(--accent)] px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--accent)]">
+                        Local pickup
+                      </span>
+                    )}
                     <div className="mt-1">
                       <RemoveOrderButton
                         id={order.id}
