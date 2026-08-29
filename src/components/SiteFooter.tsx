@@ -15,7 +15,7 @@ export default function SiteFooter() {
             alt="ID4G — I'll Die For The Gospel"
             width={653}
             height={633}
-            className="h-9 w-9"
+            className="h-18 w-18"
           />
           <span className="text-sm font-bold uppercase tracking-widest text-[var(--text-body)]">
             I&rsquo;ll Die For The Gospel
