@@ -2,138 +2,134 @@
 
 ## Where things stand
 
-**id4g ("I'll Die For The Gospel")** is a streetwear store deployed on Vercel and
-git-connected, so **every push to `main` auto-deploys to production**. There is no
-staging gate.
+**id4g ("I'll Die For The Gospel")** is a multi-product streetwear store deployed on
+Vercel and git-connected, so **every push to `main` auto-deploys to production**. There
+is no staging gate.
 
-**Live at https://www.id4g.com** — `www` is canonical; the apex `id4g.com` 308-redirects
-to it. The original `id4g.vercel.app` still resolves as a fallback.
+**Live at https://www.id4g.com** — `www` is canonical; the apex 308-redirects to it.
 
 **🔴 STRIPE IS IN LIVE MODE. The site charges real cards as of 2026-08-14.**
 
-No longer a single-product store: it now runs a **real multi-product catalog** with
-Shopify-like admin management. Two products are live (`brok3n-tee`, `jesus-john-316`).
+Two products live (`brok3n-tee`, `jesus-john-316`). Admin back office at `/admin`:
+orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile.
 
-### Done this session (2026-08-29)
+### Done this session (2026-08-29) — 27 commits
 
-Housekeeping only — **no feature work, no schema change, no deploy.**
+**1. Housekeeping first (`63961a4`, `da8dffa`).** The checkout was 49 commits behind;
+after pulling, `npm install` had never been run against the new lockfile, so
+`node_modules/@tiptap/` did not exist and `tsc` reported 8 phantom errors. Installing
+fixed all eight with **no source change**. Then patched 6 high-severity advisories to
+**0** (`next 16.2.10 → 16.3.3` + transitives), after checking the two scariest Next
+advisories against this app's actual config — the proxy auth bypass needs single-locale
+i18n (none here) and the rewrites SSRF needs a custom server (Vercel-managed, no
+rewrites), so **neither was exploitable**. Re-pinned next to an exact version.
 
-**1. Installed missing dependencies (`63961a4`).** The local checkout was 49 commits
-behind; after pulling, `npm install` had never been run against the new lockfile, so
-`node_modules/@tiptap/` did not exist at all. `tsc --noEmit` failed with 8 errors
-(three unresolvable tiptap imports + five downstream property errors in
-`RichTextEditor.tsx`). Installing fixed all eight — **no source change was needed**.
-If those errors reappear on another machine, run `npm install` before believing them.
+**2. Lifestyle gallery is now admin-managed (`5a64298` + follow-ups).** Was five
+hardcoded `<Image>` tags. Now a `lifestyle_images` table with upload / drag-reorder /
+alt text / remove at `/admin/lifestyle`. The storefront keeps the original hand-tuned
+mosaic, now data-driven, **repeating every 5 images** with Prev/"N of M"/Next controls
+that appear only above 5. Click-to-enlarge lightbox with arrow navigation across the
+whole gallery. Reordering **auto-saves**; captions stay on the Save button.
 
-**2. Patched 6 high-severity advisories (same commit).** `next 16.2.10 → 16.3.3`, plus
-sharp/postcss/nanoid/js-yaml/brace-expansion transitively. `npm audit` now reports 0.
+**3. Admin profile photos + mobile overhaul (`7ca444a`, `6d1dd2e`, `9d0c1cf`).**
+Circular avatar (`admin_users.avatar_url`), Live-site button, larger nav. Then a mobile
+audit found four real problems, all fixed: the nav wrapped to five lines (~200px → 69px,
+now a hamburger), the products table ran off-screen (now stacked cards), **reordering
+did nothing at all on touch** (HTML5 drag events never fire on phones — added
+up/down arrows), and 20px tap targets (now 44px). Admin images go one per row on phones.
 
-Two Next advisories were **checked against this app rather than taken at face value**:
-the proxy/middleware auth bypass needs a single-locale i18n config (this app has no
-i18n), and the rewrites SSRF needs a custom server plus an attacker-controlled rewrite
-destination (Vercel-managed, no rewrites declared). **Neither was exploitable here.**
-The rest (Server Action DoS, image-optimizer DoS, cache confusion) do apply.
+**4. Local pickup at checkout (`165efb2`) — newest, least exercised.** Shipping was a
+fixed line item on every order; it is now a Stripe `shipping_options` choice —
+"Standard shipping" vs "Local pickup — free". **The address is still collected on
+pickup orders on purpose**: Stripe Tax computes sales tax FROM that address, so
+skipping it would silently under-collect CA tax. New `orders.delivery_method` column;
+the webhook derives it from the **chosen rate's display_name, not a $0 amount**, because
+comping shipping on a normal order would otherwise look identical to a pickup.
 
-`npm audit fix --force` relaxed the next pin to `^16.3.3`; it was **re-pinned to exact
-`16.3.3`** on purpose — a floating range on an auto-deploying live payment site could
-ship an unreviewed minor on any redeploy. Keep it exact.
+**5. Storefront polish.** Logo 40px → 104px (2.6x). About/Contact moved to pure `#000`
+to match the homepage, and the paint-drip now fades via a radial mask — the PNG is a
+rectangular photo with a dark background baked in, not a cutout, so `mix-blend-screen`
+was showing its box edge. "About Greg" → "About Greg Romano" everywhere. Footer nav now
+mirrors the header from one shared `src/lib/nav-links.ts`. Footer height 202px → 102px,
+fonts 14px → 12px. Mobile hero shirt 342x354 → 390x473, full-bleed.
 
-`AGENTS.md` is regenerated by `next dev` and is committed deliberately; the framework
-writes a note into the block saying so. Reverting it only re-creates the dirty file.
+### Three bugs Greg found by clicking that testing missed
 
-### How it was verified (not assumed)
+All three had a **correct data layer** and a broken browser experience, which is exactly
+what DB-level verification cannot see. Worth remembering when verifying admin work.
 
-- `tsc --noEmit` clean, `eslint` clean, `next build` clean **with an identical route
-  table** before and after the upgrade.
-- `npm audit`: 6 high → **0**.
-- Ran the dev server: `/`, `/about`, `/contact`, `/products/brok3n-tee` all 200;
-  `/admin` still 307-redirects unauthenticated; **a forged session cookie still passes
-  the proxy and is rejected by the DAL** — the two-layer boundary still holds under the
-  new Next version.
-- Confirmed against production Supabase that the `20260828000001_admin_users` migration
-  **is applied** and holds one account. The commit message for `febc907` says it still
-  needs running — **that is now out of date; it has been run.**
-- Confirmed the newest commit is actually deployed (the `unoptimized` paint-drip fix is
-  serving on the live `/about`).
-
-### Catalog + admin accounts (2026-08-25 → 08-28, 49 commits, not previously logged)
-
-This work landed on `main` and deployed, but no `/end` ran, so it was missing from this
-file until now. Reconstructed from commits — **treat the commit messages as the
-authority, not this summary.**
-
-- **Multi-product catalog (`cb64d49`)** — replaced the hardcoded `PRODUCT` constant with
-  `products`/`product_variants` tables (RLS forced, service-role only) plus admin CRUD at
-  `/admin/products`. `/api/checkout` now looks up variants **server-side** (still never
-  trusting client-submitted price) and stamps a point-of-sale snapshot into each Stripe
-  line item's metadata, which the webhook and `/api/order` read back. This also fixed a
-  latent bug where packing slips rendered the *current* product name instead of what was
-  actually ordered. Legacy pre-catalog orders render via a fallback in `parseItems()`.
-- **Real admin accounts (`febc907`)** — `admin_users` table, scrypt hashes, **no new
-  dependency**. `ADMIN_PASSWORD` is now only a **one-time bootstrap key**: while the
-  table is empty, the first login creates the account. It is already bootstrapped, so
-  that path is spent — logins now check the stored hash.
-- **Storefront**: `/about`, `/contact`, site header/footer, image galleries with zoom,
-  rich-text descriptions (tiptap), drag-to-reorder images.
-- **Two notable bug fixes** worth remembering: sizes silently not saving (`a7aa5c2` — the
-  picker was in a separate form from the Save button), and a duplicate size group from a
-  legacy plural `"Sizes"` option (`c1d9e15`).
+- **Uploads appeared to do nothing** (`a04eae1`). They were writing rows and storing
+  files the whole time; the grid never re-rendered. Two causes: the tile calls the
+  action directly (so `revalidatePath` does not re-render), and `LifestyleGrid` seeded
+  its order from props with `useState`, which reads them once. Greg ended up with a
+  duplicate upload from clicking twice.
+- **Remove crashed with a server error** (`4959360`). **React REPLACES a submit button's
+  `name` with its own `$ACTION_ID_…` when the button carries a `formAction` server
+  action**, so `name`/`value` never reaches the server. Fixed by binding the id into the
+  action. The product image grid had the identical bug in Remove and Set-as-cover.
+- **Lightbox X would not close** (`f93bb4d`). A regression from `cf26f9b`: removing the
+  image container's max-width let it span under the X, and the container stops click
+  propagation. Also fixed the gallery page resetting to 1 on reload (now `?lookbook=N`).
 
 ### NOT done / known gaps
 
-- **No real-money order has ever been placed.** The LIVE webhook has never fired. All
-  end-to-end proof to date is sandbox. **Still the #1 unverified link.**
+- **No real-money order has ever been placed.** The LIVE webhook has never fired. Now
+  **more** important than before: checkout has TWO paths (ship / pickup) and neither has
+  run with a real card. Still the #1 unverified link.
+- **The pickup flow is untested end to end.** Verified against the live Stripe API that
+  a session carries both rates ($15.00 / $0.00, correct tax codes) — that test session
+  was expired so it could not be paid — but no order has actually been placed through
+  either path, so `delivery_method` has never been written by a real webhook.
 - **`/api/admin/export` returns 500, not 401, when unauthenticated.** `requireAdmin()`
-  throws and nothing catches it. **The security property holds — no data is returned** —
-  so this is cosmetic, and it is **pre-existing** (the route is untouched since
-  `51b8c8c`), not a regression from the Next upgrade. An earlier note in this file
-  claimed a 401 here; that was wrong.
-- **An unmerged remote branch `origin/products-dashboard` (`3cfd6a6`,
-  "fixture-backed")** appears **superseded** by the real catalog in `cb64d49`. Confirm,
-  then delete it — it is a trap for a future session.
-- **Tax on historical orders is unknowable.** `amount_tax` is nullable with no default
-  *deliberately* — `default 0` would make old rows claim "$0 collected" when the truth is
-  "unknown". Backfilling means re-fetching each session from Stripe.
-- **Only California is registered for tax.** Every other state gets $0. Correct if CA is
-  the only nexus; Stripe's Tax → Monitoring page tracks threshold crossings.
-- **Rate limiting is per-instance.** Vercel instances don't share memory, so spreading
-  attempts across cold instances beats the 5-per-15-min budget. Password entropy is the
-  real defense; move counters to Postgres if abuse appears.
-- **Shipping weight is an ESTIMATE** — `UNIT_WEIGHT_OZ = 6` + `PACKAGING_WEIGHT_OZ = 2`
-  in `src/lib/fulfillment.ts`. Weigh a real package; under-declaring gets postage-due.
-- **`getSupabase()` (anon client) in `src/lib/supabase.ts` is dead code.** With RLS
-  denying by default it now returns empty rather than erroring — easy to lose time
-  debugging. Delete it or add policies deliberately.
-- **No batch packing-slip view.** Printing 30 slips one at a time is the real bottleneck;
-  `/admin/slips?ids=…` with `break-after-page` is the highest-value follow-on.
-- Supabase still free tier; no branded confirmation email; live Stripe branding empty;
-  no MX records on id4g.com.
+  throws, nothing catches it. No data is returned, so the security property holds; this
+  is cosmetic and pre-existing.
+- **Admin UI on production was never driven by Claude** — the live session secret
+  differs from local, so all admin verification was done locally against the real
+  database. Greg's click-throughs are the only production UI coverage.
+- Unmerged `origin/products-dashboard` (`3cfd6a6`) looks superseded by `cb64d49`.
+- Tax: only California is registered; every other state gets $0. Historical `amount_tax`
+  is null (unknown, deliberately not 0).
+- Rate limiting is per-instance; shipping weight is an estimate (`UNIT_WEIGHT_OZ = 6`);
+  `getSupabase()` in `src/lib/supabase.ts` is dead code; no batch packing-slip view.
+- Supabase still free tier; no branded confirmation email; live Stripe branding empty.
 
 ## Next step(s)
 
-1. **Place one real order on a real card** at https://www.id4g.com, confirm the row lands
-   in `orders`, watch it appear in `/admin`, then refund it from Stripe. The live webhook
-   has never fired; launch day should not be its first firing. Also produces the first
-   order with real `amount_tax`. **Needs a real card — only Greg can do this.**
-2. **Deploy the dependency patch.** `63961a4` is committed but **not yet pushed**.
-   Pushing auto-deploys to the live store, so push when there's time to watch it.
-   Everything is verified locally (build, typecheck, lint, auth boundary, 0 vulns).
-3. **Save the admin password in a password manager** if not already done. There is no
-   reset flow; rotating means updating `ADMIN_PASSWORD` in Vercel and redeploying —
-   though note it is now only the spent bootstrap key. Real logins check `admin_users`,
-   and the password is changed at `/admin/profile`. Changing `ADMIN_SESSION_SECRET`
-   invalidates all sessions ("log out everywhere").
-4. **Consider rotating `SUPABASE_SERVICE_ROLE_KEY`** — read from `.env.local` during
-   verification work. Local file, likely fine; cheap insurance.
-5. Optional: delete `origin/products-dashboard`; batch slip view; delete dead
-   `getSupabase()`; upgrade Supabase to paid; live Stripe branding.
+1. **Place one real order on a real card** at https://www.id4g.com — ideally **one of
+   each**: a shipped order and a local pickup. Confirm both rows land in `orders` with
+   the right `delivery_method`, that pickup shows its badge in `/admin`, then refund
+   both from Stripe. The live webhook has never fired once; launch day should not be its
+   first firing. **Needs a real card — only Greg can do this.**
+2. **Click through `/admin/lifestyle` and `/admin/products` on a phone.** The mobile
+   work was verified in an emulator, not on a real device, and Greg's real-device use
+   has already caught three bugs an emulator did not.
+3. Optional: delete `origin/products-dashboard`; batch slip view; rotate
+   `SUPABASE_SERVICE_ROLE_KEY`; delete dead `getSupabase()`.
 
-**Active plan:** `~/.claude/plans/i-want-to-build-keen-lollipop.md` — the fulfillment
-dashboard plan. **Fully implemented and deployed**; keep only as a design-rationale
-record. Note it predates the multi-product catalog, so its single-product assumptions
-no longer describe the app.
+**Active plan:** none in progress. `~/.claude/plans/i-want-to-build-keen-lollipop.md` is
+the fulfillment-dashboard design record — fully implemented, and it predates the
+multi-product catalog, so its single-product assumptions no longer describe the app.
 
 ## Notes / gotchas
+
+- **React clobbers a submit button's `name` when it has a `formAction` server action** —
+  it becomes `$ACTION_ID_…`, so `name`/`value` never reach the server. Bind the value
+  into the action instead (`action.bind(null, id)`). This cost a live crash once.
+- **`revalidatePath` does not re-render for a DIRECT action call**, only for a form
+  submission. A tile that calls an action as a plain async function needs
+  `router.refresh()` too — and any child holding list state in `useState` must re-seed
+  from props, or the fresh data is discarded anyway.
+- **Verify admin work in a BROWSER, not just against the database.** All three bugs
+  found this session had a perfectly correct data layer.
+- **Wait for a Vercel deploy to settle before testing it.** Checking too soon returned
+  the previous build three separate times this session and looked like a failed change
+  each time. `vercel ls` age of ~1m+ is a reasonable gate; a cache-buster alone does not
+  help while the rollout is still in progress.
+- **`db push` was NOT safe on this project until 2026-08-29.** Nine migrations were
+  applied outside the CLI and unrecorded; a plain push would have re-run them, and
+  `20260826000001` ends in an unconditional backfill that rewrites `products.position`
+  from `created_at` — which would have silently swapped the homepage product order.
+  Repaired with `migration repair --status applied`. History is correct now.
 
 - id4g lives INSIDE the gregromanoart repo folder (`~/Desktop/CLAUDE/id4g`) but is its
   own git repo (github.com/gregsromano/id4g) and its own Vercel project
@@ -171,6 +167,17 @@ no longer describe the app.
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-08-29: **Large session, 27 commits.** Fixed a broken checkout (missing deps) and
+  patched 6 advisories to 0. Built the admin-managed lifestyle gallery (upload,
+  drag-reorder, alt text, pagination, lightbox, auto-save order). Added admin profile
+  photos and made the whole admin usable on a phone (hamburger nav, product cards,
+  touch reordering — drag had never worked on touch at all). Added **free local pickup**
+  as a checkout option alongside shipping, with a new `delivery_method` column. Storefront
+  polish: bigger logo, pure-black About/Contact with a masked paint-drip, matched
+  header/footer nav, tighter footer, bigger mobile hero. **Fixed three bugs Greg found by
+  clicking** — silent uploads, Remove crashing, and the lightbox X not closing (the last
+  a regression from earlier the same day). Repaired the migration history, which had
+  made `db push` unsafe.
 - 2026-08-29: Housekeeping. Ran the missing `npm install` (49 pulled commits had added
   tiptap but node_modules was never updated, so `tsc` reported 8 phantom errors), then
   patched 6 high-severity advisories to 0 (`next 16.2.10 -> 16.3.3` + transitives),
