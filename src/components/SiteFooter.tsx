@@ -8,7 +8,7 @@ export default function SiteFooter() {
 
   return (
     <footer className="border-t border-[var(--border)] bg-[var(--bg-primary)]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-7 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Image
             src="/idfg-logo.webp"
@@ -47,7 +47,7 @@ export default function SiteFooter() {
       </div>
 
       <div className="border-t border-[var(--border)]">
-        <p className="mx-auto max-w-6xl px-6 py-4 text-sm uppercase tracking-wider text-[var(--accent)]">
+        <p className="mx-auto max-w-6xl px-6 py-3 text-sm uppercase tracking-wider text-[var(--accent)]">
           &copy; {year} I&rsquo;ll Die For The Gospel. All rights reserved.
         </p>
       </div>
