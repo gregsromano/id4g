@@ -33,7 +33,7 @@ export default function SiteFooter() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+                className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
               >
                 {link.label}
               </a>
@@ -41,7 +41,7 @@ export default function SiteFooter() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+                className="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
               >
                 {link.label}
               </Link>
@@ -51,7 +51,7 @@ export default function SiteFooter() {
       </div>
 
       <div className="border-t border-[var(--border)]">
-        <p className="mx-auto max-w-6xl px-6 py-3 text-sm uppercase tracking-wider text-[var(--accent)]">
+        <p className="mx-auto max-w-6xl px-6 py-3 text-xs uppercase tracking-wider text-[var(--accent)]">
           &copy; {year} I&rsquo;ll Die For The Gospel. All rights reserved.
         </p>
       </div>
