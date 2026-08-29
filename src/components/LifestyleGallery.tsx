@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
@@ -29,7 +30,32 @@ const SLOTS = [
 ];
 
 export default function LifestyleGallery({ images }: { images: Item[] }) {
-  const [page, setPage] = useState(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  /**
+   * The visible page lives in the URL (?lookbook=2) rather than in component
+   * state, so a refresh, a shared link, or the browser's back button all land
+   * on the page the viewer was actually looking at. Plain state reset to
+   * page 1 on every reload.
+   */
+  const pageParam = Number(searchParams.get("lookbook"));
+  const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
+
+  const setPage = useCallback(
+    (next: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (next <= 1) params.delete("lookbook");
+      else params.set("lookbook", String(next));
+      const qs = params.toString();
+      // scroll: false keeps the viewer where they are — the gallery is far
+      // down the homepage, and jumping to the top on every page change would
+      // be worse than the problem being fixed.
+      router.replace(`${pathname}${qs ? `?${qs}` : ""}#lookbook`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
   // Index into `images` (not into the current page) of the photo open in the
   // lightbox, or null when closed — so arrow navigation can walk the whole
   // gallery rather than stopping at a page boundary.
@@ -51,7 +77,7 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
       // being viewed, so closing it leaves you where you ended up.
       setPage(Math.floor(next / LIFESTYLE_PAGE_SIZE) + 1);
     },
-    [images.length],
+    [images.length, setPage],
   );
 
   useEffect(() => {
@@ -154,7 +180,7 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
             type="button"
             aria-label="Close"
             onClick={() => setLightbox(null)}
-            className="absolute right-6 top-6 text-3xl leading-none text-white/80 transition-colors hover:text-white"
+            className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center text-3xl leading-none text-white/80 transition-colors hover:text-white sm:right-6 sm:top-6"
           >
             &times;
           </button>
@@ -168,7 +194,7 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
                   e.stopPropagation();
                   show((lightbox as number) - 1);
                 }}
-                className="absolute left-4 z-10 flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 transition-colors hover:text-white sm:left-8"
+                className="absolute left-4 z-20 flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 transition-colors hover:text-white sm:left-8"
               >
                 <span aria-hidden="true">‹</span>
               </button>
@@ -179,7 +205,7 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
                   e.stopPropagation();
                   show((lightbox as number) + 1);
                 }}
-                className="absolute right-4 z-10 flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 transition-colors hover:text-white sm:right-8"
+                className="absolute right-4 z-20 flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 transition-colors hover:text-white sm:right-8"
               >
                 <span aria-hidden="true">›</span>
               </button>
@@ -188,7 +214,7 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
 
           <div
             onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-full w-full flex-col items-center justify-center gap-3"
+            className="relative flex max-h-full w-full max-w-[calc(100%-6rem)] flex-col items-center justify-center gap-3"
           >
             <Image
               src={open.url}
