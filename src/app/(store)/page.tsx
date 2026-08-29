@@ -60,7 +60,7 @@ export default async function Home() {
           }}
         />
 
-        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-16 pt-16 sm:min-h-[80vh] sm:flex sm:items-center sm:py-24">
+        <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pb-8 pt-6 sm:min-h-[80vh] sm:flex sm:items-center sm:py-24">
           <div className="max-w-xl">
             <span className="section-label mb-4">Greg Romano Presents</span>
             <h1 className="mb-6 text-6xl sm:text-7xl lg:text-8xl">
@@ -70,7 +70,7 @@ export default async function Home() {
                 Psalm 34:18
               </span>
             </h1>
-            <p className="lead mb-10 max-w-md">
+            <p className="lead mb-6 max-w-md">
               &ldquo;The LORD is close to the brokenhearted and saves those
               who are crushed in spirit.&rdquo; Psalm 34:18
             </p>
@@ -78,7 +78,7 @@ export default async function Home() {
             {/* Mobile: shirts above the CTA; desktop keeps CTA in place */}
             <div className="flex flex-col">
               {/* Mobile: shirt photo below the copy */}
-              <div className="relative order-1 mb-10 h-[42vh] w-full sm:hidden">
+              <div className="relative order-1 -mx-6 mb-6 h-[56vh] w-[calc(100%+3rem)] sm:hidden">
                 <Image
                   src="/shirt-front-back.png"
                   alt=""
@@ -88,7 +88,7 @@ export default async function Home() {
                 />
               </div>
 
-              <div className="order-2 flex flex-wrap items-center gap-4">
+              <div className="order-2 -mt-4 flex flex-wrap items-center gap-4 sm:mt-0">
                 <a href="#shop" className="btn-primary">
                   Shop the Drop
                 </a>
