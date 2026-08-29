@@ -66,7 +66,7 @@ export default function ImageReorderGrid({
           <span className="sm:hidden">Use the arrows to reorder.</span>
         </p>
       )}
-      <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         {order.map((url, index) => {
           const image = byUrl.get(url);
           if (!image) return null;
