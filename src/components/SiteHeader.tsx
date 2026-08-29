@@ -33,7 +33,7 @@ export default function SiteHeader() {
             alt="ID4G — I'll Die For The Gospel"
             width={653}
             height={633}
-            className="h-20 w-20"
+            className="h-26 w-26"
           />
         </Link>
 
