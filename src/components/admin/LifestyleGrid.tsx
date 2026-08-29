@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import AddLifestyleTile from "./AddLifestyleTile";
+import MoveButtons from "./MoveButtons";
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
 
 type Item = { id: string; url: string; alt: string };
@@ -50,6 +51,16 @@ export default function LifestyleGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverKey]);
 
+  function move(from: number, to: number) {
+    if (to < 0 || to >= order.length) return;
+    setOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
   function handleDrop(targetIndex: number) {
     setOverIndex(null);
     if (dragIndex === null || dragIndex === targetIndex) {
@@ -69,8 +80,9 @@ export default function LifestyleGrid({
     <div>
       {order.length > 1 && (
         <p className="mb-2 text-xs text-[var(--text-muted)]">
-          Drag to reorder. The first image is the large one in each row of the
-          storefront mosaic.
+          <span className="hidden sm:inline">Drag to reorder.</span>
+          <span className="sm:hidden">Use the arrows to reorder.</span> The first
+          image is the large one in each row of the storefront mosaic.
         </p>
       )}
       <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
@@ -119,6 +131,12 @@ export default function LifestyleGrid({
                   </span>
                 )}
               </div>
+              <MoveButtons
+                index={index}
+                total={order.length}
+                onMove={(to) => move(index, to)}
+                className="mt-2"
+              />
               <input type="hidden" name="image_id" value={id} />
               <input
                 name="image_alt"

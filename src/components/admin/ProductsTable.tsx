@@ -6,11 +6,13 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { reorderProductsAction } from "@/app/(admin)/admin/products/actions";
 import { formatPrice } from "@/lib/product";
+import MoveButtons from "./MoveButtons";
 import type { AdminProductSummary, ProductFilter } from "@/lib/products";
 
 /**
- * Drag-and-drop reordering (native HTML5 DnD — desktop only, no touch
- * support) replacing the old up/down buttons. Dragging only reorders local
+ * Drag-and-drop reordering (native HTML5 DnD — desktop only, phones do not
+ * fire these events, which is why each row also carries MoveButtons below
+ * `sm`) replacing the old up/down buttons. Dragging only reorders local
  * state — nothing is persisted until "Save order" is clicked, same pattern
  * as the product edit page (edit, then an explicit Save), rather than firing
  * a server action on every drop with no visible confirmation it worked.
@@ -39,6 +41,17 @@ export default function ProductsTable({
     }
     wasPending.current = isPending;
   }, [isPending]);
+
+  function move(from: number, to: number) {
+    if (to < 0 || to >= products.length) return;
+    setProducts((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    setJustSaved(false);
+  }
 
   function handleDrop(targetIndex: number) {
     setOverIndex(null);
@@ -70,7 +83,12 @@ export default function ProductsTable({
     <div>
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <p className="text-xs text-[var(--text-muted)]">
-          {products.length > 1 ? "Drag a row to reorder, then save." : ""}
+          {products.length > 1 ? (
+            <>
+              <span className="hidden sm:inline">Drag a row to reorder, then save.</span>
+              <span className="sm:hidden">Use the arrows to reorder, then save.</span>
+            </>
+          ) : null}
         </p>
         <div className="flex items-center gap-3">
           {(dirty || justSaved) && (
@@ -94,7 +112,7 @@ export default function ProductsTable({
           No products in this view.
         </p>
       ) : (
-      <div className="mt-4 overflow-x-auto">
+      <div className="mt-4 hidden overflow-x-auto sm:block">
         <table className="w-full min-w-2xl border-collapse text-left">
           <thead>
             <tr className="bg-[var(--bg-section-alt)]">
@@ -179,6 +197,55 @@ export default function ProductsTable({
           </tbody>
         </table>
       </div>
+      )}
+
+      {/* Phones: the table's seven columns ran off the screen edge with
+          price, status and actions unreachable, so each product becomes a
+          stacked card instead. Same data, same order, same Save button. */}
+      {products.length > 0 && (
+        <ul className="mt-4 sm:hidden">
+          {products.map((product, index) => {
+            const cover = [...product.images].sort((a, b) => a.position - b.position)[0];
+            return (
+              <li key={product.id} className="border-b border-[var(--border)] py-4">
+                <div className="flex gap-4">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
+                    {cover ? (
+                      <Image src={cover.url} alt={cover.alt} fill className="object-cover" />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={`/admin/products/${product.id}`}
+                      className="block text-sm text-[var(--text-primary)]"
+                    >
+                      {product.name}
+                    </Link>
+                    <span className="mt-0.5 block text-xs text-[var(--text-muted)]">
+                      /{product.slug}
+                    </span>
+                    <p className="mt-2 text-sm text-[var(--text-body)]">
+                      {product.minPriceCents === product.maxPriceCents
+                        ? formatPrice(product.minPriceCents)
+                        : `${formatPrice(product.minPriceCents)} – ${formatPrice(product.maxPriceCents)}`}
+                    </p>
+                    <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                      {product.status} · {product.variantCount} variant
+                      {product.variantCount === 1 ? "" : "s"}
+                      {product.category ? ` · ${product.category}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <MoveButtons
+                  index={index}
+                  total={products.length}
+                  onMove={(to) => move(index, to)}
+                  className="mt-3"
+                />
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );

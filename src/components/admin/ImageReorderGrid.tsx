@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import AddImageTile from "./AddImageTile";
+import MoveButtons from "./MoveButtons";
 
 type ImageItem = { url: string; alt: string };
 
@@ -32,6 +33,16 @@ export default function ImageReorderGrid({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
+  function move(from: number, to: number) {
+    if (to < 0 || to >= order.length) return;
+    setOrder((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
   function handleDrop(targetIndex: number) {
     setOverIndex(null);
     if (dragIndex === null || dragIndex === targetIndex) {
@@ -50,7 +61,10 @@ export default function ImageReorderGrid({
   return (
     <div>
       {order.length > 1 && (
-        <p className="mb-2 text-xs text-[var(--text-muted)]">Drag to reorder.</p>
+        <p className="mb-2 text-xs text-[var(--text-muted)]">
+          <span className="hidden sm:inline">Drag to reorder.</span>
+          <span className="sm:hidden">Use the arrows to reorder.</span>
+        </p>
       )}
       <div className="grid grid-cols-3 gap-4 sm:grid-cols-4">
         {order.map((url, index) => {
@@ -91,6 +105,12 @@ export default function ImageReorderGrid({
                   </span>
                 )}
               </div>
+              <MoveButtons
+                index={index}
+                total={order.length}
+                onMove={(to) => move(index, to)}
+                className="mt-2"
+              />
               <input type="hidden" name="image_url" value={url} />
               <input
                 name="image_alt"
