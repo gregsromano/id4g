@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
 
@@ -30,6 +30,10 @@ const SLOTS = [
 
 export default function LifestyleGallery({ images }: { images: Item[] }) {
   const [page, setPage] = useState(1);
+  // Index into `images` (not into the current page) of the photo open in the
+  // lightbox, or null when closed — so arrow navigation can walk the whole
+  // gallery rather than stopping at a page boundary.
+  const [lightbox, setLightbox] = useState<number | null>(null);
 
   const pageCount = Math.max(1, Math.ceil(images.length / LIFESTYLE_PAGE_SIZE));
   // Guard against a stale page if the list ever shrinks under a live update.
@@ -37,7 +41,34 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
   const start = (current - 1) * LIFESTYLE_PAGE_SIZE;
   const visible = images.slice(start, start + LIFESTYLE_PAGE_SIZE);
 
+  const show = useCallback(
+    (index: number) => {
+      if (images.length === 0) return;
+      // Wrap around at both ends so the arrows never dead-end.
+      const next = (index + images.length) % images.length;
+      setLightbox(next);
+      // Keep the mosaic behind the lightbox on the page that holds the photo
+      // being viewed, so closing it leaves you where you ended up.
+      setPage(Math.floor(next / LIFESTYLE_PAGE_SIZE) + 1);
+    },
+    [images.length],
+  );
+
+  useEffect(() => {
+    if (lightbox === null) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setLightbox(null);
+      if (e.key === "ArrowRight") show((lightbox as number) + 1);
+      if (e.key === "ArrowLeft") show((lightbox as number) - 1);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [lightbox, show]);
+
   if (images.length === 0) return null;
+
+  const open = lightbox === null ? null : images[lightbox];
 
   return (
     <>
@@ -56,6 +87,20 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
                 height={slot.height}
                 className={`h-full w-full object-cover ${slot.objectPosition} transition-transform duration-700 group-hover:scale-105`}
               />
+
+              {/* Same affordance as the shop grid: a "+" that fades in on
+                  hover and opens the photo full-size. */}
+              <button
+                type="button"
+                aria-label={`View larger image${image.alt ? `: ${image.alt}` : ""}`}
+                onClick={() => show(start + index)}
+                className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center border border-[var(--border)] bg-[var(--bg-primary)]/80 text-[var(--text-primary)] opacity-0 transition-opacity duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:opacity-100 group-hover:opacity-100"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <line x1="8" y1="1" x2="8" y2="15" stroke="currentColor" strokeWidth="2" />
+                  <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </button>
             </figure>
           );
         })}
@@ -95,6 +140,70 @@ export default function LifestyleGallery({ images }: { images: Item[] }) {
             Next <span aria-hidden="true">›</span>
           </button>
         </nav>
+      )}
+
+      {open && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Lifestyle photo"
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
+        >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => setLightbox(null)}
+            className="absolute right-6 top-6 text-3xl leading-none text-white/80 transition-colors hover:text-white"
+          >
+            &times;
+          </button>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous photo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  show((lightbox as number) - 1);
+                }}
+                className="absolute left-4 z-10 flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 transition-colors hover:text-white sm:left-8"
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
+              <button
+                type="button"
+                aria-label="Next photo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  show((lightbox as number) + 1);
+                }}
+                className="absolute right-4 z-10 flex h-12 w-12 items-center justify-center text-3xl leading-none text-white/70 transition-colors hover:text-white sm:right-8"
+              >
+                <span aria-hidden="true">›</span>
+              </button>
+            </>
+          )}
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex h-full max-h-[85vh] w-full max-w-4xl flex-col items-center justify-center"
+          >
+            <Image
+              src={open.url}
+              alt={open.alt}
+              width={1400}
+              height={1400}
+              className="max-h-full w-auto max-w-full object-contain"
+            />
+            {open.alt && (
+              <p className="mt-4 text-center text-xs uppercase tracking-widest text-white/60">
+                {open.alt}
+              </p>
+            )}
+          </div>
+        </div>
       )}
     </>
   );
