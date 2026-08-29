@@ -33,7 +33,7 @@ export default function SiteFooter() {
             href="/about"
             className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
           >
-            About Greg
+            About Greg Romano
           </Link>
           <a
             href={CONTACT_URL}

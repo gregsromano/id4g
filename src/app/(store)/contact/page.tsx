@@ -35,7 +35,7 @@ export default function ContactPage() {
   }
 
   return (
-    <main className="relative flex-1 overflow-hidden bg-[var(--bg-primary)]">
+    <main className="relative flex-1 overflow-hidden bg-black">
       {/* Paint splatter texture — matches the homepage hero */}
       <Image
         src="/paint-drip.png"

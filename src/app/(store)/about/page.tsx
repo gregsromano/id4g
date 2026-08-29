@@ -2,16 +2,16 @@ import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About Greg — I'll Die For The Gospel",
+  title: "About Greg Romano — I'll Die For The Gospel",
   description:
     "The story behind I'll Die for the Gospel — Greg Romano's faith, art, and streetwear brand.",
 };
 
 export default function AboutPage() {
   return (
-    <main className="flex-1 bg-[var(--bg-primary)]">
+    <main className="flex-1 bg-black">
       {/* The story behind the shirt */}
-      <section style={{ background: "var(--bg-section-alt)" }}>
+      <section className="bg-black">
         {/* Opening: headline + the origin line as a pull quote */}
         <div className="relative overflow-hidden">
           {/* Paint splatter texture — matches the homepage hero */}
