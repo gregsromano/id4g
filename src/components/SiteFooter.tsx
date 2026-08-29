@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-const CONTACT_URL = "https://instagram.com/id4gospel";
+import { NAV_LINKS } from "@/lib/nav-links";
 
 export default function SiteFooter() {
   const year = new Date().getFullYear();
@@ -22,27 +22,31 @@ export default function SiteFooter() {
           </span>
         </div>
 
+        {/* Mirrors the header nav exactly — same labels, same order, same
+            destinations — so the two never drift apart. "Custom Orders" and
+            the old footer-only "Instagram" link were already the same URL. */}
         <nav className="flex flex-wrap gap-x-8 gap-y-3">
-          <Link
-            href="/#shop"
-            className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-          >
-            Shop
-          </Link>
-          <Link
-            href="/about"
-            className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-          >
-            About Greg Romano
-          </Link>
-          <a
-            href={CONTACT_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
-          >
-            Instagram
-          </a>
+          {NAV_LINKS.map((link) =>
+            link.external ? (
+              <a
+                key={link.label}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+              >
+                {link.label}
+              </Link>
+            ),
+          )}
         </nav>
       </div>
 

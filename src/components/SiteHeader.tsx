@@ -5,21 +5,14 @@ import Link from "next/link";
 import { useState } from "react";
 
 import CartButton from "./CartButton";
+import { NAV_LINKS } from "@/lib/nav-links";
 
 /**
  * No dedicated Custom Orders page/flow exists yet, so it routes to the one
  * real, already-used channel (see success page's social links) rather than
  * a dead link or a fabricated email address.
  */
-const CONTACT_URL = "https://instagram.com/id4gospel";
 
-const NAV_LINKS: { label: string; href: string; external?: boolean }[] = [
-  { label: "Home", href: "/" },
-  { label: "Drops", href: "/#shop" },
-  { label: "Custom Orders", href: CONTACT_URL, external: true },
-  { label: "About Greg Romano", href: "/about" },
-  { label: "Contact", href: "/contact" },
-];
 
 export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
