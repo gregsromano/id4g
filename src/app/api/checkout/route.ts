@@ -136,6 +136,15 @@ export async function POST(req: NextRequest) {
     // Stripe Tax computes sales tax from the shipping address, and only
     // charges in states where you've added a tax registration.
     automatic_tax: { enabled: true },
+    // Renders Stripe's "Add promotion code" box. Validation, redemption
+    // limits and the active/inactive state are all enforced by Stripe at
+    // redemption, so no code here needs to know which codes exist — and
+    // Stripe Tax recomputes tax on the DISCOUNTED subtotal, which is the part
+    // a hand-applied discount would silently get wrong.
+    //
+    // Mutually exclusive with the `discounts` param: passing both is an API
+    // error, so a code can never be force-applied here as well.
+    allow_promotion_codes: true,
     // Shipping is a choice, not a fixed charge: some buyers collect in
     // person. Stripe renders these as radio buttons and records which one
     // was picked on the session, so the fulfillment queue can tell a pickup

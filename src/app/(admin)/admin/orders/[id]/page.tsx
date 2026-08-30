@@ -109,6 +109,22 @@ export default async function AdminOrderDetailPage({
           </ul>
           <div className="mt-4 border-t border-[var(--border)] pt-3 text-sm">
             <Row label="Subtotal" value={order.amountSubtotal} />
+            {/* Only when something actually came off. Every undiscounted
+                order records a real 0, so showing the row unconditionally
+                would put a "-$0.00" on almost every order. */}
+            {order.amountDiscount !== null && order.amountDiscount > 0 && (
+              <div className="flex justify-between py-1 text-[var(--text-body)]">
+                <span>
+                  Discount
+                  {order.discountCode ? (
+                    <span className="ml-2 text-xs uppercase tracking-widest text-[var(--accent)]">
+                      {order.discountCode}
+                    </span>
+                  ) : null}
+                </span>
+                <span>-{formatPrice(order.amountDiscount)}</span>
+              </div>
+            )}
             <Row label="Tax" value={order.amountTax} />
             <div className="mt-2 flex justify-between border-t border-[var(--border)] pt-2 font-bold text-[var(--text-primary)]">
               <span>Total</span>

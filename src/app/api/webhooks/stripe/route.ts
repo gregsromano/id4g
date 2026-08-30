@@ -63,7 +63,16 @@ export async function POST(req: NextRequest) {
     const shipping = session.collected_information?.shipping_details;
 
     const expanded = await getStripe().checkout.sessions.retrieve(session.id, {
-      expand: ["line_items.data.price.product", "shipping_cost.shipping_rate"],
+      expand: [
+        "line_items.data.price.product",
+        "shipping_cost.shipping_rate",
+        // Four levels is Stripe's hard maximum for `expand`; asking for
+        // ...discount.promotion_code is five and fails the whole request with
+        // a 400, which would break EVERY order, not just discounted ones.
+        // So the promotion code arrives here as a bare id and is resolved
+        // with a second call below, only when there actually is one.
+        "total_details.breakdown.discounts.discount",
+      ],
     });
 
     /**
@@ -84,6 +93,40 @@ export async function POST(req: NextRequest) {
       : "shipping";
     const items = itemsFromLineItems(expanded.line_items?.data ?? []);
 
+    /**
+     * Which promotion code the customer redeemed, if any.
+     *
+     * Checkout allows exactly one promotion code per session, so reading the
+     * first entry is not a simplification that loses information. The code
+     * string is only present when the discount came from a promotion code —
+     * a coupon applied directly in the Stripe dashboard leaves it null, which
+     * is why the amount is recorded separately rather than inferred from
+     * whether a code exists.
+     */
+    const promotionCodeRef =
+      expanded.total_details?.breakdown?.discounts?.[0]?.discount?.promotion_code;
+
+    let discountCode: string | null = null;
+    if (promotionCodeRef) {
+      try {
+        const promotionCode =
+          typeof promotionCodeRef === "string"
+            ? await getStripe().promotionCodes.retrieve(promotionCodeRef)
+            : promotionCodeRef;
+        discountCode = promotionCode.code;
+      } catch (error) {
+        // The code is reporting metadata, not something the order depends on.
+        // Losing it must never cost us the order record itself, so this
+        // degrades to null rather than throwing into the 500 path below —
+        // amount_discount still records what came off.
+        console.error("[stripe-webhook] could not resolve promotion code", {
+          stripe_session_id: session.id,
+          promotion_code: promotionCodeRef,
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     // The customer has already paid at this point. If we cannot record the
     // order we must NOT return 2xx: Stripe treats that as delivered and never
     // retries, leaving a paid order with nothing to ship against. Returning
@@ -99,6 +142,12 @@ export async function POST(req: NextRequest) {
       // collected for a filing can't be derived from our own data.
       amount_tax: session.total_details?.amount_tax,
       amount_subtotal: session.amount_subtotal,
+      // Zero, not null, when no code was used: Stripe reports an explicit 0
+      // on an undiscounted session, so this genuinely records "no discount"
+      // rather than "never captured". Null is reserved for orders that
+      // predate the column.
+      amount_discount: session.total_details?.amount_discount ?? 0,
+      discount_code: discountCode,
       items,
       items_summary: session.metadata?.items_summary,
       shipping_name: shipping?.name,

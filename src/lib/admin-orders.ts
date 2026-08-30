@@ -39,6 +39,8 @@ const ORDER_COLUMNS = [
   "amount_total",
   "amount_tax",
   "amount_subtotal",
+  "amount_discount",
+  "discount_code",
   "status",
   "size",
   "items",
@@ -61,6 +63,8 @@ type OrderRow = {
   amount_total: number | null;
   amount_tax: number | null;
   amount_subtotal: number | null;
+  amount_discount: number | null;
+  discount_code: string | null;
   status: string;
   size: string | null;
   items: unknown;
@@ -85,6 +89,8 @@ function toAdminOrder(row: OrderRow): AdminOrder {
     amountTotal: row.amount_total,
     amountTax: row.amount_tax,
     amountSubtotal: row.amount_subtotal,
+    amountDiscount: row.amount_discount,
+    discountCode: row.discount_code,
     status: isOrderStatus(row.status) ? row.status : "paid",
     items,
     itemsSummary: row.items_summary ?? itemsSummaryFrom(items),

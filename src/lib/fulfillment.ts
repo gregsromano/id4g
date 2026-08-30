@@ -214,6 +214,18 @@ export type AdminOrder = {
   /** Null on orders recorded before tax was stored separately — not zero. */
   amountTax: number | null;
   amountSubtotal: number | null;
+  /**
+   * What came off the order via a promotion code, in cents. Null only on
+   * orders placed before discount codes existed; 0 means a real order with
+   * no code applied.
+   */
+  amountDiscount: number | null;
+  /**
+   * The code redeemed, e.g. "LAUNCH20". Null when no code was used — or when
+   * the discount came from a coupon applied directly in the Stripe dashboard,
+   * which carries no customer-facing code.
+   */
+  discountCode: string | null;
   status: OrderStatus;
   items: OrderItem[];
   itemsSummary: string;

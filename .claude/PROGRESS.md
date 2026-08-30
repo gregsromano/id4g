@@ -13,7 +13,42 @@ is no staging gate.
 Two products live (`brok3n-tee`, `jesus-john-316`). Admin back office at `/admin`:
 orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile.
 
-### Done this session (2026-08-29) — 27 commits
+### Done this session (2026-08-30)
+
+**Discount codes, admin-managed and backed by Stripe.** New `/admin/discounts`
+creates percent-off codes; checkout now shows Stripe's "Add promotion code" box
+(`allow_promotion_codes: true`), and orders record `amount_discount` +
+`discount_code`.
+
+**Stripe is deliberately the source of truth, not a `discount_codes` table.**
+Redemption, expiry and usage caps are enforced by the same system that takes the
+money, so there is no second copy of that state to drift — and Stripe Tax
+recomputes tax on the DISCOUNTED subtotal automatically, which is the part a
+hand-applied discount silently gets wrong (it would under-collect CA tax on
+every discounted order). A code is a Coupon (the percent) + a Promotion Code
+(the customer-facing string); the admin presents the pair as one row.
+
+**The `expand` depth bug this caught — worth remembering.** The webhook first
+asked for `total_details.breakdown.discounts.discount.promotion_code`. That is
+FIVE levels and **Stripe caps expand at four**, so the call 400s — which would
+have broken the order insert for EVERY order, discounted or not, not just the
+discount feature. At four levels `promotion_code` comes back as a bare id
+string, so the code is now resolved with a second `promotionCodes.retrieve`,
+wrapped in try/catch: losing the code label must never cost us the order row.
+
+**Admin nav breakpoint moved `sm` -> `xl`.** Six links plus the wordmark, Live
+site, avatar and Log out need ~1112px, so the bar scrolled horizontally below
+that. Measured 390-1440px: `xl` is the first width where the full row fits.
+This also **fixed a pre-existing overflow at 900px** that five links already had.
+
+Verified in a real browser (create, deactivate/reactivate, duplicate rejection,
+bad-percent rejection, 44px mobile tap targets, no h-scroll at 7 widths), and
+end to end against the LIVE Stripe API: a code created through the admin UI
+applies at checkout and the webhook extracts the right code and amount, with
+the arithmetic reconciling. All test coupons/codes were deleted afterwards —
+**Stripe has 0 coupons and 0 active codes**, and `orders` is still empty.
+
+### Done 2026-08-29 — 27 commits
 
 **1. Housekeeping first (`63961a4`, `da8dffa`).** The checkout was 49 commits behind;
 after pulling, `npm install` had never been run against the new lockfile, so
@@ -97,7 +132,9 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 
 ## Next step(s)
 
-1. **WAITING ON A REAL ORDER.** As of 2026-08-29 Greg is waiting for a friend to place a
+1. **WAITING ON A REAL ORDER.** Now also the first test of a discounted
+   checkout — if the buyer uses a code, check `amount_discount` and
+   `discount_code` on the row alongside the checks below. As of 2026-08-29 Greg is waiting for a friend to place a
    genuine order rather than testing it himself — a better test, since a fresh buyer
    exercises the whole flow. **Nothing to build; this is the open item.**
 
@@ -127,6 +164,18 @@ multi-product catalog, so its single-product assumptions no longer describe the 
 
 ## Notes / gotchas
 
+- **Stripe caps `expand` at FOUR levels.** A five-level path 400s the whole
+  request, so one greedy expand in the webhook breaks the order insert for
+  every order, not just the case you added it for. On a checkout session
+  `total_details.breakdown.discounts.discount` is the deepest legal path;
+  `.promotion_code` under it is one too many and must be a second retrieve.
+- **Discount codes live in Stripe, not in our database** (`src/lib/discounts.ts`).
+  A local `discount_codes` table would be a second copy of redemption state that
+  can only drift, and applying a percentage ourselves before handing Stripe a
+  price would under-collect CA tax, since Stripe Tax computes on the discounted
+  subtotal. Admin CRUD calls the Stripe API; nothing about codes is stored here.
+  Deactivate rather than delete a code — redeemed codes are referenced by those
+  orders.
 - **React clobbers a submit button's `name` when it has a `formAction` server action** —
   it becomes `$ACTION_ID_…`, so `name`/`value` never reach the server. Bind the value
   into the action instead (`action.bind(null, id)`). This cost a live crash once.
@@ -187,6 +236,12 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-08-30: Added **admin-managed discount codes** (`/admin/discounts`,
+  percent-off), backed by Stripe rather than a local table so redemption and
+  tax-on-discounted-subtotal stay Stripe's job. Caught before shipping: the
+  webhook's 5-level `expand` exceeded Stripe's 4-level cap and would have 400'd
+  the order insert for every order. Moved the admin nav to a hamburger below
+  `xl`, fixing a pre-existing 900px overflow too.
 - 2026-08-29 (later): Session wrap-up. Greg confirmed the site and admin are working,
   phone included. Verified the LIVE Stripe webhook endpoint is enabled and correctly
   subscribed, and that `orders` is empty — a clean baseline for the pending first real

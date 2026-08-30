@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/admin", label: "Orders" },
   { href: "/admin/products", label: "Products" },
   { href: "/admin/lifestyle", label: "Lifestyle" },
+  { href: "/admin/discounts", label: "Discounts" },
   { href: "/admin/import", label: "Import tracking" },
   { href: "/admin/profile", label: "Profile" },
 ];
@@ -17,14 +18,20 @@ const LINKS = [
 /**
  * Admin header.
  *
- * On phones the five links wrapped to five lines and ate ~200px before any
- * content, on every page. Below `sm` they collapse behind a menu button; the
+ * On phones the links wrapped to one line each and ate ~200px before any
+ * content, on every page. Below `xl` they collapse behind a menu button; the
  * profile photo and Log out stay on the bar, since those are the two things
  * worth reaching without opening anything.
  *
+ * The breakpoint is `xl` (1280px), not `sm`: six links plus the wordmark,
+ * Live site, avatar and Log out need ~1112px of bar, so anything narrower
+ * scrolled horizontally rather than wrapping. It already overflowed at 900px
+ * with five links; adding Discounts pushed that to 1024. Measured across
+ * 390–1440px, `xl` is the first breakpoint where the full row genuinely fits.
+ *
  * Tap targets are min-h-11 (44px) on mobile — the links were 20px tall, well
  * under the usual touch guideline — and relax back to the tighter desktop
- * sizing at `sm`, where they are mouse targets rather than thumb targets.
+ * sizing at `xl`, where they are mouse targets rather than thumb targets.
  */
 export default function AdminNav({
   email,
@@ -59,7 +66,7 @@ export default function AdminNav({
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center border border-[var(--border)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] sm:hidden"
+            className="flex h-11 w-11 shrink-0 items-center justify-center border border-[var(--border)] text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] xl:hidden"
           >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
               {menuOpen ? (
@@ -70,16 +77,16 @@ export default function AdminNav({
             </svg>
           </button>
 
-          <span className="text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">
-            ID4G <span className="hidden sm:inline">Fulfillment</span>
+          <span className="whitespace-nowrap text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">
+            ID4G <span className="hidden xl:inline">Fulfillment</span>
           </span>
 
-          <nav className="hidden items-center gap-8 sm:flex">
+          <nav className="hidden items-center gap-6 xl:flex xl:gap-8">
             {LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm uppercase tracking-widest transition-colors ${
+                className={`whitespace-nowrap text-sm uppercase tracking-widest transition-colors ${
                   isActive(link.href)
                     ? "text-[var(--text-primary)]"
                     : "text-[var(--text-muted)] hover:text-[var(--accent)]"
@@ -99,7 +106,7 @@ export default function AdminNav({
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden items-center gap-2 border border-[var(--border)] px-4 py-2 text-sm uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] sm:flex"
+            className="hidden shrink-0 items-center gap-2 whitespace-nowrap border border-[var(--border)] px-4 py-2 text-sm uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] xl:flex"
           >
             Live site
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
@@ -113,7 +120,7 @@ export default function AdminNav({
             </svg>
           </a>
 
-          <Link href="/admin/profile" aria-label="Profile" className="flex h-11 w-11 shrink-0 items-center justify-center sm:h-auto sm:w-auto">
+          <Link href="/admin/profile" aria-label="Profile" className="flex h-11 w-11 shrink-0 items-center justify-center xl:h-auto xl:w-auto">
             <Avatar
               src={avatarUrl}
               email={email ?? ""}
@@ -124,7 +131,7 @@ export default function AdminNav({
 
           <button
             onClick={handleLogout}
-            className="flex min-h-11 items-center text-sm uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)] sm:min-h-0"
+            className="flex min-h-11 items-center text-sm uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)] xl:min-h-0"
           >
             Log out
           </button>
@@ -133,7 +140,7 @@ export default function AdminNav({
 
       {/* Mobile menu. Rendered only when open so the closed bar stays one row. */}
       {menuOpen && (
-        <nav className="border-t border-[var(--border)] sm:hidden">
+        <nav className="border-t border-[var(--border)] xl:hidden">
           {LINKS.map((link) => (
             <Link
               key={link.href}
