@@ -31,6 +31,11 @@
 
 html {
   scroll-behavior: smooth;
+  /* The header is sticky (logo h-26 + py-4 + border ~= 137px), so an anchor
+     jump would otherwise land the target's top edge underneath it — hiding the
+     section label and clipping the heading. Applied on html so every anchor
+     clears it, not just the ones that exist today. */
+  scroll-padding-top: 9.5rem;
 }
 
 body {
