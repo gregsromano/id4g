@@ -12,13 +12,13 @@ export default function SiteFooter() {
         <div className="flex items-center gap-3">
           <Image
             src="/idfg-logo.webp"
-            alt="ID4G — I'll Die For The Gospel"
-            width={653}
-            height={633}
+            alt="ID4G — I'm Down For The Gospel"
+            width={640}
+            height={620}
             className="h-9 w-9"
           />
           <span className="text-sm font-bold uppercase tracking-widest text-[var(--text-body)]">
-            I&rsquo;ll Die For The Gospel
+            I&rsquo;m Down For The Gospel
           </span>
         </div>
 
@@ -52,7 +52,7 @@ export default function SiteFooter() {
 
       <div className="border-t border-[var(--border)]">
         <p className="mx-auto max-w-6xl px-6 py-3 text-xs uppercase tracking-wider text-[var(--accent)]">
-          &copy; {year} I&rsquo;ll Die For The Gospel. All rights reserved.
+          &copy; {year} I&rsquo;m Down For The Gospel. All rights reserved.
         </p>
       </div>
     </footer>

@@ -23,9 +23,9 @@ export default function SiteHeader() {
         <Link href="/" className="shrink-0" onClick={() => setMenuOpen(false)}>
           <Image
             src="/idfg-logo.webp"
-            alt="ID4G — I'll Die For The Gospel"
-            width={653}
-            height={633}
+            alt="ID4G — I'm Down For The Gospel"
+            width={640}
+            height={620}
             className="h-26 w-26"
           />
         </Link>

@@ -2,9 +2,9 @@ import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "About Greg Romano — I'll Die For The Gospel",
+  title: "About Greg Romano — I'm Down For The Gospel",
   description:
-    "The story behind I'll Die for the Gospel — Greg Romano's faith, art, and streetwear brand.",
+    "The story behind I'm Down for the Gospel — Greg Romano's faith, art, and streetwear brand.",
 };
 
 export default function AboutPage() {
@@ -39,7 +39,7 @@ export default function AboutPage() {
 
             <div>
               <p className="border-l-2 border-[var(--accent)] pl-6 text-3xl leading-snug text-[var(--text-primary)] sm:text-4xl">
-                I&rsquo;ll Die for the Gospel was born from my love for God,
+                I&rsquo;m Down for the Gospel was born from my love for God,
                 clothing, and art.
               </p>
               <p className="mt-6 pl-6 text-lg text-[var(--text-body)] sm:text-xl">
@@ -109,7 +109,7 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-5 text-lg text-[var(--text-body)] sm:text-xl">
                 <p>
-                  Every I&rsquo;ll Die for the Gospel piece is created as
+                  Every I&rsquo;m Down for the Gospel piece is created as
                   wearable art. Through hand-done details, rhinestones,
                   bleaching, and different techniques, each piece becomes
                   uniquely its own.

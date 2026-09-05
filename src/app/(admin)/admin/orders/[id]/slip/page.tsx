@@ -41,7 +41,7 @@ export default async function PackingSlipPage({
 
       <header className="flex items-start justify-between border-b-2 border-black pb-4">
         <div>
-          <h1 className="!text-3xl !text-black">I Die For The Gospel</h1>
+          <h1 className="!text-3xl !text-black">I&rsquo;m Down For The Gospel</h1>
           <p className="text-xs uppercase tracking-widest text-neutral-600">
             Packing slip
           </p>
