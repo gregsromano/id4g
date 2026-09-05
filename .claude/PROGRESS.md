@@ -2,7 +2,7 @@
 
 ## Where things stand
 
-**id4g ("I'll Die For The Gospel")** is a multi-product streetwear store deployed on
+**id4g ("I'm Down For The Gospel")** is a multi-product streetwear store deployed on
 Vercel and git-connected, so **every push to `main` auto-deploys to production**. There
 is no staging gate.
 

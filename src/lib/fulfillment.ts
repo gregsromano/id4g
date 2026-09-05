@@ -76,13 +76,18 @@ export function orderUnitCount(items: OrderItem[]): number {
 }
 
 /**
- * Frozen historical values for the single product this store sold before the
- * catalog existed. Used only to synthesize a snapshot for orders written
- * before this migration — NOT a live catalog reference, so this store must
- * never be updated to match a current product edit.
+ * Historical values for the single product this store sold before the catalog
+ * existed. Used only to synthesize a snapshot for orders written before this
+ * migration — NOT a live catalog reference, so it must not be updated to track
+ * ordinary product edits.
+ *
+ * The name is the one exception, changed once with the brand rename from
+ * "I'll Die For The Gospel" to "I'm Down For The Gospel". That was a deliberate
+ * call to keep old orders reading under the current brand rather than showing
+ * customers a name that no longer exists anywhere else on the site.
  */
 const LEGACY_PRODUCT_ID = "brok3n-tee";
-const LEGACY_PRODUCT_NAME = "BROK3N Tee — I'll Die For The Gospel";
+const LEGACY_PRODUCT_NAME = "BROK3N Tee — I'm Down For The Gospel";
 const LEGACY_SIZES = new Set(["S", "M", "L", "XL", "2XL", "3XL"]);
 
 function legacyItem(size: string, quantity: number): OrderItem {
