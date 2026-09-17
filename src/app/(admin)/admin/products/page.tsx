@@ -28,8 +28,12 @@ export default async function AdminProductsPage({
 
   // Independent reads, so run them concurrently rather than serializing two
   // round trips on a force-dynamic page.
-  const [products, settings] = await Promise.all([
+  // The pin list is fetched separately and always unfiltered: building it
+  // from the filtered view emptied the dropdown on the Draft/Archived tabs,
+  // which made an already-pinned product look unset.
+  const [products, pinnable, settings] = await Promise.all([
     listAllProductsForAdmin(filter),
+    listAllProductsForAdmin("active"),
     getSiteSettings(),
   ]);
 
@@ -45,9 +49,7 @@ export default async function AdminProductsPage({
         pinnedProductId={settings.pinnedProductId}
         // Only active products reach the storefront, so only they can
         // meaningfully hold first place on it.
-        products={products
-          .filter((product) => product.status === "active")
-          .map((product) => ({ id: product.id, name: product.name }))}
+        products={pinnable.map((product) => ({ id: product.id, name: product.name }))}
       />
 
       <nav className="mt-8 flex gap-6 border-b border-[var(--border)] pb-4">
