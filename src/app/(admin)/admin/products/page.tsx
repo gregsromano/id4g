@@ -40,7 +40,15 @@ export default async function AdminProductsPage({
         <h1 className="!text-4xl mt-1 text-[var(--text-primary)]">Products</h1>
       </div>
 
-      <RandomizeToggle enabled={settings.randomizeProducts} />
+      <RandomizeToggle
+        enabled={settings.randomizeProducts}
+        pinnedProductId={settings.pinnedProductId}
+        // Only active products reach the storefront, so only they can
+        // meaningfully hold first place on it.
+        products={products
+          .filter((product) => product.status === "active")
+          .map((product) => ({ id: product.id, name: product.name }))}
+      />
 
       <nav className="mt-8 flex gap-6 border-b border-[var(--border)] pb-4">
         {FILTERS.map((option) => (
@@ -58,7 +66,12 @@ export default async function AdminProductsPage({
         ))}
       </nav>
 
-      <ProductsTable key={filter} products={products} filter={filter} />
+      <ProductsTable
+        key={filter}
+        products={products}
+        filter={filter}
+        orderInUse={!settings.randomizeProducts}
+      />
     </div>
   );
 }

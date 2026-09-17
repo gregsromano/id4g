@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin-dal";
-import { setRandomizeProducts } from "@/lib/settings";
+import { setPinnedProduct, setRandomizeProducts } from "@/lib/settings";
 
 /**
  * Server action for the storefront ordering toggle.
@@ -33,4 +33,28 @@ export async function setRandomizeProductsAction(
   revalidatePath("/");
   revalidatePath("/admin/products");
   return { ok: true, enabled };
+}
+
+export type PinnedState = { error: string } | { ok: true } | null;
+
+/**
+ * Pin a product to first place, or pass null to clear the pin.
+ *
+ * Only affects the storefront while the shuffle is on; with it off the
+ * manual `position` order already decides what comes first.
+ */
+export async function setPinnedProductAction(
+  productId: string | null,
+): Promise<PinnedState> {
+  await requireAdmin();
+
+  try {
+    await setPinnedProduct(productId);
+  } catch {
+    return { error: "Could not save that. Try again." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin/products");
+  return { ok: true };
 }

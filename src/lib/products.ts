@@ -205,8 +205,23 @@ export async function listActiveProducts(): Promise<Product[]> {
 
   const products = (data as unknown as ProductRow[]).map(toProduct);
 
-  const { randomizeProducts } = await getSiteSettings();
-  return randomizeProducts ? shuffled(products) : products;
+  const { randomizeProducts, pinnedProductId } = await getSiteSettings();
+  if (!randomizeProducts) return products;
+
+  // A pinned product holds first place and only the rest are shuffled. The
+  // pin is looked up in the list we actually fetched rather than trusted, so
+  // a product that has since been drafted or archived simply is not found
+  // and the whole catalog shuffles — it can never reappear on the storefront
+  // just because it is still named here.
+  const pinnedIndex = pinnedProductId
+    ? products.findIndex((product) => product.id === pinnedProductId)
+    : -1;
+
+  if (pinnedIndex === -1) return shuffled(products);
+
+  const pinned = products[pinnedIndex];
+  const rest = products.filter((_, i) => i !== pinnedIndex);
+  return [pinned, ...shuffled(rest)];
 }
 
 /** Storefront detail page. Draft/archived products are treated as not found. */

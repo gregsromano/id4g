@@ -20,9 +20,16 @@ import type { AdminProductSummary, ProductFilter } from "@/lib/products";
 export default function ProductsTable({
   products: initialProducts,
   filter,
+  orderInUse = true,
 }: {
   products: AdminProductSummary[];
   filter: ProductFilter;
+  /**
+   * Whether the storefront is actually using this order. False while the
+   * shuffle is on, when the order is still editable and still saved — it
+   * just is not what shoppers see until the shuffle is turned back off.
+   */
+  orderInUse?: boolean;
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -84,10 +91,20 @@ export default function ProductsTable({
       <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
         <p className="text-xs text-[var(--text-muted)]">
           {products.length > 1 ? (
-            <>
-              <span className="hidden sm:inline">Drag a row to reorder, then save.</span>
-              <span className="sm:hidden">Use the arrows to reorder, then save.</span>
-            </>
+            orderInUse ? (
+              <>
+                <span className="hidden sm:inline">Drag a row to reorder, then save.</span>
+                <span className="sm:hidden">Use the arrows to reorder, then save.</span>
+              </>
+            ) : (
+              /* Saving still works and is still stored — say so, rather than
+                 disabling the controls. Silently accepting a reorder that the
+                 storefront ignores is what made this look broken. */
+              <span className="text-[var(--accent)]">
+                Shuffle is on, so the shop is not using this order. You can still
+                change and save it — turn the shuffle off to use it.
+              </span>
+            )
           ) : null}
         </p>
         <div className="flex items-center gap-3">

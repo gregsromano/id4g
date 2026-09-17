@@ -19,6 +19,14 @@ const SETTINGS_ID = "00000000-0000-0000-0000-000000000001";
 export type SiteSettings = {
   /** Shuffle the storefront product grid on every request. */
   randomizeProducts: boolean;
+  /**
+   * Product held in first place while the shuffle is on; the rest are
+   * shuffled below it. Null means the shuffle covers everything.
+   *
+   * Only meaningful when `randomizeProducts` is true — with the shuffle off,
+   * the manual `position` order already decides what comes first.
+   */
+  pinnedProductId: string | null;
 };
 
 /**
@@ -29,21 +37,24 @@ export type SiteSettings = {
  * the setting only decides what order it is in. Losing the row degrades to
  * the manual order, which is the same thing a fresh install does.
  */
-const DEFAULTS: SiteSettings = { randomizeProducts: false };
+const DEFAULTS: SiteSettings = { randomizeProducts: false, pinnedProductId: null };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   assertServiceRoleConfigured();
 
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
-    .select("randomize_products")
+    .select("randomize_products, pinned_product_id")
     .eq("id", SETTINGS_ID)
     .maybeSingle();
 
   if (error || !data) return DEFAULTS;
 
+  const row = data as { randomize_products: boolean; pinned_product_id: string | null };
+
   return {
-    randomizeProducts: Boolean((data as { randomize_products: boolean }).randomize_products),
+    randomizeProducts: Boolean(row.randomize_products),
+    pinnedProductId: row.pinned_product_id ?? null,
   };
 }
 
@@ -54,6 +65,28 @@ export async function getSiteSettings(): Promise<SiteSettings> {
  * still ends up with the setting the admin just chose, instead of silently
  * accepting a click that changed nothing.
  */
+export async function setPinnedProduct(productId: string | null): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      {
+        id: SETTINGS_ID,
+        pinned_product_id: productId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save pinned_product_id", {
+      message: error.message,
+    });
+    throw new Error("Failed to save setting");
+  }
+}
+
 export async function setRandomizeProducts(enabled: boolean): Promise<void> {
   assertServiceRoleConfigured();
 
