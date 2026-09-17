@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import { listAllProductsForAdmin, type ProductFilter } from "@/lib/products";
+import { getSiteSettings } from "@/lib/settings";
 import ProductsTable from "@/components/admin/ProductsTable";
+import RandomizeToggle from "@/components/admin/RandomizeToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +26,12 @@ export default async function AdminProductsPage({
   const params = await searchParams;
   const filter: ProductFilter = isFilter(params.filter) ? params.filter : "active";
 
-  const products = await listAllProductsForAdmin(filter);
+  // Independent reads, so run them concurrently rather than serializing two
+  // round trips on a force-dynamic page.
+  const [products, settings] = await Promise.all([
+    listAllProductsForAdmin(filter),
+    getSiteSettings(),
+  ]);
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -32,6 +39,8 @@ export default async function AdminProductsPage({
         <span className="section-label">Catalog</span>
         <h1 className="!text-4xl mt-1 text-[var(--text-primary)]">Products</h1>
       </div>
+
+      <RandomizeToggle enabled={settings.randomizeProducts} />
 
       <nav className="mt-8 flex gap-6 border-b border-[var(--border)] pb-4">
         {FILTERS.map((option) => (

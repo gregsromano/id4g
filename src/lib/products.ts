@@ -2,6 +2,7 @@ import "server-only";
 
 import { assertServiceRoleConfigured, getSupabaseAdmin } from "./supabase";
 import { buildVariantLabel, variantOptionKey, type ProductOption } from "./variant";
+import { getSiteSettings } from "./settings";
 
 export { buildVariantLabel, variantOptionKey };
 export type { ProductOption };
@@ -160,7 +161,37 @@ function fail(context: string, error: { code?: string; message?: string }): neve
   throw new Error(`Failed to ${context}`);
 }
 
-/** Storefront grid: every active product. */
+/**
+ * Fisher-Yates, in place on a copy.
+ *
+ * Not `sort(() => Math.random() - 0.5)`: that is not a uniform shuffle. A
+ * comparator that answers inconsistently for the same pair leaves the result
+ * biased toward the original order — with a two-product catalog that is very
+ * visible, because the bias is exactly "the first one stays first".
+ */
+function shuffled<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+/**
+ * Storefront grid: every active product.
+ *
+ * Ordered by the manual `position` unless the admin has turned on
+ * randomization, in which case the order is shuffled per call so the product
+ * shown first rotates between visitors instead of always being whoever holds
+ * position 0.
+ *
+ * The shuffle happens here rather than in the database: postgres can do
+ * `order by random()`, but keeping it in application code means the query is
+ * identical either way and the toggle is one readable branch. The page is
+ * `force-dynamic`, so this runs per request and a refresh really does
+ * re-order — a cached page would shuffle once at build and look broken.
+ */
 export async function listActiveProducts(): Promise<Product[]> {
   assertServiceRoleConfigured();
 
@@ -172,7 +203,10 @@ export async function listActiveProducts(): Promise<Product[]> {
 
   if (error) fail("list active products", error);
 
-  return (data as unknown as ProductRow[]).map(toProduct);
+  const products = (data as unknown as ProductRow[]).map(toProduct);
+
+  const { randomizeProducts } = await getSiteSettings();
+  return randomizeProducts ? shuffled(products) : products;
 }
 
 /** Storefront detail page. Draft/archived products are treated as not found. */
