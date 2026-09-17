@@ -31,7 +31,24 @@ than an absence of tax. Nothing is owed to or filed with TX. Threshold monitorin
 **Dashboard-only** — every `/v1/tax/...thresholds` path 404s or rejects, so it cannot
 be read or toggled from code.
 
-**Storefront product order can now be shuffled per visit (`e299ff9`).** New
+**Discount codes can now be bounded: usage cap, start date, end date
+(`ecb8676`).** The create form only ever sent a code + percentage, so every
+code it had ever made was unlimited and permanent. Cap and end date are
+Stripe's own create-only fields (so Stripe enforces them at redemption — no
+window where a 26th customer slips through a 25-use code). The **start date is
+ours**: Stripe has no start field, so a scheduled code is created INACTIVE with
+`starts_at` in metadata and `syncScheduledCodes()` activates it once the time
+passes — run on the checkout path and admin list, NOT a cron, because Hobby
+allows one daily cron and a 9am sale would stay dark until the next run.
+Dates carry the browser's UTC offset, since a bare `datetime-local` would be
+read as UTC on Vercel and start a 9am sale at 2am Pacific.
+
+**Storefront product order can now be shuffled per visit (`e299ff9`), with an
+optional pinned #1 (`6c6312f`).** First version had a real flaw Greg caught:
+with shuffle on, the drag/arrow ordering still saved but the storefront
+ignored it, so a working save looked broken. Now one product can hold first
+place while the rest shuffle, and the products table says when its order is
+parked rather than silently accepting it. New
 `site_settings` singleton table + `/admin/products` toggle, **off by default** so the
 manual order stays the behavior until deliberately changed. Fisher-Yates, not
 `sort(() => Math.random() - 0.5)` — the latter is biased toward the original order,
@@ -154,17 +171,14 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 
 ## Next step(s)
 
-1. **`50OFF` is live, 50% off, uncapped and unexpiring.** Used once (Jeff).
-   Anyone with the string can keep redeeming it. `ID4G` is the same shape at 0
-   redemptions. Stripe makes `max_redemptions`/`expires_at` **immutable after
-   creation**, so the only lever on an existing code is deactivate — awaiting
-   Greg's call on both.
+1. **`50OFF` is still live, 50% off, uncapped and unexpiring** (1 redemption,
+   Jeff's). Stripe will not accept a cap or expiry on an existing code —
+   confirmed against the live API — so deactivating is the ONLY lever on it.
+   Awaiting Greg's call. `ID4G` (20% off, 0 redemptions) is the same shape.
+   New codes can now be bounded properly at creation.
 
-2. **The discount admin cannot bound a code at all.** `createDiscountCode` sends
-   only `code` + `percent_off`, so every code it has ever made lives forever with
-   unlimited uses. Adding optional `max_redemptions` / `expires_at` to the create
-   form (and "3 of 10 used" in the table) is the real fix; it must be at creation
-   time, since Stripe will not accept either field later.
+2. **Jeff's order is unfulfilled.** Local pickup, so no label and no postage —
+   it just needs handing over (or refunding, if it was a favour).
 
 3. Optional: delete `origin/products-dashboard`; batch slip view; rotate
    `SUPABASE_SERVICE_ROLE_KEY`; delete dead `getSupabase()`.
@@ -247,7 +261,7 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
-- 2026-09-16: **First real order.** The live webhook fired for the first time ever
+- 2026-09-16: **First real order** + bounded discount codes + storefront shuffle. The live webhook fired for the first time ever
   (`orders` 0 -> 1), exercising the pickup and discount paths simultaneously; all
   amounts reconciled against the live Stripe API. Confirmed $0 out-of-state tax is
   correct behavior, not a defect. Shipped the storefront shuffle toggle (`e299ff9`).
