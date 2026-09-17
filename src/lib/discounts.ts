@@ -42,6 +42,25 @@ export type DiscountCode = {
   active: boolean;
   /** How many times it has been used. */
   timesRedeemed: number;
+  /**
+   * Redemption cap, or null for unlimited. Stripe stops accepting the code
+   * once `timesRedeemed` reaches this — enforced at checkout by Stripe, not
+   * by us, so there is no window where a 26th customer slips through.
+   */
+  maxRedemptions: number | null;
+  /** Unix seconds when the code stops working, or null for never. */
+  expiresAt: number | null;
+  /**
+   * Unix seconds before which the code should not work, or null to start
+   * immediately.
+   *
+   * Stripe has no start date on promotion codes — only `expires_at` — so this
+   * is ours: the code is created INACTIVE and stored here in metadata, and
+   * `syncScheduledCodes()` flips it active once the time passes.
+   */
+  startsAt: number | null;
+  /** True when a start date is set and has not yet arrived. */
+  scheduled: boolean;
   createdAt: string;
 };
 
@@ -73,6 +92,39 @@ export function parsePercentOff(input: string): number | null {
   return percent;
 }
 
+/**
+ * A blank limit field means "no limit", which is different from a bad one:
+ * blank is the common case and must not be an error, while "abc" must not
+ * silently become unlimited. Hence the explicit "invalid".
+ */
+export function parseMaxRedemptions(input: string): number | null | "invalid" {
+  const text = input.trim();
+  if (!text) return null;
+  const value = Number(text);
+  if (!Number.isInteger(value) || value < 1) return "invalid";
+  return value;
+}
+
+/**
+ * Parses a `datetime-local` value ("2026-09-20T09:00") into Unix seconds.
+ *
+ * `new Date("YYYY-MM-DDTHH:mm")` with no zone suffix is interpreted in the
+ * runtime's LOCAL timezone — which on Vercel is UTC, not California. So a
+ * sale typed as 9am would start at 2am Pacific. The offset is therefore sent
+ * with the value from the browser (see NewDiscountForm) and applied here, so
+ * the time means what the person typing it meant.
+ */
+export function parseLocalDateTime(input: string): number | null | "invalid" {
+  const text = input.trim();
+  if (!text) return null;
+
+  // Accepts "2026-09-20T09:00" plus an explicit offset the form appends,
+  // e.g. "2026-09-20T09:00-07:00".
+  const parsed = Date.parse(text);
+  if (Number.isNaN(parsed)) return "invalid";
+  return Math.floor(parsed / 1000);
+}
+
 function toDiscountCode(promo: Stripe.PromotionCode): DiscountCode | null {
   const coupon = promo.promotion?.coupon;
 
@@ -82,12 +134,20 @@ function toDiscountCode(promo: Stripe.PromotionCode): DiscountCode | null {
   if (!coupon || typeof coupon === "string" || coupon.deleted) return null;
   if (coupon.percent_off == null) return null;
 
+  const startsAtRaw = promo.metadata?.starts_at;
+  const startsAt = startsAtRaw ? Number(startsAtRaw) : null;
+  const validStartsAt = startsAt !== null && Number.isFinite(startsAt) ? startsAt : null;
+
   return {
     id: promo.id,
     code: promo.code,
     percentOff: coupon.percent_off,
     active: promo.active,
     timesRedeemed: promo.times_redeemed,
+    maxRedemptions: promo.max_redemptions ?? null,
+    expiresAt: promo.expires_at ?? null,
+    startsAt: validStartsAt,
+    scheduled: validStartsAt !== null && validStartsAt > Math.floor(Date.now() / 1000),
     createdAt: new Date(promo.created * 1000).toISOString(),
   };
 }
@@ -124,9 +184,19 @@ export type CreateDiscountResult =
  * so a duplicate-code failure on the promotion code would otherwise leave an
  * orphaned coupon behind on every retry. We delete it back out on failure.
  */
+export type DiscountLimits = {
+  /** Stop after this many redemptions; null for unlimited. */
+  maxRedemptions?: number | null;
+  /** Unix seconds when the code stops working; null for never. */
+  expiresAt?: number | null;
+  /** Unix seconds before which the code must not work; null for immediately. */
+  startsAt?: number | null;
+};
+
 export async function createDiscountCode(
   rawCode: string,
   percentOff: number,
+  limits: DiscountLimits = {},
 ): Promise<CreateDiscountResult> {
   const code = normalizeDiscountCode(rawCode);
 
@@ -145,6 +215,26 @@ export async function createDiscountCode(
     return { ok: false, error: `${code} already exists and is active.` };
   }
 
+  const { maxRedemptions = null, expiresAt = null, startsAt = null } = limits;
+
+  // Validate the limits BEFORE creating the coupon, so a bad date cannot
+  // leave an orphaned coupon behind on Stripe.
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
+  if (maxRedemptions !== null) {
+    if (!Number.isInteger(maxRedemptions) || maxRedemptions < 1) {
+      return { ok: false, error: "Total uses must be a whole number of 1 or more." };
+    }
+  }
+
+  if (expiresAt !== null && expiresAt <= nowSeconds) {
+    return { ok: false, error: "The end date must be in the future." };
+  }
+
+  if (startsAt !== null && expiresAt !== null && startsAt >= expiresAt) {
+    return { ok: false, error: "The start date must be before the end date." };
+  }
+
   const stripe = getStripe();
   const coupon = await stripe.coupons.create({
     percent_off: percentOff,
@@ -153,9 +243,21 @@ export async function createDiscountCode(
   });
 
   try {
+    // A future start date is ours to enforce: Stripe has no start field, so
+    // the code is created INACTIVE and syncScheduledCodes() turns it on once
+    // the time arrives. Created active when there is no start date, which is
+    // the existing behavior.
+    const scheduled = startsAt !== null && startsAt > nowSeconds;
+
     const promo = await stripe.promotionCodes.create({
       code,
       promotion: { type: "coupon", coupon: coupon.id },
+      // Both are create-only on Stripe: neither can be added or changed
+      // later, which is exactly why they have to be offered here.
+      ...(maxRedemptions !== null ? { max_redemptions: maxRedemptions } : {}),
+      ...(expiresAt !== null ? { expires_at: expiresAt } : {}),
+      ...(scheduled ? { active: false } : {}),
+      ...(startsAt !== null ? { metadata: { starts_at: String(startsAt) } } : {}),
       expand: ["promotion.coupon"],
     });
 
@@ -185,4 +287,50 @@ export async function setDiscountCodeActive(
   active: boolean,
 ): Promise<void> {
   await getStripe().promotionCodes.update(promotionCodeId, { active });
+}
+
+/**
+ * Activates any scheduled code whose start time has passed.
+ *
+ * Stripe has no start date on promotion codes, so a scheduled code is stored
+ * inactive with its start time in metadata and switched on here. This runs on
+ * the storefront checkout path and on the admin list, rather than on a cron:
+ * Vercel's Hobby plan allows only ONE daily cron, so a code scheduled for
+ * 9am could stay dark until the next day's run. Checking when someone
+ * actually tries to use the store means the code is live the first time
+ * anyone could benefit from it.
+ *
+ * Never throws. A failure here must not be able to break checkout or the
+ * admin page — the worst case is a scheduled code that turns on slightly
+ * later, which is the same failure mode as the cron it replaces.
+ */
+export async function syncScheduledCodes(): Promise<void> {
+  try {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const promos = await getStripe().promotionCodes.list({
+      active: false,
+      limit: 100,
+    });
+
+    const due = promos.data.filter((promo) => {
+      const raw = promo.metadata?.starts_at;
+      if (!raw) return false;
+      const startsAt = Number(raw);
+      if (!Number.isFinite(startsAt) || startsAt > nowSeconds) return false;
+      // An expired code must stay off — turning it on because its start
+      // passed would resurrect a finished promotion.
+      if (promo.expires_at !== null && promo.expires_at <= nowSeconds) return false;
+      return true;
+    });
+
+    await Promise.all(
+      due.map((promo) =>
+        getStripe()
+          .promotionCodes.update(promo.id, { active: true })
+          .catch(() => {}),
+      ),
+    );
+  } catch {
+    // Deliberately silent: see above.
+  }
 }

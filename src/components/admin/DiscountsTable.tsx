@@ -49,10 +49,15 @@ export default function DiscountsTable({ codes }: { codes: DiscountCode[] }) {
                 {code.percentOff}% off
               </td>
               <td className="py-4 text-sm text-[var(--text-muted)]">
-                {code.timesRedeemed}
+                {usageLabel(code)}
               </td>
               <td className="py-4">
                 <StatusPill active={code.active} />
+                {windowLabel(code) && (
+                  <span className="mt-1 block text-xs text-[var(--text-muted)]">
+                    {windowLabel(code)}
+                  </span>
+                )}
               </td>
               <td className="py-4 text-right">
                 <ToggleButton code={code} />
@@ -73,9 +78,11 @@ export default function DiscountsTable({ codes }: { codes: DiscountCode[] }) {
               <StatusPill active={code.active} />
             </div>
             <p className="mt-1 text-sm text-[var(--text-muted)]">
-              {code.percentOff}% off · used {code.timesRedeemed}
-              {code.timesRedeemed === 1 ? " time" : " times"}
+              {code.percentOff}% off · used {usageLabel(code)}
             </p>
+            {windowLabel(code) && (
+              <p className="mt-1 text-xs text-[var(--text-muted)]">{windowLabel(code)}</p>
+            )}
             <div className="mt-3">
               <ToggleButton code={code} />
             </div>
@@ -84,6 +91,44 @@ export default function DiscountsTable({ codes }: { codes: DiscountCode[] }) {
       </div>
     </>
   );
+}
+
+/** "3 of 25" when capped, otherwise just the count. */
+function usageLabel(code: DiscountCode): string {
+  return code.maxRedemptions === null
+    ? String(code.timesRedeemed)
+    : `${code.timesRedeemed} of ${code.maxRedemptions}`;
+}
+
+function formatDate(unixSeconds: number): string {
+  return new Date(unixSeconds * 1000).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * The one line that says why a code is or is not usable right now.
+ *
+ * Ordered by what actually stops a redemption first: a used-up or expired
+ * code is finished regardless of its switch, so those outrank "Inactive".
+ */
+function windowLabel(code: DiscountCode): string | null {
+  const now = Math.floor(Date.now() / 1000);
+
+  if (code.maxRedemptions !== null && code.timesRedeemed >= code.maxRedemptions) {
+    return "All used up";
+  }
+  if (code.expiresAt !== null && code.expiresAt <= now) {
+    return `Ended ${formatDate(code.expiresAt)}`;
+  }
+  if (code.scheduled && code.startsAt !== null) {
+    return `Starts ${formatDate(code.startsAt)}`;
+  }
+  if (code.expiresAt !== null) return `Ends ${formatDate(code.expiresAt)}`;
+  return null;
 }
 
 function StatusPill({ active }: { active: boolean }) {

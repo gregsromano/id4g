@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { getVariantsForCheckout, type CheckoutVariant } from "@/lib/products";
 import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
+import { syncScheduledCodes } from "@/lib/discounts";
 
 type IncomingItem = { productId: string; variantId: string; quantity: number };
 
@@ -130,6 +131,11 @@ export async function POST(req: NextRequest) {
   const itemsSummary = normalized
     .map((line) => `${line.variantLabel || line.productName} x${line.quantity}`)
     .join(", ");
+
+  // Turn on any code whose start date has passed, so a scheduled code is
+  // live the moment a customer could use it rather than waiting for a daily
+  // cron. Never throws; a failure just means it activates a little later.
+  await syncScheduledCodes();
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",

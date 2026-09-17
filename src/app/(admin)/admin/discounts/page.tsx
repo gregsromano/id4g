@@ -1,4 +1,4 @@
-import { listDiscountCodes } from "@/lib/discounts";
+import { listDiscountCodes, syncScheduledCodes } from "@/lib/discounts";
 import DiscountsTable from "@/components/admin/DiscountsTable";
 import NewDiscountForm from "@/components/admin/NewDiscountForm";
 
@@ -7,6 +7,9 @@ import NewDiscountForm from "@/components/admin/NewDiscountForm";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDiscountsPage() {
+  // Sync first so a code whose start date has passed shows as live here
+  // rather than as still-scheduled.
+  await syncScheduledCodes();
   const codes = await listDiscountCodes();
 
   return (
@@ -15,9 +18,11 @@ export default async function AdminDiscountsPage() {
         <span className="section-label">Marketing</span>
         <h1 className="!text-4xl mt-1 text-[var(--text-primary)]">Discount codes</h1>
         <p className="mt-3 max-w-xl text-sm text-[var(--text-muted)]">
-          Customers enter these in the “Add promotion code” box at checkout.
-          A code works the moment it is created, and tax is recalculated on the
-          discounted total automatically.
+          Customers enter these in the “Add promotion code” box at checkout, and
+          tax is recalculated on the discounted total automatically. A code works
+          immediately unless you give it a start date, and Stripe stops accepting
+          it once it hits its limit — set those below, since they cannot be added
+          to a code afterwards.
         </p>
       </div>
 

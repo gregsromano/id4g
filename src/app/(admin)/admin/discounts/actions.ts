@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-dal";
 import {
   createDiscountCode,
+  parseMaxRedemptions,
+  parseLocalDateTime,
   parsePercentOff,
   setDiscountCodeActive,
 } from "@/lib/discounts";
@@ -38,7 +40,23 @@ export async function createDiscountAction(
     return { error: "Enter a whole percentage between 1 and 100." };
   }
 
-  const result = await createDiscountCode(code, percentOff);
+  const maxRedemptionsRaw = String(formData.get("maxRedemptions") ?? "");
+  const maxRedemptions = parseMaxRedemptions(maxRedemptionsRaw);
+  if (maxRedemptions === "invalid") {
+    return { error: "Total uses must be a whole number of 1 or more, or left blank." };
+  }
+
+  const startsAt = parseLocalDateTime(String(formData.get("startsAt") ?? ""));
+  if (startsAt === "invalid") return { error: "That start date is not a valid date." };
+
+  const expiresAt = parseLocalDateTime(String(formData.get("expiresAt") ?? ""));
+  if (expiresAt === "invalid") return { error: "That end date is not a valid date." };
+
+  const result = await createDiscountCode(code, percentOff, {
+    maxRedemptions,
+    startsAt,
+    expiresAt,
+  });
   if (!result.ok) return { error: result.error };
 
   revalidatePath("/admin/discounts");
