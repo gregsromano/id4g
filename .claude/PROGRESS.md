@@ -13,6 +13,32 @@ is no staging gate.
 Two products live (`brok3n-tee`, `jesus-john-316`). Admin back office at `/admin`:
 orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile.
 
+### Done this session (2026-09-16)
+
+**🎉 THE FIRST REAL ORDER LANDED — the live webhook fired for the first time ever.**
+Jeff Elder, BROK3N Tee Size L, `cs_live_b1rGaU…`. `orders` went 0 -> 1 row. Every
+field reconciled against the live Stripe API, not just read back from the row:
+$49.00 subtotal, `50OFF` -$24.50, **$24.50 charged**, Visa ••0728, `pi_3UGNHS…`
+`succeeded`. It exercised **both** previously-untested paths in one go —
+`delivery_method: "pickup"` (derived from the rate display_name, exactly as designed)
+and the discount path (`amount_discount` + `discount_code` correct, so the 4-level
+expand + second `promotionCodes.retrieve` works on a real order).
+
+**`amount_tax: 0` is CORRECT, not a bug.** Buyer is in TX; CA is the only
+registration. Stripe computed TX at 8.25% and returned
+`taxability_reason: "not_collecting"` — positive evidence Stripe Tax works, rather
+than an absence of tax. Nothing is owed to or filed with TX. Threshold monitoring is
+**Dashboard-only** — every `/v1/tax/...thresholds` path 404s or rejects, so it cannot
+be read or toggled from code.
+
+**Storefront product order can now be shuffled per visit (`e299ff9`).** New
+`site_settings` singleton table + `/admin/products` toggle, **off by default** so the
+manual order stays the behavior until deliberately changed. Fisher-Yates, not
+`sort(() => Math.random() - 0.5)` — the latter is biased toward the original order,
+which on a 2-product catalog is almost exactly the bug being fixed. Verified over 12
+requests on (7/5 split) and 6 off (identical every time). Works per-refresh only
+because `/` is already `force-dynamic`.
+
 ### Done this session (2026-08-30)
 
 **Discount codes, admin-managed and backed by Stripe.** New `/admin/discounts`
@@ -108,13 +134,9 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 
 ### NOT done / known gaps
 
-- **No real-money order has ever been placed.** The LIVE webhook has never fired. Now
-  **more** important than before: checkout has TWO paths (ship / pickup) and neither has
-  run with a real card. Still the #1 unverified link.
-- **The pickup flow is untested end to end.** Verified against the live Stripe API that
-  a session carries both rates ($15.00 / $0.00, correct tax codes) — that test session
-  was expired so it could not be paid — but no order has actually been placed through
-  either path, so `delivery_method` has never been written by a real webhook.
+- ~~No real-money order has ever been placed.~~ **RESOLVED 2026-09-16 — see below.**
+  The live webhook fired, and the order exercised the pickup AND discount paths at once.
+  The shipping path is still unexercised by a real card.
 - **`/api/admin/export` returns 500, not 401, when unauthenticated.** `requireAdmin()`
   throws, nothing catches it. No data is returned, so the security property holds; this
   is cosmetic and pre-existing.
@@ -132,30 +154,19 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 
 ## Next step(s)
 
-1. **WAITING ON A REAL ORDER.** Now also the first test of a discounted
-   checkout — if the buyer uses a code, check `amount_discount` and
-   `discount_code` on the row alongside the checks below. As of 2026-08-29 Greg is waiting for a friend to place a
-   genuine order rather than testing it himself — a better test, since a fresh buyer
-   exercises the whole flow. **Nothing to build; this is the open item.**
+1. **`50OFF` is live, 50% off, uncapped and unexpiring.** Used once (Jeff).
+   Anyone with the string can keep redeeming it. `ID4G` is the same shape at 0
+   redemptions. Stripe makes `max_redemptions`/`expires_at` **immutable after
+   creation**, so the only lever on an existing code is deactivate — awaiting
+   Greg's call on both.
 
-   When it lands, verify:
-   - The row appears in `orders` at all — that alone proves the live webhook fired for
-     the first time ever.
-   - `delivery_method` matches what they picked (shipping / pickup), and a pickup shows
-     its badge in the `/admin` queue.
-   - `amount_tax` — the first real tax data. CA buyer should see tax; outside CA is $0
-     and correct, since CA is the only registration.
+2. **The discount admin cannot bound a code at all.** `createDiscountCode` sends
+   only `code` + `percent_off`, so every code it has ever made lives forever with
+   unlimited uses. Adding optional `max_redemptions` / `expires_at` to the create
+   form (and "3 of 10 used" in the table) is the real fix; it must be at creation
+   time, since Stripe will not accept either field later.
 
-   Baseline at the end of this session: **`orders` was empty (0 rows)**, so anything
-   appearing is definitively that test. If it does NOT appear within a couple of
-   minutes, the money still reached Stripe — the handler fails loudly (500 + retry) by
-   design, so Stripe will retry; trace it by the payment id rather than assuming it was
-   lost.
-
-   Decide before refunding whether it is a real sale (fulfill it) or a favour (refund
-   from Stripe's Payments page).
-
-2. Optional: delete `origin/products-dashboard`; batch slip view; rotate
+3. Optional: delete `origin/products-dashboard`; batch slip view; rotate
    `SUPABASE_SERVICE_ROLE_KEY`; delete dead `getSupabase()`.
 
 **Active plan:** none in progress. `~/.claude/plans/i-want-to-build-keen-lollipop.md` is
@@ -236,6 +247,11 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-09-16: **First real order.** The live webhook fired for the first time ever
+  (`orders` 0 -> 1), exercising the pickup and discount paths simultaneously; all
+  amounts reconciled against the live Stripe API. Confirmed $0 out-of-state tax is
+  correct behavior, not a defect. Shipped the storefront shuffle toggle (`e299ff9`).
+  Found that the discount admin can only ever mint uncapped, never-expiring codes.
 - 2026-08-30: Added **admin-managed discount codes** (`/admin/discounts`,
   percent-off), backed by Stripe rather than a local table so redemption and
   tax-on-discounted-subtotal stay Stripe's job. Caught before shipping: the
