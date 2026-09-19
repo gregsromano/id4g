@@ -1,5 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
+/**
+ * Anon-key client, safe to construct in the browser.
+ *
+ * Its one caller is the admin media uploader, which needs a client-side
+ * Storage client to PUT a file straight to Supabase with a signed token —
+ * because Vercel caps a function request body at 4.5MB, so a real video can
+ * never travel through a server action. The anon key grants nothing on its
+ * own here: every table forces RLS, and the upload is authorized by the
+ * short-lived signed token, not by this key.
+ */
 export function getSupabase() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

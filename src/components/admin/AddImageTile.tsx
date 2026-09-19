@@ -3,7 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
-import { uploadProductImages } from "@/app/(admin)/admin/products/actions";
+import {
+  attachProductUpload,
+  createProductUploadUrl,
+} from "@/app/(admin)/admin/products/actions";
+import { getSupabase } from "@/lib/supabase";
+
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 /**
  * Grid-cell "+" upload button — not inside any <form>, since it lives inside
@@ -27,16 +34,49 @@ export default function AddImageTile({ productId }: { productId: string }) {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-
-    const formData = new FormData();
-    formData.append("id", productId);
-    for (const file of Array.from(files)) formData.append("files", file);
+    const chosen = Array.from(files);
 
     startTransition(async () => {
       setError(null);
-      const result = await uploadProductImages(null, formData);
-      if (!result.ok) setError(result.message);
-      else router.refresh();
+
+      for (const file of chosen) {
+        const isVideo = file.type === "video/mp4";
+        const max = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+        // Checked here so an oversized pick fails with a sentence instead of
+        // a failed request partway through the transfer.
+        if (file.size > max) {
+          setError(`${file.name}: larger than ${max / (1024 * 1024)}MB.`);
+          break;
+        }
+
+        // The file goes BROWSER -> SUPABASE directly, never through a server
+        // action: Vercel caps a function request body at 4.5MB (413
+        // FUNCTION_PAYLOAD_TOO_LARGE) and that ceiling cannot be configured
+        // away, so any real video would fail if it were posted to the server.
+        // Only the token and, afterwards, the stored path cross that boundary.
+        const signed = await createProductUploadUrl(productId, file.type);
+        if (!signed.ok) {
+          setError(signed.message);
+          break;
+        }
+
+        const { error: putError } = await getSupabase()
+          .storage.from("images")
+          .uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
+
+        if (putError) {
+          setError(`${file.name}: upload failed (${putError.message}).`);
+          break;
+        }
+
+        const attached = await attachProductUpload(productId, signed.path, file.name);
+        if (!attached.ok) {
+          setError(attached.message);
+          break;
+        }
+      }
+
+      router.refresh();
       if (inputRef.current) inputRef.current.value = "";
     });
   }

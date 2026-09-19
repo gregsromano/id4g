@@ -15,10 +15,21 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-09-19)
 
-**Product media can now be an MP4 video, not only a photo (`d479c9f`).** Uploaded
-from the same "+" tile, and ordered / made cover / removed exactly like an image —
-video shares `products.images` and the `images` bucket rather than getting a
-parallel list the admin would have to interleave by hand.
+**Product media can now be an MP4 video, not only a photo (`d479c9f`, fixed by
+`FIXSHA`).** Uploaded from the same "+" tile, and ordered / made cover / removed
+exactly like an image — video shares `products.images` and the `images` bucket
+rather than getting a parallel list the admin would have to interleave by hand.
+
+**The first version was BROKEN in production and Greg hit it immediately:** the
+upload posted the file to a server action, and **Vercel caps a function request
+body at 4.5MB**, so a real video 413'd and the admin saw "This page couldn't
+load". The local verification missed it entirely because the synthetic test clip
+was 83KB — well under a ceiling that only exists on Vercel. Now the browser PUTs
+straight to Supabase with a signed token and the file never touches a function.
+Re-verified by driving the real admin page in headless Chrome with a **30MB**
+1920x1080 clip: signed URL -> direct PUT -> row recorded -> plays on the
+storefront, no page error. `bodySizeLimit` was also corrected 25mb -> 4mb, since
+anything above the platform ceiling is fiction.
 
 **Video-ness is DERIVED from the URL extension (`src/lib/media.ts`), not stored.**
 Every URL in that array is one this app uploaded and named itself
@@ -193,6 +204,12 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 - ~~No real-money order has ever been placed.~~ **RESOLVED 2026-09-16 — see below.**
   The live webhook fired, and the order exercised the pickup AND discount paths at once.
   The shipping path is still unexercised by a real card.
+- **The LIFESTYLE uploader still POSTs files to a server action, so it inherits
+  Vercel's 4.5MB request-body ceiling** — a lookbook photo between 4.5MB and the
+  8MB its own validation allows will fail in production with a 413, not a readable
+  message. Pre-existing (it predates the video work) and not yet hit in practice
+  since photos are usually under 2MB. The fix is the same signed-upload pattern
+  product media now uses (`createProductUploadUrl` / `attachProductUpload`).
 - **`/api/admin/export` returns 500, not 401, when unauthenticated.** `requireAdmin()`
   throws, nothing catches it. No data is returned, so the security property holds; this
   is cosmetic and pre-existing.
@@ -249,6 +266,19 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   from props, or the fresh data is discarded anyway.
 - **Verify admin work in a BROWSER, not just against the database.** All three bugs
   found this session had a perfectly correct data layer.
+- **VERCEL CAPS A FUNCTION REQUEST BODY AT 4.5MB** — hard, infrastructure-level,
+  returns 413 FUNCTION_PAYLOAD_TOO_LARGE, and **cannot be raised**.
+  `serverActions.bodySizeLimit` in next.config.ts can only LOWER the limit within
+  that ceiling, so any value above ~4.5mb is fiction in production: it was set to
+  `25mb` here for months and looked fine, because no upload had ever been big
+  enough to find out. The consequence is not a friendly error but an unhandled
+  413, which the admin sees as "This page couldn't load".
+  **So a file bigger than ~4.5MB can never travel through a server action.**
+  Product media therefore uploads BROWSER -> SUPABASE with a short-lived signed
+  token (`createProductUploadUrl` mints it, the browser PUTs, then
+  `attachProductUpload` records the row after verifying the object exists). Only
+  the token crosses the function boundary, so the request stays kilobytes no
+  matter how big the file is.
 - **`next/image` THROWS on a non-image source**, so every place that renders an item
   out of `products.images` must branch on `isVideoUrl()` first (`src/lib/media.ts`).
   A missed branch does not degrade to a broken thumbnail — it breaks the whole

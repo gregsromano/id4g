@@ -24,11 +24,18 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Product image uploads (uploadProductImages in
-      // admin/products/actions.ts) allow multiple files up to 8MB each; the
-      // framework default of 1MB rejects any real product photo before our
-      // own per-file validation ever runs.
-      bodySizeLimit: "25mb",
+      // Lifestyle uploads still POST the file to a server action, and the
+      // framework default of 1MB rejects any real photo before our own
+      // per-file validation runs.
+      //
+      // 4mb, NOT the 25mb this used to say: **Vercel caps a function request
+      // body at 4.5MB** and returns 413 FUNCTION_PAYLOAD_TOO_LARGE past it.
+      // That ceiling is infrastructure-level and cannot be raised here — this
+      // setting can only lower the limit within it, so a larger number is
+      // fiction in production and merely moves the failure from a readable
+      // error to an unhandled 413. Product media avoids the ceiling entirely
+      // by uploading browser -> Supabase with a signed token.
+      bodySizeLimit: "4mb",
     },
   },
 };

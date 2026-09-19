@@ -42,12 +42,11 @@ const MAX_NAME_LENGTH = 200;
 // of visible text.
 const MAX_DESCRIPTION_LENGTH = 20000;
 const MAX_IMAGE_ALT_LENGTH = 200;
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
-// Video gets its own, much larger ceiling: a 15-30s phone clip runs to tens
-// of megabytes where a product photo is under two, so one shared limit would
-// have to be either uselessly small for video or needlessly loose for images.
-// Kept in step with the bucket's own file_size_limit (20260919000001).
-const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+// Per-file size ceilings (8MB image / 50MB video) live in AddImageTile, not
+// here: the file never reaches this server any more — it goes browser ->
+// Supabase with a signed token — so the only checks that can actually stop an
+// oversized upload are the client's, for a friendly message, and the bucket's
+// own file_size_limit, which is what truly enforces it (20260919000001).
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 // MP4 only. An iPhone .mov is usually HEVC, which Chrome on Android and most
 // Windows browsers will not play — it would upload fine and look correct to
@@ -273,64 +272,98 @@ export type UploadImagesResult = {
   message: string;
 };
 
-export async function uploadProductImages(
-  _prev: UploadImagesResult | null,
-  formData: FormData,
+export type SignedUploadResult =
+  | { ok: true; path: string; token: string; publicUrl: string }
+  | { ok: false; message: string };
+
+/**
+ * Mint a one-file signed upload token so the BROWSER can PUT straight to
+ * Supabase Storage, never routing the bytes through a server action.
+ *
+ * This exists because of a hard platform ceiling, not a preference:
+ * **Vercel caps a function's request body at 4.5MB** and returns 413
+ * FUNCTION_PAYLOAD_TOO_LARGE above it. That limit is infrastructure-level and
+ * cannot be raised by config — `serverActions.bodySizeLimit` only ever lowers
+ * the ceiling within it, so a larger value there is fiction in production. Any
+ * video worth uploading is far past 4.5MB, so `uploadProductImages` (which
+ * receives the file itself) can never carry one on Vercel.
+ *
+ * Only the short-lived token crosses the function boundary here, so the
+ * request stays kilobytes regardless of file size. The admin gate still
+ * applies: requireAdmin() runs before a token is issued, and the token is
+ * scoped to one exact path that this action chooses — the client never names
+ * its own destination, so it cannot write anywhere else in the bucket.
+ *
+ * Size and type are NOT enforceable here (there is no file to inspect yet).
+ * The bucket's own allowed_mime_types and file_size_limit are what actually
+ * reject a bad upload, server-side, at the moment of the PUT.
+ */
+export async function createProductUploadUrl(
+  productId: string,
+  contentType: string,
+): Promise<SignedUploadResult> {
+  await requireAdmin();
+  if (!UUID_RE.test(productId)) return { ok: false, message: "Invalid product id" };
+
+  const isVideo = ALLOWED_VIDEO_TYPES.has(contentType);
+  if (!isVideo && !ALLOWED_IMAGE_TYPES.has(contentType)) {
+    return { ok: false, message: "Only PNG, JPEG, WEBP images or MP4 video are allowed." };
+  }
+
+  const ext = EXTENSION_BY_TYPE[contentType];
+  const path = `products/${productId}/${crypto.randomUUID()}.${ext}`;
+
+  const { data, error } = await getSupabaseAdmin()
+    .storage.from("images")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    return { ok: false, message: `Could not start upload (${error?.message ?? "unknown"}).` };
+  }
+
+  const { data: pub } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
+  return { ok: true, path: data.path, token: data.token, publicUrl: pub.publicUrl };
+}
+
+/**
+ * Record a file the browser already PUT to storage.
+ *
+ * Deliberately verifies the object EXISTS before writing the row, rather than
+ * trusting the client's word: the signed PUT happens outside this server's
+ * sight, so a failed or spoofed upload would otherwise leave a product row
+ * pointing at a 404 — which renders as a broken tile on the live storefront.
+ */
+export async function attachProductUpload(
+  productId: string,
+  path: string,
+  alt: string,
 ): Promise<UploadImagesResult> {
   await requireAdmin();
-  const id = requireId(formData);
+  if (!UUID_RE.test(productId)) return { ok: false, message: "Invalid product id" };
 
-  const files = formData
-    .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0);
-
-  if (files.length === 0) {
-    return { ok: false, message: "Choose at least one image or video file." };
+  // The path must be the one we handed out for THIS product — never a
+  // client-supplied path pointing at another product's folder.
+  if (!path.startsWith(`products/${productId}/`)) {
+    return { ok: false, message: "Invalid upload path." };
   }
 
-  const uploaded: { url: string; alt: string }[] = [];
+  const slash = path.lastIndexOf("/");
+  const { data: listed, error: listError } = await getSupabaseAdmin()
+    .storage.from("images")
+    .list(path.slice(0, slash), { search: path.slice(slash + 1), limit: 1 });
 
-  for (const file of files) {
-    const isVideo = ALLOWED_VIDEO_TYPES.has(file.type);
-
-    if (!isVideo && !ALLOWED_IMAGE_TYPES.has(file.type)) {
-      return {
-        ok: false,
-        message: `${file.name}: only PNG, JPEG, WEBP images or MP4 video are allowed.`,
-      };
-    }
-
-    // Each kind is checked against its own ceiling, so an oversized photo is
-    // still rejected at 8MB rather than being let through on the video limit.
-    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
-    if (file.size > maxBytes) {
-      return {
-        ok: false,
-        message: `${file.name}: ${isVideo ? "video" : "file"} is larger than ${
-          maxBytes / (1024 * 1024)
-        }MB.`,
-      };
-    }
-
-    const ext = EXTENSION_BY_TYPE[file.type];
-    const path = `products/${id}/${crypto.randomUUID()}.${ext}`;
-
-    const { error } = await getSupabaseAdmin()
-      .storage.from("images")
-      .upload(path, file, { contentType: file.type });
-
-    if (error) {
-      return { ok: false, message: `${file.name}: upload failed (${error.message}).` };
-    }
-
-    const { data } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
-    uploaded.push({ url: data.publicUrl, alt: file.name });
+  if (listError) return { ok: false, message: `Could not verify upload (${listError.message}).` };
+  if (!listed || listed.length === 0) {
+    return { ok: false, message: "Upload did not complete — nothing was stored." };
   }
 
-  await appendProductImages(id, uploaded);
-  revalidateProduct(id);
+  const { data: pub } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
+  await appendProductImages(productId, [
+    { url: pub.publicUrl, alt: alt.slice(0, MAX_IMAGE_ALT_LENGTH) },
+  ]);
+  revalidateProduct(productId);
 
-  return { ok: true, message: `Uploaded ${uploaded.length} file${uploaded.length === 1 ? "" : "s"}.` };
+  return { ok: true, message: "Uploaded." };
 }
 
 /**
