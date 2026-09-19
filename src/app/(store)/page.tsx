@@ -3,17 +3,21 @@ import Image from "next/image";
 import { listActiveProducts } from "@/lib/products";
 import { listLifestyleImages } from "@/lib/lifestyle";
 import { formatPrice } from "@/lib/product";
+import { getSiteSettings } from "@/lib/settings";
 import LifestyleGallery from "@/components/LifestyleGallery";
 import ProductQuickView from "@/components/ProductQuickView";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Both reads are independent, so run them concurrently rather than
-  // serializing two round trips on every render of a force-dynamic page.
-  const [products, lifestyleImages] = await Promise.all([
+  // All three reads are independent, so run them concurrently rather than
+  // serializing the round trips on every render of a force-dynamic page.
+  // (listActiveProducts reads settings itself for its own shuffle; the copy
+  // here is for the lookbook, whose shuffle happens client-side instead.)
+  const [products, lifestyleImages, settings] = await Promise.all([
     listActiveProducts(),
     listLifestyleImages(),
+    getSiteSettings(),
   ]);
 
   return (
@@ -141,7 +145,10 @@ export default async function Home() {
             </div>
           </div>
 
-          <LifestyleGallery images={lifestyleImages} />
+          <LifestyleGallery
+            images={lifestyleImages}
+            randomize={settings.randomizeLifestyle}
+          />
         </div>
       </section>
 

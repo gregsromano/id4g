@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
 
@@ -29,10 +29,81 @@ const SLOTS = [
   { className: "lg:col-span-5", width: 800, height: 1000, objectPosition: "" },
 ];
 
-export default function LifestyleGallery({ images }: { images: Item[] }) {
+/**
+ * Fisher-Yates, in place on a copy — the same reasoning as the product
+ * shuffle in products.ts: `sort(() => Math.random() - 0.5)` is not uniform
+ * and stays biased toward the original order.
+ */
+/**
+ * The "is this the client yet" store never changes after hydration, so there
+ * is nothing to subscribe to — but useSyncExternalStore requires a subscribe
+ * function, and it must be a stable reference or React resubscribes forever.
+ */
+function subscribeNoop() {
+  return () => {};
+}
+
+function shuffled<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+export default function LifestyleGallery({
+  images: ordered,
+  randomize = false,
+}: {
+  images: Item[];
+  randomize?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  /**
+   * The shuffle runs in the BROWSER, once per visit — not on the server per
+   * request like the product grid.
+   *
+   * It cannot be a server shuffle here. The gallery is PAGINATED with the
+   * page number in the URL, and the homepage is force-dynamic, so a server
+   * shuffle would deal a NEW order on every request: click Next and you get
+   * a fresh arrangement, so some photos repeat across pages and others are
+   * never shown. The lightbox indexes into this same list, so the order also
+   * has to hold still while someone is stepping through it.
+   *
+   * Computed once per mount and stored in state, so every later render —
+   * paging, opening the lightbox, arrow keys — reuses the same arrangement.
+   * A fresh visit or a reload remounts and deals a new one.
+   */
+  const [shuffledImages] = useState<Item[]>(() => shuffled(ordered));
+
+  /**
+   * Gate rather than a second shuffle: the arrangement above is dealt once
+   * in a state initializer, and this only decides WHEN it becomes visible.
+   *
+   * It has to wait for the client, because the server has no idea which
+   * order this visitor will get — rendering a shuffle during the first paint
+   * would disagree with the server's HTML and trip a hydration mismatch. So
+   * the manual order paints once, then swaps to the shuffle on mount.
+   *
+   * useSyncExternalStore, not a mount flag set from an effect: it returns
+   * the server snapshot (false) while rendering on the server and during
+   * hydration, then the client snapshot (true) — which is precisely this
+   * question, with no setState-in-effect round trip.
+   */
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true, // client
+    () => false, // server + hydration pass
+  );
+
+  const images = useMemo(
+    () => (randomize && mounted ? shuffledImages : ordered),
+    [randomize, mounted, shuffledImages, ordered],
+  );
 
   /**
    * The visible page lives in the URL (?lookbook=2) rather than in component

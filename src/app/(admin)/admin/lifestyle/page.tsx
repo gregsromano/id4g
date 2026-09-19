@@ -1,8 +1,10 @@
 import LifestyleGrid from "@/components/admin/LifestyleGrid";
+import LifestyleRandomizeToggle from "@/components/admin/LifestyleRandomizeToggle";
 import SaveButton from "@/components/admin/SaveButton";
 import UnsavedChangesForm from "@/components/admin/UnsavedChangesForm";
 import { listLifestyleImages } from "@/lib/lifestyle";
 import { LIFESTYLE_PAGE_SIZE } from "@/lib/lifestyle-constants";
+import { getSiteSettings } from "@/lib/settings";
 
 import {
   removeLifestyleImageAction,
@@ -13,7 +15,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function AdminLifestylePage() {
-  const images = await listLifestyleImages();
+  // Both are independent reads; parallel rather than serialized on a
+  // force-dynamic page.
+  const [images, settings] = await Promise.all([listLifestyleImages(), getSiteSettings()]);
   const pageCount = Math.ceil(images.length / LIFESTYLE_PAGE_SIZE);
 
   return (
@@ -47,6 +51,15 @@ export default async function AdminLifestylePage() {
           No lifestyle images yet. Use the “+” tile to add some.
         </p>
       ) : null}
+
+      {/* Hidden until there is something to shuffle: with 0 or 1 photos the
+          switch would be a control that provably cannot change anything. */}
+      {images.length > 1 && (
+        <LifestyleRandomizeToggle
+          enabled={settings.randomizeLifestyle}
+          imageCount={images.length}
+        />
+      )}
 
       <UnsavedChangesForm action={saveLifestyleGallery} className="mt-8 block">
         <div className="mb-4 flex items-center justify-between gap-4">

@@ -9,6 +9,7 @@ import {
   reorderLifestyleImages,
   updateLifestyleAlt,
 } from "@/lib/lifestyle";
+import { setRandomizeLifestyle } from "@/lib/settings";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -151,4 +152,27 @@ export async function removeLifestyleImageAction(id: string): Promise<void> {
 
   await removeLifestyleImage(id);
   revalidateLifestyle();
+}
+
+export type RandomizeLifestyleState = { error: string } | { ok: true } | null;
+
+/**
+ * Toggle the homepage lookbook shuffle.
+ *
+ * Separate from the products toggle so either gallery can be shuffled while
+ * the other keeps its manual order.
+ */
+export async function setRandomizeLifestyleAction(
+  enabled: boolean,
+): Promise<RandomizeLifestyleState> {
+  await requireAdmin();
+
+  try {
+    await setRandomizeLifestyle(enabled);
+  } catch {
+    return { error: "Could not save that. Try again." };
+  }
+
+  revalidateLifestyle();
+  return { ok: true };
 }

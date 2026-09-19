@@ -15,6 +15,29 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-09-19)
 
+**The lookbook can now be shuffled too, on its own switch (`/admin/lifestyle`).**
+A second boolean on the settings singleton (`randomize_lifestyle`,
+`20260919000002`) rather than reusing `randomize_products`, so either gallery
+can shuffle while the other keeps its manual order. Off by default; the switch
+is hidden below 2 images, where it provably could not change anything.
+
+**Unlike the product grid, this shuffle runs in the BROWSER, once per mount —
+and it has to.** The lookbook is PAGINATED with the page number in the URL, and
+`/` is force-dynamic, so a server-side shuffle would deal a new order on every
+request: clicking Next would repeat some photos across pages and never show
+others. The lightbox indexes into the same list, so the order also has to hold
+still while someone arrows through it. Dealt once in a `useState` initializer
+and revealed via `useSyncExternalStore` (server snapshot false, client true) —
+NOT a mount flag set from an effect, which is what `react-hooks/set-state-in-effect`
+rejects, and not a shuffle during render, which would trip a hydration mismatch.
+
+Verified in headless Chrome against the real 13-image gallery: paging all 3
+pages showed **13 photos, 13 distinct, 0 duplicates**; 6 visits gave 6 different
+orders; with the switch off, 6 visits gave the identical manual order; the
+lightbox opened the photo actually clicked, arrow-right advanced to the next one
+in the shuffled order, and the grid did not re-deal underneath it. No hydration
+errors. 72x44px switch, no h-scroll at 390px.
+
 **Product media can now be an MP4 video, not only a photo (`d479c9f`, fixed
 by `410afe0`).** Uploaded from the same "+" tile, and ordered / made cover / removed
 exactly like an image — video shares `products.images` and the `images` bucket
@@ -266,6 +289,18 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   from props, or the fresh data is discarded anyway.
 - **Verify admin work in a BROWSER, not just against the database.** All three bugs
   found this session had a perfectly correct data layer.
+- **A per-visitor shuffle cannot be rendered on the server if the list is
+  PAGINATED.** `/` is force-dynamic, so a server shuffle re-rolls on every
+  request — including the request that serves page 2, which then comes from a
+  different deal than page 1: photos repeat and others never appear. The product
+  grid gets away with a server shuffle only because it is a single unpaginated
+  grid. The lookbook shuffles client-side, once per mount, so the arrangement
+  survives paging and the lightbox.
+- **Randomizing in a client component is a hydration trap.** Shuffling during
+  render makes the client's first paint disagree with the server HTML. Deal the
+  order in a `useState` initializer and gate it behind `useSyncExternalStore`
+  (server snapshot `false`, client `true`); a `useState`+`useEffect` mount flag
+  does the same job but trips `react-hooks/set-state-in-effect`.
 - **VERCEL CAPS A FUNCTION REQUEST BODY AT 4.5MB** — hard, infrastructure-level,
   returns 413 FUNCTION_PAYLOAD_TOO_LARGE, and **cannot be raised**.
   `serverActions.bodySizeLimit` in next.config.ts can only LOWER the limit within
@@ -343,6 +378,12 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-09-19 (later): **Lookbook shuffle**, on its own switch at
+  `/admin/lifestyle` (`randomize_lifestyle`, `20260919000002`), independent of the
+  product shuffle. Runs in the browser once per mount rather than on the server
+  per request, because the gallery is paginated and a server shuffle would repeat
+  and skip photos as visitors page through. Verified: 13 photos over 3 pages with
+  0 duplicates, 6 visits / 6 different orders, identical order with it off.
 - 2026-09-19: **Product media accepts MP4 video** (`d479c9f`). Shares the existing
   `products.images` array and `images` bucket, with video-ness derived from the URL
   extension so no backfill was needed. MP4 only — an iPhone `.mov` is usually HEVC

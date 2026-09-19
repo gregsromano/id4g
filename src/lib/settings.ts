@@ -20,6 +20,17 @@ export type SiteSettings = {
   /** Shuffle the storefront product grid on every request. */
   randomizeProducts: boolean;
   /**
+   * Shuffle the homepage lookbook gallery.
+   *
+   * Separate from `randomizeProducts` because they are unrelated surfaces:
+   * one can shuffle while the other keeps its manual order.
+   *
+   * Unlike the product grid, the shuffle is applied in the BROWSER, once per
+   * visit — the lookbook is paginated, so re-rolling per request would make
+   * Next/Prev show repeats and skips. See LifestyleGallery.
+   */
+  randomizeLifestyle: boolean;
+  /**
    * Product held in first place while the shuffle is on; the rest are
    * shuffled below it. Null means the shuffle covers everything.
    *
@@ -37,23 +48,32 @@ export type SiteSettings = {
  * the setting only decides what order it is in. Losing the row degrades to
  * the manual order, which is the same thing a fresh install does.
  */
-const DEFAULTS: SiteSettings = { randomizeProducts: false, pinnedProductId: null };
+const DEFAULTS: SiteSettings = {
+  randomizeProducts: false,
+  randomizeLifestyle: false,
+  pinnedProductId: null,
+};
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   assertServiceRoleConfigured();
 
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
-    .select("randomize_products, pinned_product_id")
+    .select("randomize_products, randomize_lifestyle, pinned_product_id")
     .eq("id", SETTINGS_ID)
     .maybeSingle();
 
   if (error || !data) return DEFAULTS;
 
-  const row = data as { randomize_products: boolean; pinned_product_id: string | null };
+  const row = data as {
+    randomize_products: boolean;
+    randomize_lifestyle: boolean;
+    pinned_product_id: string | null;
+  };
 
   return {
     randomizeProducts: Boolean(row.randomize_products),
+    randomizeLifestyle: Boolean(row.randomize_lifestyle),
     pinnedProductId: row.pinned_product_id ?? null,
   };
 }
@@ -81,6 +101,28 @@ export async function setPinnedProduct(productId: string | null): Promise<void> 
 
   if (error) {
     console.error("[settings] failed to save pinned_product_id", {
+      message: error.message,
+    });
+    throw new Error("Failed to save setting");
+  }
+}
+
+export async function setRandomizeLifestyle(enabled: boolean): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      {
+        id: SETTINGS_ID,
+        randomize_lifestyle: enabled,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save randomize_lifestyle", {
       message: error.message,
     });
     throw new Error("Failed to save setting");
