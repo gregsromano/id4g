@@ -15,8 +15,8 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-09-19)
 
-**Product media can now be an MP4 video, not only a photo (`d479c9f`, fixed by
-`FIXSHA`).** Uploaded from the same "+" tile, and ordered / made cover / removed
+**Product media can now be an MP4 video, not only a photo (`d479c9f`, fixed
+by `410afe0`).** Uploaded from the same "+" tile, and ordered / made cover / removed
 exactly like an image — video shares `products.images` and the `images` bucket
 rather than getting a parallel list the admin would have to interleave by hand.
 
