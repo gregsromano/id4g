@@ -13,6 +13,45 @@ is no staging gate.
 Two products live (`brok3n-tee`, `jesus-john-316`). Admin back office at `/admin`:
 orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile.
 
+### Done this session (2026-09-19)
+
+**Product media can now be an MP4 video, not only a photo (`d479c9f`).** Uploaded
+from the same "+" tile, and ordered / made cover / removed exactly like an image —
+video shares `products.images` and the `images` bucket rather than getting a
+parallel list the admin would have to interleave by hand.
+
+**Video-ness is DERIVED from the URL extension (`src/lib/media.ts`), not stored.**
+Every URL in that array is one this app uploaded and named itself
+(`products/<id>/<uuid>.<ext>`), so the extension is reliable — and deriving it
+means the image rows already in production needed no backfill, and no row can
+carry a `kind` that disagrees with the file it points at.
+
+**MP4 only, deliberately — `.mov` is rejected.** An iPhone `.mov` is usually HEVC,
+which Chrome on Android and most Windows browsers will not play: it would upload
+cleanly and look right to an admin on a Mac while showing a black box to a share of
+real customers. There is no transcoding step on Hobby to normalize it, so the
+format is restricted instead. Verified against the live API: `video/quicktime`
+returns 415 `invalid_mime_type`.
+
+**Video has its own 50MB cap; images stay at 8MB.** A short phone clip runs to tens
+of megabytes. The limit is set on the BUCKET as well as in the action
+(`20260919000001`) — the action can only see what the browser reports, while
+Storage applies its own on the write path.
+
+**Every render site had to branch, because `next/image` throws on a non-image
+source** — one unguarded call breaks the whole page, not just the new feature.
+Four sites: the product gallery, its thumbnail strip, the homepage card
+(`ProductQuickView`), and both admin thumbnails (now one shared `CoverThumb` in
+`ProductsTable` so the two cannot drift). The lightbox is image-only: a video
+already plays inline with controls, so a modal copy would be a second player
+competing with the first.
+
+**Playback differs by context on purpose.** Gallery autoplays muted + looping WITH
+controls; the homepage card drops the controls, since the whole tile is a `Link`
+and a control bar would swallow taps meant to open the product; thumbnails and
+admin lists never play and use `preload="metadata"`, so listing products does not
+pull down a clip per row.
+
 ### Done this session (2026-09-16)
 
 **🎉 THE FIRST REAL ORDER LANDED — the live webhook fired for the first time ever.**
@@ -210,6 +249,19 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   from props, or the fresh data is discarded anyway.
 - **Verify admin work in a BROWSER, not just against the database.** All three bugs
   found this session had a perfectly correct data layer.
+- **`next/image` THROWS on a non-image source**, so every place that renders an item
+  out of `products.images` must branch on `isVideoUrl()` first (`src/lib/media.ts`).
+  A missed branch does not degrade to a broken thumbnail — it breaks the whole
+  page. There are four such sites: `ProductGallery` (main + thumbnail strip),
+  `ProductQuickView`, and `ProductsTable`'s shared `CoverThumb`.
+- **Checking rendered HTML is NOT enough for `<video>`.** React serializes
+  `autoPlay` / `playsInline` into the markup as camelCase attributes, which HTML
+  does not recognize — they look broken in `view-source` but resolve to correct DOM
+  properties on hydration. Verify with the hydrated DOM (headless Chrome via CDP:
+  `v.autoplay`, `v.paused`, `v.currentTime`), not `curl` output.
+- **Muted is not optional for autoplay** — browsers refuse to autoplay a video with
+  sound, and iOS Safari needs `playsInline` or it hijacks playback into fullscreen.
+  Confirmed autoplaying at 390px width.
 - **Wait for a Vercel deploy to settle before testing it.** Checking too soon returned
   the previous build three separate times this session and looked like a failed change
   each time. `vercel ls` age of ~1m+ is a reasonable gate; a cache-buster alone does not
@@ -261,6 +313,14 @@ multi-product catalog, so its single-product assumptions no longer describe the 
   SANDBOX `we_1U4S6SJk6ewcig7x6JLZ9gEm` still points at `id4g.vercel.app` (harmless).
 
 ## History
+- 2026-09-19: **Product media accepts MP4 video** (`d479c9f`). Shares the existing
+  `products.images` array and `images` bucket, with video-ness derived from the URL
+  extension so no backfill was needed. MP4 only — an iPhone `.mov` is usually HEVC
+  and would show a black box to Android/Windows customers while looking fine on a
+  Mac, and there is no transcoding available on Hobby. Bucket widened to 50MB for
+  video (images still capped at 8MB in the action). All four `next/image` call
+  sites now branch, since that component throws on a video source and would take
+  the whole page down. Verified in headless Chrome against the hydrated DOM.
 - 2026-09-16: **First real order** + bounded discount codes + storefront shuffle. The live webhook fired for the first time ever
   (`orders` 0 -> 1), exercising the pickup and discount paths simultaneously; all
   amounts reconciled against the live Stripe API. Confirmed $0 out-of-state tax is
