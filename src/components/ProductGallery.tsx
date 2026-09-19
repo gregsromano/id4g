@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+import { isVideoUrl } from "@/lib/media";
+
 type GalleryImage = { url: string; alt: string };
 
 export default function ProductGallery({ images }: { images: GalleryImage[] }) {
@@ -25,24 +27,47 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
       <div className="group relative aspect-square w-full overflow-hidden">
         {active ? (
           <>
-            <Image
-              src={active.url}
-              alt={active.alt}
-              width={1200}
-              height={1200}
-              className="h-full w-full object-contain"
-            />
-            <button
-              type="button"
-              aria-label="View larger image"
-              onClick={() => setOpen(true)}
-              className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center border border-[var(--border)] bg-[var(--bg-primary)]/80 text-[var(--text-primary)] opacity-0 transition-opacity duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)] group-hover:opacity-100"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                <line x1="8" y1="1" x2="8" y2="15" stroke="currentColor" strokeWidth="2" />
-                <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            </button>
+            {isVideoUrl(active.url) ? (
+              /* autoPlay REQUIRES muted to be honored by browsers, and
+                 playsInline keeps iOS Safari from hijacking it into
+                 fullscreen. Controls stay on so the clip can be paused. */
+              <video
+                src={active.url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                preload="metadata"
+                aria-label={active.alt || "Product video"}
+                className="h-full w-full object-contain"
+              />
+            ) : (
+              <Image
+                src={active.url}
+                alt={active.alt}
+                width={1200}
+                height={1200}
+                className="h-full w-full object-contain"
+              />
+            )}
+            {/* Images only: the video already plays inline with its own
+                controls, so a lightbox copy would just be a second player
+                competing with the first — and its button would sit over the
+                scrubber on small screens. */}
+            {!isVideoUrl(active.url) && (
+              <button
+                type="button"
+                aria-label="View larger image"
+                onClick={() => setOpen(true)}
+                className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center border border-[var(--border)] bg-[var(--bg-primary)]/80 text-[var(--text-primary)] opacity-0 transition-opacity duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)] group-hover:opacity-100"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <line x1="8" y1="1" x2="8" y2="15" stroke="currentColor" strokeWidth="2" />
+                  <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </button>
+            )}
           </>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
@@ -62,13 +87,27 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
                 i === index ? "border-[var(--accent)]" : "border-[var(--border)]"
               }`}
             >
-              <Image
-                src={image.url}
-                alt={image.alt}
-                width={64}
-                height={64}
-                className="h-full w-full object-cover"
-              />
+              {/* Thumbnail videos never play — muted, no autoplay, metadata
+                  only, so the strip stays a still preview and does not pull
+                  down every clip's bytes on page load. */}
+              {isVideoUrl(image.url) ? (
+                <video
+                  src={image.url}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  aria-label={image.alt || "Product video"}
+                  className="pointer-events-none h-full w-full object-cover"
+                />
+              ) : (
+                <Image
+                  src={image.url}
+                  alt={image.alt}
+                  width={64}
+                  height={64}
+                  className="h-full w-full object-cover"
+                />
+              )}
             </button>
           ))}
         </div>
@@ -80,7 +119,10 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
         </p>
       )}
 
-      {open && active && (
+      {/* isVideoUrl is re-checked, not assumed: the button that sets `open`
+          is already image-only, but this is the call that would throw if a
+          later change ever let a video through. */}
+      {open && active && !isVideoUrl(active.url) && (
         <div
           role="dialog"
           aria-modal="true"

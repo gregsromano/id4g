@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useState } from "react";
 
+import { isVideoUrl } from "@/lib/media";
+
 import AddImageTile from "./AddImageTile";
 import MoveButtons from "./MoveButtons";
 
@@ -98,7 +100,27 @@ export default function ImageReorderGrid({
                     : "border-[var(--border)]"
                 }`}
               >
-                <Image src={image.url} alt={image.alt} fill className="object-cover" />
+                {/* A video must never reach next/image, which throws on a
+                    non-image source. Muted with controls and no autoplay:
+                    this is a review grid, and a wall of clips playing at
+                    once is noise when the admin only needs to scrub one. */}
+                {isVideoUrl(image.url) ? (
+                  <>
+                    <video
+                      src={image.url}
+                      muted
+                      playsInline
+                      controls
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                    />
+                    <span className="pointer-events-none absolute right-2 top-2 border border-[var(--border)] bg-[var(--bg-primary)]/80 px-1.5 py-0.5 text-[9px] uppercase tracking-widest text-[var(--text-muted)]">
+                      Video
+                    </span>
+                  </>
+                ) : (
+                  <Image src={image.url} alt={image.alt} fill className="object-cover" />
+                )}
                 {index === 0 && (
                   <span className="absolute left-2 top-2 border border-[var(--accent)] bg-[var(--bg-primary)] px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--accent)]">
                     Cover

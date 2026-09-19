@@ -54,13 +54,16 @@ export default function AddImageTile({ productId }: { productId: string }) {
       ) : (
         <>
           <span className="text-3xl leading-none">+</span>
-          <span className="text-[10px] uppercase tracking-widest">Add images</span>
+          <span className="text-[10px] uppercase tracking-widest">Add media</span>
+          <span className="text-[9px] uppercase tracking-widest opacity-70">
+            Images or MP4
+          </span>
         </>
       )}
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp"
+        accept="image/png,image/jpeg,image/webp,video/mp4"
         multiple
         disabled={isPending}
         onChange={handleChange}

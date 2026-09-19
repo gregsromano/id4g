@@ -43,7 +43,24 @@ const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 20000;
 const MAX_IMAGE_ALT_LENGTH = 200;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+// Video gets its own, much larger ceiling: a 15-30s phone clip runs to tens
+// of megabytes where a product photo is under two, so one shared limit would
+// have to be either uselessly small for video or needlessly loose for images.
+// Kept in step with the bucket's own file_size_limit (20260919000001).
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+// MP4 only. An iPhone .mov is usually HEVC, which Chrome on Android and most
+// Windows browsers will not play — it would upload fine and look correct to
+// an admin on a Mac while showing a black box to real customers, and there is
+// no transcoding step here to normalize it.
+const ALLOWED_VIDEO_TYPES = new Set(["video/mp4"]);
+
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+  "video/mp4": "mp4",
+};
 
 function requireId(formData: FormData): string {
   const id = String(formData.get("id") ?? "");
@@ -268,20 +285,34 @@ export async function uploadProductImages(
     .filter((f): f is File => f instanceof File && f.size > 0);
 
   if (files.length === 0) {
-    return { ok: false, message: "Choose at least one image file." };
+    return { ok: false, message: "Choose at least one image or video file." };
   }
 
   const uploaded: { url: string; alt: string }[] = [];
 
   for (const file of files) {
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      return { ok: false, message: `${file.name}: only PNG, JPEG, or WEBP images are allowed.` };
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      return { ok: false, message: `${file.name}: file is larger than 8MB.` };
+    const isVideo = ALLOWED_VIDEO_TYPES.has(file.type);
+
+    if (!isVideo && !ALLOWED_IMAGE_TYPES.has(file.type)) {
+      return {
+        ok: false,
+        message: `${file.name}: only PNG, JPEG, WEBP images or MP4 video are allowed.`,
+      };
     }
 
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    // Each kind is checked against its own ceiling, so an oversized photo is
+    // still rejected at 8MB rather than being let through on the video limit.
+    const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+    if (file.size > maxBytes) {
+      return {
+        ok: false,
+        message: `${file.name}: ${isVideo ? "video" : "file"} is larger than ${
+          maxBytes / (1024 * 1024)
+        }MB.`,
+      };
+    }
+
+    const ext = EXTENSION_BY_TYPE[file.type];
     const path = `products/${id}/${crypto.randomUUID()}.${ext}`;
 
     const { error } = await getSupabaseAdmin()
@@ -299,7 +330,7 @@ export async function uploadProductImages(
   await appendProductImages(id, uploaded);
   revalidateProduct(id);
 
-  return { ok: true, message: `Uploaded ${uploaded.length} image${uploaded.length === 1 ? "" : "s"}.` };
+  return { ok: true, message: `Uploaded ${uploaded.length} file${uploaded.length === 1 ? "" : "s"}.` };
 }
 
 /**

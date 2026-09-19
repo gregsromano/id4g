@@ -6,8 +6,31 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { reorderProductsAction } from "@/app/(admin)/admin/products/actions";
 import { formatPrice } from "@/lib/product";
+import { isVideoUrl } from "@/lib/media";
 import MoveButtons from "./MoveButtons";
 import type { AdminProductSummary, ProductFilter } from "@/lib/products";
+
+/**
+ * The cover item can be a video, which next/image throws on. Shared by the
+ * desktop row and the mobile card so the two thumbnails cannot drift.
+ * Never plays: metadata only, so listing every product does not fetch a
+ * clip per row.
+ */
+function CoverThumb({ url, alt }: { url: string; alt: string }) {
+  if (isVideoUrl(url)) {
+    return (
+      <video
+        src={url}
+        muted
+        playsInline
+        preload="metadata"
+        aria-label={alt || "Product video"}
+        className="h-full w-full object-cover"
+      />
+    );
+  }
+  return <Image src={url} alt={alt} fill className="object-cover" />;
+}
 
 /**
  * Drag-and-drop reordering (native HTML5 DnD — desktop only, phones do not
@@ -177,7 +200,7 @@ export default function ProductsTable({
                   <Td>
                     <div className="relative h-12 w-12 overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
                       {cover ? (
-                        <Image src={cover.url} alt={cover.alt} fill className="object-cover" />
+                        <CoverThumb url={cover.url} alt={cover.alt} />
                       ) : null}
                     </div>
                   </Td>
@@ -228,7 +251,7 @@ export default function ProductsTable({
                 <div className="flex gap-4">
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden border border-[var(--border)] bg-[var(--bg-section-alt)]">
                     {cover ? (
-                      <Image src={cover.url} alt={cover.alt} fill className="object-cover" />
+                      <CoverThumb url={cover.url} alt={cover.alt} />
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">

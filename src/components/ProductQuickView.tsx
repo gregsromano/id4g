@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { isVideoUrl } from "@/lib/media";
+
 type QuickViewImage = { url: string; alt: string };
 
 export default function ProductQuickView({
@@ -36,13 +38,30 @@ export default function ProductQuickView({
           <div className="relative aspect-square w-full">
             {image ? (
               <>
-                <Image
-                  src={image.url}
-                  alt={image.alt}
-                  width={800}
-                  height={800}
-                  className="h-full w-full scale-[1.2] object-contain transition-transform duration-500 group-hover:scale-[1.26]"
-                />
+                {/* No controls on the card: the whole tile is a Link to the
+                    product, and a control bar would swallow taps meant to
+                    open it. The clip just loops silently as motion; the
+                    product page is where it gets a real player. */}
+                {isVideoUrl(image.url) ? (
+                  <video
+                    src={image.url}
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-label={image.alt || name}
+                    className="pointer-events-none h-full w-full scale-[1.2] object-contain transition-transform duration-500 group-hover:scale-[1.26]"
+                  />
+                ) : (
+                  <Image
+                    src={image.url}
+                    alt={image.alt}
+                    width={800}
+                    height={800}
+                    className="h-full w-full scale-[1.2] object-contain transition-transform duration-500 group-hover:scale-[1.26]"
+                  />
+                )}
                 {image.alt && (
                   <span className="absolute bottom-2 left-2 border border-[var(--border)] bg-[var(--bg-primary)]/80 px-2 py-0.5 text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
                     {image.alt}
@@ -61,7 +80,7 @@ export default function ProductQuickView({
           <p className="mt-1 text-sm text-[var(--text-muted)]">{priceLabel}</p>
         </Link>
 
-        {image && (
+        {image && !isVideoUrl(image.url) && (
           <button
             type="button"
             aria-label={`View larger image of ${name}`}
@@ -76,7 +95,10 @@ export default function ProductQuickView({
         )}
       </div>
 
-      {open && image && (
+      {/* Guarded as well as gated: the only button that opens this is already
+          image-only, but next/image throws on a video source, so the check
+          belongs at the render too. */}
+      {open && image && !isVideoUrl(image.url) && (
         <div
           role="dialog"
           aria-modal="true"
