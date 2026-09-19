@@ -35,7 +35,11 @@ export default function ProductQuickView({
     <>
       <div className="group relative">
         <Link href={href} className="block">
-          <div className="relative aspect-square w-full">
+          {/* overflow-hidden is load-bearing: the artwork is scaled to 1.2
+              (and 1.26 on hover) to crop in on the print, and without a clip
+              it spilled outside this box — over the product name below it,
+              past the card's left edge, and up under the "Shop" heading. */}
+          <div className="relative aspect-square w-full overflow-hidden">
             {image ? (
               <>
                 {/* No controls on the card: the whole tile is a Link to the
