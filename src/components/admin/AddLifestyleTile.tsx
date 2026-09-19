@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
 
-import { uploadLifestyleImages } from "@/app/(admin)/admin/lifestyle/actions";
+import {
+  attachLifestyleUpload,
+  createLifestyleUploadUrl,
+} from "@/app/(admin)/admin/lifestyle/actions";
+import { getSupabase } from "@/lib/supabase";
+
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 /**
  * Grid-cell "+" upload button for the lifestyle gallery. Mirrors
@@ -30,14 +36,46 @@ export default function AddLifestyleTile() {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const formData = new FormData();
-    for (const file of Array.from(files)) formData.append("files", file);
+    const chosen = Array.from(files);
 
     startTransition(async () => {
       setError(null);
-      const result = await uploadLifestyleImages(null, formData);
-      if (!result.ok) setError(result.message);
-      else router.refresh();
+
+      for (const file of chosen) {
+        // Checked here so an oversized pick fails with a sentence rather
+        // than partway through the transfer.
+        if (file.size > MAX_IMAGE_BYTES) {
+          setError(`${file.name}: larger than 8MB.`);
+          break;
+        }
+
+        // The file goes BROWSER -> SUPABASE directly, never through a server
+        // action: Vercel caps a function request body at 4.5MB (413
+        // FUNCTION_PAYLOAD_TOO_LARGE) and that ceiling cannot be configured
+        // away, so a photo over it would fail if posted to the server.
+        const signed = await createLifestyleUploadUrl(file.type);
+        if (!signed.ok) {
+          setError(signed.message);
+          break;
+        }
+
+        const { error: putError } = await getSupabase()
+          .storage.from("images")
+          .uploadToSignedUrl(signed.path, signed.token, file, { contentType: file.type });
+
+        if (putError) {
+          setError(`${file.name}: upload failed (${putError.message}).`);
+          break;
+        }
+
+        const attached = await attachLifestyleUpload(signed.path, file.name);
+        if (!attached.ok) {
+          setError(attached.message);
+          break;
+        }
+      }
+
+      router.refresh();
       if (inputRef.current) inputRef.current.value = "";
     });
   }

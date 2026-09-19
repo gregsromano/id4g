@@ -15,6 +15,15 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-09-19)
 
+**The lifestyle uploader now uses the same signed-upload path as product
+media.** It was the last place still POSTing a file to a server action, so it
+carried Vercel's 4.5MB ceiling while its own validation advertised 8MB: every
+lookbook photo in that gap would have 413'd as an unloadable page. Latent rather
+than reported — photos are usually 1-2MB — and closed before it bit. Verified by
+uploading a **5.6MB** PNG through the real admin UI (over the platform cap, under
+our limit): signed URL -> direct PUT -> row recorded -> grid re-rendered. Test
+image removed from the row and from storage afterwards.
+
 **The lookbook can now be shuffled too, on its own switch (`/admin/lifestyle`).**
 A second boolean on the settings singleton (`randomize_lifestyle`,
 `20260919000002`) rather than reusing `randomize_products`, so either gallery
@@ -227,12 +236,6 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 - ~~No real-money order has ever been placed.~~ **RESOLVED 2026-09-16 — see below.**
   The live webhook fired, and the order exercised the pickup AND discount paths at once.
   The shipping path is still unexercised by a real card.
-- **The LIFESTYLE uploader still POSTs files to a server action, so it inherits
-  Vercel's 4.5MB request-body ceiling** — a lookbook photo between 4.5MB and the
-  8MB its own validation allows will fail in production with a 413, not a readable
-  message. Pre-existing (it predates the video work) and not yet hit in practice
-  since photos are usually under 2MB. The fix is the same signed-upload pattern
-  product media now uses (`createProductUploadUrl` / `attachProductUpload`).
 - **`/api/admin/export` returns 500, not 401, when unauthenticated.** `requireAdmin()`
   throws, nothing catches it. No data is returned, so the security property holds; this
   is cosmetic and pre-existing.

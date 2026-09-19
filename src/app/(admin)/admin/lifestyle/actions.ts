@@ -23,7 +23,10 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+// The 8MB per-file ceiling lives in AddLifestyleTile, not here: the file
+// never reaches this server any more (browser -> Supabase with a signed
+// token), so the only checks that can stop an oversized upload are the
+// client's, for a friendly message, and the bucket's own file_size_limit.
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_ALT_LENGTH = 300;
 
@@ -38,51 +41,92 @@ function revalidateLifestyle() {
 
 export type UploadLifestyleResult = { ok: boolean; message: string };
 
-export async function uploadLifestyleImages(
-  _prev: UploadLifestyleResult | null,
-  formData: FormData,
+export type SignedLifestyleUpload =
+  | { ok: true; path: string; token: string }
+  | { ok: false; message: string };
+
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp",
+};
+
+/**
+ * Mint a one-file signed upload token so the BROWSER can PUT straight to
+ * Supabase Storage, never routing the bytes through a server action.
+ *
+ * Same hard ceiling as product media: **Vercel caps a function request body
+ * at 4.5MB** (413 FUNCTION_PAYLOAD_TOO_LARGE), and that limit is
+ * infrastructure-level — `serverActions.bodySizeLimit` can only lower it, so
+ * no config makes a bigger file fit. This upload used to POST the file
+ * itself and allowed 8MB, so every lookbook photo between 4.5MB and 8MB
+ * passed our own validation and then failed as an unhandled 413, which the
+ * admin sees as "This page couldn't load". Only the token crosses the
+ * function boundary now, so the request stays kilobytes.
+ *
+ * Size is not checkable here (there is no file yet) — the bucket's own
+ * file_size_limit is what actually rejects an oversized upload, server-side,
+ * at the moment of the PUT.
+ */
+export async function createLifestyleUploadUrl(
+  contentType: string,
+): Promise<SignedLifestyleUpload> {
+  await requireAdmin();
+
+  if (!ALLOWED_IMAGE_TYPES.has(contentType)) {
+    return { ok: false, message: "Only PNG, JPEG, or WEBP images are allowed." };
+  }
+
+  const path = `lifestyle/${crypto.randomUUID()}.${EXTENSION_BY_TYPE[contentType]}`;
+
+  const { data, error } = await getSupabaseAdmin()
+    .storage.from("images")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    return { ok: false, message: `Could not start upload (${error?.message ?? "unknown"}).` };
+  }
+
+  return { ok: true, path: data.path, token: data.token };
+}
+
+/**
+ * Record a file the browser already PUT to storage.
+ *
+ * Verifies the object EXISTS before writing the row rather than trusting the
+ * client: the PUT happens outside this server's sight, so a failed or forged
+ * upload would otherwise leave a gallery row pointing at a 404, which renders
+ * as a broken tile on the live homepage.
+ */
+export async function attachLifestyleUpload(
+  path: string,
+  alt: string,
 ): Promise<UploadLifestyleResult> {
   await requireAdmin();
 
-  const files = formData
-    .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0);
-
-  if (files.length === 0) {
-    return { ok: false, message: "Choose at least one image file." };
+  // Must be a path we handed out — never a client-supplied path elsewhere in
+  // the bucket (product folders, say).
+  if (!path.startsWith("lifestyle/")) {
+    return { ok: false, message: "Invalid upload path." };
   }
 
-  const uploaded: { url: string; alt: string }[] = [];
+  const slash = path.lastIndexOf("/");
+  const { data: listed, error: listError } = await getSupabaseAdmin()
+    .storage.from("images")
+    .list(path.slice(0, slash), { search: path.slice(slash + 1), limit: 1 });
 
-  for (const file of files) {
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      return { ok: false, message: `${file.name}: only PNG, JPEG, or WEBP images are allowed.` };
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      return { ok: false, message: `${file.name}: file is larger than 8MB.` };
-    }
-
-    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-    const path = `lifestyle/${crypto.randomUUID()}.${ext}`;
-
-    const { error } = await getSupabaseAdmin()
-      .storage.from("images")
-      .upload(path, file, { contentType: file.type });
-
-    if (error) {
-      return { ok: false, message: `${file.name}: upload failed (${error.message}).` };
-    }
-
-    const { data } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
-    // Alt defaults to the filename so the field is never empty on arrival;
-    // the admin edits it to something descriptive and saves.
-    uploaded.push({ url: data.publicUrl, alt: file.name });
+  if (listError) return { ok: false, message: `Could not verify upload (${listError.message}).` };
+  if (!listed || listed.length === 0) {
+    return { ok: false, message: "Upload did not complete — nothing was stored." };
   }
 
-  await appendLifestyleImages(uploaded);
+  const { data } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
+  // Alt defaults to the filename so the field is never empty on arrival;
+  // the admin edits it to something descriptive and saves.
+  await appendLifestyleImages([{ url: data.publicUrl, alt: alt.slice(0, MAX_ALT_LENGTH) }]);
   revalidateLifestyle();
 
-  return { ok: true, message: `Uploaded ${uploaded.length} image${uploaded.length === 1 ? "" : "s"}.` };
+  return { ok: true, message: "Uploaded." };
 }
 
 /**
