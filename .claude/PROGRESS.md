@@ -15,6 +15,23 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-10-07)
 
+**Google Analytics 4 (`G-BD5PFM2HKH`) on the storefront.** Added to the
+`(store)` layout, NOT the root layout: that one also wraps `/admin`, so the
+tag would have counted Greg's own back-office sessions as traffic and sent
+order-page data to Google. Same reasoning that moved the cart out of the root
+layout earlier. Uses `next/script` rather than the raw `<script>` tags Google
+supplies — React strips script tags written into JSX, so the snippet pasted
+literally would silently never run. Verified in a browser: storefront pages
+define `gtag`, load the loader, and send a real `/g/collect` pageview hit;
+`/admin/login` makes ZERO Google requests.
+
+**Popup layout restyled to the reference Greg supplied.** Phone first, then
+an always-visible consent checkbox with the full TCPA disclosure as its own
+block beneath, then email, then "Sign me up". The checkbox no longer appears
+only after a number is typed — in this order it sits directly under the phone
+field, so it reads as that field's option. Ticking it with no number still
+records no consent; the server ignores it.
+
 **Homepage email/SMS signup popup, trading a one-time 15% code for contact
 details (`/admin/email` to switch on and off).** Off by default. Appears 5s
 after landing, once per visitor (localStorage), and the code is shown on

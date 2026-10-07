@@ -182,27 +182,85 @@ export default function EmailPopup() {
           </div>
         ) : (
           <>
-            <span className="section-label">Exclusive drops</span>
             <h2
               id="email-popup-title"
-              className="!text-3xl mt-2 text-[var(--text-primary)] sm:!text-4xl"
+              className="!text-3xl text-[var(--text-primary)] sm:!text-4xl"
             >
-              Get 15% off
+              Stay Updated!
             </h2>
             <p className="mt-3 text-sm text-[var(--text-body)]">
-              Join the list for early access to new drops and sales — and take 15% off
-              your first order.
+              Sign up for early access on all future drops — and take 15% off your
+              first order.
             </p>
 
+            {/* Field order follows the reference layout: phone first with its
+                consent directly beneath, then email last above the button, so
+                the consent sits next to the thing it governs. */}
             <form onSubmit={submit} className="mt-6">
-              <label htmlFor="email-popup-input" className="sr-only">
-                Email address
+              <label htmlFor="phone-popup-input" className="sr-only">
+                Phone number (optional)
               </label>
               {/* Underline fields rather than boxes: lighter against the dark
                   panel, and the 16px text size is deliberate — anything
                   smaller makes iOS Safari zoom the page on focus. */}
               <input
                 ref={inputRef}
+                id="phone-popup-input"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Enter phone number"
+                disabled={status === "sending"}
+                className="h-12 w-full border-0 border-b border-[var(--border)] bg-transparent px-1 text-base text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] disabled:opacity-50"
+              />
+
+              {/* Always visible, unlike before: in this layout it sits directly
+                  under the phone field, so it reads as that field's option
+                  rather than appearing from nowhere mid-form. Ticking it with
+                  no number still records no consent — the server ignores it,
+                  because consenting with nothing to text consents to nothing. */}
+              <div className="mt-5 flex items-center gap-3">
+                <input
+                  id="sms-consent"
+                  type="checkbox"
+                  checked={smsConsent}
+                  onChange={(e) => setSmsConsent(e.target.checked)}
+                  disabled={status === "sending"}
+                  className="h-5 w-5 shrink-0 cursor-pointer accent-[var(--accent)]"
+                />
+                <label
+                  htmlFor="sms-consent"
+                  className="cursor-pointer text-sm text-[var(--text-primary)]"
+                >
+                  Receive offers via text message
+                </label>
+              </div>
+
+              {/* The full disclosure is a separate block below the checkbox, as
+                  in the reference: the label stays short and tappable, while
+                  the legal text it commits to is still on screen at the moment
+                  of consent rather than hidden behind the link. */}
+              <p className="mt-3 text-[11px] leading-relaxed text-[var(--text-muted)]">
+                By checking this box, I consent to receive marketing text messages
+                from ID4G at the number provided, including messages sent by an
+                automatic telephone dialing system. Consent is not a condition of
+                purchase. Msg &amp; data rates may apply. Reply STOP to unsubscribe or
+                HELP for help.{" "}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-[var(--accent)] underline underline-offset-2"
+                >
+                  Check our privacy policy
+                </Link>
+              </p>
+
+              <label htmlFor="email-popup-input" className="sr-only">
+                Email address
+              </label>
+              <input
                 id="email-popup-input"
                 type="email"
                 required
@@ -212,55 +270,8 @@ export default function EmailPopup() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 disabled={status === "sending"}
-                className="h-12 w-full border-0 border-b border-[var(--border)] bg-transparent px-1 text-base text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] disabled:opacity-50"
+                className="mt-5 h-12 w-full border-0 border-b border-[var(--border)] bg-transparent px-1 text-base text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] disabled:opacity-50"
               />
-
-              <label htmlFor="phone-popup-input" className="sr-only">
-                Phone number (optional)
-              </label>
-              <input
-                id="phone-popup-input"
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Phone number (optional)"
-                disabled={status === "sending"}
-                className="mt-4 h-12 w-full border-0 border-b border-[var(--border)] bg-transparent px-1 text-base text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] disabled:opacity-50"
-              />
-
-              {/* The consent box is only shown once a number has been typed:
-                  an untouched checkbox above an empty field is noise, and
-                  consenting with no number consents to nothing. */}
-              {phone.trim().length > 0 && (
-                <div className="mt-5 flex gap-3">
-                  <input
-                    id="sms-consent"
-                    type="checkbox"
-                    checked={smsConsent}
-                    onChange={(e) => setSmsConsent(e.target.checked)}
-                    disabled={status === "sending"}
-                    className="mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--accent)]"
-                  />
-                  <label
-                    htmlFor="sms-consent"
-                    className="cursor-pointer text-xs leading-relaxed text-[var(--text-muted)]"
-                  >
-                    Text me about new drops. Recurring automated marketing texts;
-                    consent is not a condition of purchase. Msg &amp; data rates may
-                    apply. Reply STOP to opt out. See our{" "}
-                    <Link
-                      href="/privacy"
-                      target="_blank"
-                      className="text-[var(--accent)] underline-offset-2 hover:underline"
-                    >
-                      privacy policy
-                    </Link>
-                    .
-                  </label>
-                </div>
-              )}
 
               {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
 
