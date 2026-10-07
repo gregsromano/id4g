@@ -6,34 +6,74 @@ import { useCallback, useEffect, useRef, useState } from "react";
 /**
  * Homepage email capture: address in, one-time 15% code out.
  *
- * Shown once per visitor and then remembered in localStorage, so it is not
- * a toll gate on every page view. That memory is per-browser and can come
- * back empty (private windows, cleared data, a blocked accessor throwing),
- * which is why every read and write is wrapped — the worst case is that
- * someone sees the popup a second time, never that the page fails to render.
+ * Suppression is remembered in localStorage, and SIGNING UP is treated very
+ * differently from DISMISSING: a signup hides it for good, while a dismissal
+ * only quiets it for a week. Both used to write the same flag, which meant
+ * one "No thanks" retired the offer permanently — a visitor who was simply
+ * busy on their first visit never saw it again.
+ *
+ * That memory is per-browser and can come back empty (private windows,
+ * cleared data, a blocked accessor throwing), which is why every read and
+ * write is wrapped — the worst case is someone seeing the popup again, never
+ * that the page fails to render.
  *
  * The SERVER still decides who gets a code: a visitor who clears storage and
  * submits the same address again gets the SAME code back, because the
  * subscriber table is keyed by email.
  */
 
-const SEEN_KEY = "id4g_email_popup_seen";
+/**
+ * Set only when someone actually SIGNS UP — they have their code, so showing
+ * the offer again would be noise.
+ */
+const SIGNED_UP_KEY = "id4g_email_popup_signed_up";
+/**
+ * Set when someone dismisses without signing up. Deliberately a SEPARATE key
+ * from signing up, and deliberately time-limited: dismissing once used to
+ * hide the popup forever, so a visitor who closed it on their first look
+ * never saw the offer again. Now it stays quiet for the rest of that visit
+ * and the following few days, then gets one more chance.
+ */
+const DISMISSED_KEY = "id4g_email_popup_dismissed_at";
+const DISMISS_DAYS = 7;
 const DELAY_MS = 5000;
 
-function hasSeen(): boolean {
+/**
+ * Whether to stay hidden.
+ *
+ * Signing up suppresses it permanently; dismissing suppresses it for
+ * DISMISS_DAYS. Any storage failure returns false (show it) — the worst case
+ * is seeing the offer again, which is better than a visitor who never sees it.
+ */
+function shouldStayHidden(): boolean {
   try {
-    return window.localStorage.getItem(SEEN_KEY) === "1";
+    if (window.localStorage.getItem(SIGNED_UP_KEY) === "1") return true;
+
+    const dismissedAt = Number(window.localStorage.getItem(DISMISSED_KEY));
+    if (!Number.isFinite(dismissedAt) || dismissedAt <= 0) return false;
+
+    return Date.now() - dismissedAt < DISMISS_DAYS * 24 * 60 * 60 * 1000;
   } catch {
     return false;
   }
 }
 
-function markSeen() {
+function markSignedUp() {
   try {
-    window.localStorage.setItem(SEEN_KEY, "1");
+    window.localStorage.setItem(SIGNED_UP_KEY, "1");
+    // Clear the dismissal so the two cannot disagree about why it is hidden.
+    window.localStorage.removeItem(DISMISSED_KEY);
   } catch {
     // Private mode or blocked storage: showing it again next visit is an
     // acceptable outcome, a crash is not.
+  }
+}
+
+function markDismissed() {
+  try {
+    window.localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+  } catch {
+    // Same as above — never let storage take the page down.
   }
 }
 
@@ -53,16 +93,18 @@ export default function EmailPopup() {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (hasSeen()) return;
+    if (shouldStayHidden()) return;
     const timer = setTimeout(() => setOpen(true), DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
 
   const close = useCallback(() => {
     setOpen(false);
-    // Marked on close rather than on open: someone who never saw it (tab in
-    // the background, closed the page early) should still get a chance.
-    markSeen();
+    // A dismissal is recorded with a timestamp, not a permanent flag: it
+    // quiets the popup for DISMISS_DAYS rather than retiring it. Someone who
+    // signed up already took the `status === "done"` path below and is
+    // suppressed permanently, so this only ever affects non-subscribers.
+    markDismissed();
   }, []);
 
   // Escape closes, and focus moves into the dialog so a keyboard or screen
@@ -101,7 +143,7 @@ export default function EmailPopup() {
       setCode(data.code);
       setRepeat(Boolean(data.alreadySubscribed));
       setStatus("done");
-      markSeen();
+      markSignedUp();
     } catch {
       setError("Could not reach the server. Please try again.");
       setStatus("error");

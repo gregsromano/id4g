@@ -15,6 +15,19 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-10-07)
 
+**Dismissing the popup no longer hides it forever.** Closing it and signing
+up both wrote the same localStorage flag, so one "No thanks" retired the
+offer permanently — a visitor who was just busy on their first visit never
+saw it again. Now two separate keys: signing up suppresses it for good (they
+have their code), dismissing suppresses it for 7 days. Verified in a browser
+across all four paths: shown on first visit, hidden after dismissing, shown
+again once the 7 days lapse, and never again after an actual signup — not
+even 400 days later.
+
+**Product copy + alt text filled in for BROK3N Hoodie and the Bling Crown
+Tee** (Greg's own wording). Their image alt text was raw camera filenames
+(`C4834079-...png`), which tells a search engine nothing.
+
 **Technical SEO — the storefront had almost none.** Every one of the seven
 product pages served the ROOT layout's site-wide title and description, so
 Google saw seven duplicates of the homepage and nothing named the product.
