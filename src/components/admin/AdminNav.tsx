@@ -11,7 +11,8 @@ const LINKS = [
   { href: "/admin/products", label: "Products" },
   { href: "/admin/lifestyle", label: "Lifestyle" },
   { href: "/admin/discounts", label: "Discounts" },
-  { href: "/admin/import", label: "Import tracking" },
+  { href: "/admin/email", label: "Email" },
+  { href: "/admin/import", label: "Tracking" },
   { href: "/admin/profile", label: "Profile" },
 ];
 
@@ -23,11 +24,16 @@ const LINKS = [
  * profile photo and Log out stay on the bar, since those are the two things
  * worth reaching without opening anything.
  *
- * The breakpoint is `xl` (1280px), not `sm`: six links plus the wordmark,
+ * The breakpoint is `xl` (1280px), not `sm`: the links plus the wordmark,
  * Live site, avatar and Log out need ~1112px of bar, so anything narrower
  * scrolled horizontally rather than wrapping. It already overflowed at 900px
  * with five links; adding Discounts pushed that to 1024. Measured across
  * 390–1440px, `xl` is the first breakpoint where the full row genuinely fits.
+ * Adding "Email" as a seventh link broke that: measured across 1280-1536px,
+ * the full row then needed ~1366px, so 1280-1365px scrolled horizontally
+ * again. Fixed by shortening "Import tracking" to "Tracking" rather than
+ * moving the breakpoint to `2xl` — that would have put a hamburger on every
+ * 1280-1535px laptop to solve a problem one label created.
  *
  * Tap targets are min-h-11 (44px) on mobile — the links were 20px tall, well
  * under the usual touch guideline — and relax back to the tighter desktop

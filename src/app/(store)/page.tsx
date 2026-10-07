@@ -4,6 +4,7 @@ import { listActiveProducts } from "@/lib/products";
 import { listLifestyleImages } from "@/lib/lifestyle";
 import { formatPrice } from "@/lib/product";
 import { getSiteSettings } from "@/lib/settings";
+import EmailPopup from "@/components/EmailPopup";
 import LifestyleGallery from "@/components/LifestyleGallery";
 import ProductQuickView from "@/components/ProductQuickView";
 
@@ -152,6 +153,7 @@ export default async function Home() {
         </div>
       </section>
 
+      {settings.emailPopupEnabled && <EmailPopup />}
     </main>
   );
 }

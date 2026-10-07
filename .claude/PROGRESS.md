@@ -13,6 +13,50 @@ is no staging gate.
 Two products live (`brok3n-tee`, `jesus-john-316`). Admin back office at `/admin`:
 orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile.
 
+### Done this session (2026-10-07)
+
+**Homepage email/SMS signup popup, trading a one-time 15% code for contact
+details (`/admin/email` to switch on and off).** Off by default. Appears 5s
+after landing, once per visitor (localStorage), and the code is shown on
+screen rather than emailed — there is still no email service wired up.
+
+**Each signup gets its OWN code, capped at `max_redemptions: 1` by Stripe and
+expiring in 30 days.** A shared code would be one string anyone could repost;
+this way a screenshotted code is still only worth one order.
+
+**The email is the PRIMARY KEY of `email_subscribers`, and that is the whole
+anti-duplicate design.** The row is claimed BEFORE Stripe is called, so a
+double submit loses the race at the database and gets the existing code back
+instead of minting a second one. Check-then-create-then-insert would race
+across serverless instances and hand one person two codes. Verified: repeat
+submits, and casing/whitespace variants, all return the same code.
+
+**Phone + SMS consent (`20261007000002`), and a privacy policy at `/privacy`.**
+Phone is optional; the consent checkbox only appears once a number is typed,
+since consenting with no number consents to nothing. Consent is stored as a
+TIMESTAMP plus the EXACT disclosure text shown — TCPA needs proof that this
+person agreed to this wording at this moment, and a boolean is not that. The
+wording is imported from `SMS_CONSENT_TEXT` by both the popup and the policy
+so they cannot drift. Numbers are normalized to E.164 (`+15551234567`) at the
+door; an unparseable number is rejected rather than stored unsendable.
+
+**NOTHING CAN ACTUALLY SEND SMS YET** — no provider (Twilio/Klaviyo) is wired
+up, and no STOP handler exists. Numbers and consent are being collected for
+when one is added; the policy already promises STOP works, so that must be
+honored before the first message is ever sent.
+
+**The off switch closes the ENDPOINT, not just the UI.** `/api/subscribe`
+404s when the popup is off, since it is reachable by direct POST regardless of
+what the homepage renders. It is also the only unauthenticated path that
+creates Stripe objects, so it carries its own rate limit (5/hour/IP, separate
+from the login limiter's 5/15min).
+
+**Admin nav regression caught and fixed.** Adding "Email" as a seventh link
+pushed the bar past its `xl` hamburger breakpoint — measured 1280-1536px, it
+needed ~1366px, so 1280-1365px scrolled horizontally. Fixed by shortening
+"Import tracking" to "Tracking" rather than moving the breakpoint to `2xl`,
+which would have put a hamburger on every 1280-1535px laptop.
+
 ### Done this session (2026-09-19)
 
 **The lifestyle uploader now uses the same signed-upload path as product
@@ -236,6 +280,14 @@ what DB-level verification cannot see. Worth remembering when verifying admin wo
 - ~~No real-money order has ever been placed.~~ **RESOLVED 2026-09-16 — see below.**
   The live webhook fired, and the order exercised the pickup AND discount paths at once.
   The shipping path is still unexercised by a real card.
+- **SMS numbers and consent are being COLLECTED but nothing can send them.** No
+  provider is wired up and there is no STOP handler. `/privacy` already promises
+  STOP works, so a provider plus a working STOP/HELP handler must both exist
+  before the first marketing text is ever sent — that promise is live the moment
+  the popup is switched on.
+- **No welcome EMAIL either.** The 15% code is shown on screen only; a visitor
+  who closes the tab without copying it has to re-submit the same address to see
+  it again (which works — the code is stable per email).
 - **`/api/admin/export` returns 500, not 401, when unauthenticated.** `requireAdmin()`
   throws, nothing catches it. No data is returned, so the security property holds; this
   is cosmetic and pre-existing.

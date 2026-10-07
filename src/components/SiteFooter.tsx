@@ -51,9 +51,20 @@ export default function SiteFooter() {
       </div>
 
       <div className="border-t border-[var(--border)]">
-        <p className="mx-auto max-w-6xl px-6 py-3 text-xs uppercase tracking-wider text-[var(--accent)]">
-          &copy; {year} I&rsquo;m Down For The Gospel. All rights reserved.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-3">
+          <p className="text-xs uppercase tracking-wider text-[var(--accent)]">
+            &copy; {year} I&rsquo;m Down For The Gospel. All rights reserved.
+          </p>
+          {/* Kept out of NAV_LINKS: the policy belongs in the legal line, not
+              in the main navigation beside Shop and Contact — and SMS consent
+              links here, so it has to be reachable from every page. */}
+          <Link
+            href="/privacy"
+            className="text-xs uppercase tracking-wider text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+          >
+            Privacy Policy
+          </Link>
+        </div>
       </div>
     </footer>
   );

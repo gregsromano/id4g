@@ -31,6 +31,14 @@ export type SiteSettings = {
    */
   randomizeLifestyle: boolean;
   /**
+   * Show the homepage email-capture popup, which hands out a one-time 15%
+   * code in exchange for an address.
+   *
+   * Off by default: a popup is the most intrusive thing on the site, so it
+   * stays dark until deliberately switched on.
+   */
+  emailPopupEnabled: boolean;
+  /**
    * Product held in first place while the shuffle is on; the rest are
    * shuffled below it. Null means the shuffle covers everything.
    *
@@ -51,6 +59,7 @@ export type SiteSettings = {
 const DEFAULTS: SiteSettings = {
   randomizeProducts: false,
   randomizeLifestyle: false,
+  emailPopupEnabled: false,
   pinnedProductId: null,
 };
 
@@ -59,7 +68,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
 
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
-    .select("randomize_products, randomize_lifestyle, pinned_product_id")
+    .select(
+      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id",
+    )
     .eq("id", SETTINGS_ID)
     .maybeSingle();
 
@@ -68,12 +79,14 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const row = data as {
     randomize_products: boolean;
     randomize_lifestyle: boolean;
+    email_popup_enabled: boolean;
     pinned_product_id: string | null;
   };
 
   return {
     randomizeProducts: Boolean(row.randomize_products),
     randomizeLifestyle: Boolean(row.randomize_lifestyle),
+    emailPopupEnabled: Boolean(row.email_popup_enabled),
     pinnedProductId: row.pinned_product_id ?? null,
   };
 }
@@ -101,6 +114,28 @@ export async function setPinnedProduct(productId: string | null): Promise<void> 
 
   if (error) {
     console.error("[settings] failed to save pinned_product_id", {
+      message: error.message,
+    });
+    throw new Error("Failed to save setting");
+  }
+}
+
+export async function setEmailPopupEnabled(enabled: boolean): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      {
+        id: SETTINGS_ID,
+        email_popup_enabled: enabled,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save email_popup_enabled", {
       message: error.message,
     });
     throw new Error("Failed to save setting");
