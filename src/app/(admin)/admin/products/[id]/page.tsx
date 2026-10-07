@@ -4,6 +4,7 @@ import { getProductWithVariants } from "@/lib/products";
 import { formatPrice } from "@/lib/product";
 import { optionsToText, PRODUCT_CATEGORIES } from "@/lib/product-options";
 import ImageReorderGrid from "@/components/admin/ImageReorderGrid";
+import SeoField from "@/components/admin/SeoField";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import SaveButton from "@/components/admin/SaveButton";
 import SizeOptionsField from "@/components/admin/SizeOptionsField";
@@ -158,6 +159,36 @@ export default async function AdminProductEditPage({
               />
             </Field>
           </div>
+          </div>
+        </section>
+
+        {/* SEO overrides — inside the same form, saved by the top Save
+            button. Both optional: blank means the page title falls back to
+            the product name and the description to the product description,
+            which is what generateMetadata does. */}
+        <section className="mt-6 border border-[var(--border)] p-6">
+          <span className="section-label">Search engines</span>
+          <p className="mt-2 max-w-prose text-sm text-[var(--text-muted)]">
+            How this product appears in Google. Leave both blank to use the
+            product name and description automatically — only fill these in to
+            override.
+          </p>
+          <div className="mt-4 space-y-4">
+            <SeoField
+              name="meta_title"
+              label="Page title"
+              defaultValue={product.metaTitle ?? ""}
+              placeholder={`${product.name} — I'm Down For The Gospel`}
+              recommended={60}
+            />
+            <SeoField
+              name="meta_description"
+              label="Search description"
+              defaultValue={product.metaDescription ?? ""}
+              placeholder="A short sentence describing this piece for search results."
+              recommended={155}
+              multiline
+            />
           </div>
         </section>
 

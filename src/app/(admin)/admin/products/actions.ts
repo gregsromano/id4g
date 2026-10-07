@@ -42,6 +42,11 @@ const MAX_NAME_LENGTH = 200;
 // of visible text.
 const MAX_DESCRIPTION_LENGTH = 20000;
 const MAX_IMAGE_ALT_LENGTH = 200;
+// Search engines truncate well before these, but the cap is about storing
+// something sane, not about enforcing the display limit — the editor shows a
+// live counter with the recommended length instead.
+const MAX_META_TITLE_LENGTH = 200;
+const MAX_META_DESCRIPTION_LENGTH = 400;
 // Per-file size ceilings (8MB image / 50MB video) live in AddImageTile, not
 // here: the file never reaches this server any more — it goes browser ->
 // Supabase with a signed token — so the only checks that can actually stop an
@@ -195,6 +200,13 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
   const taxCode = optionalText(formData.get("tax_code"), 60) ?? "txcd_30011000";
   const description = optionalText(formData.get("description"), MAX_DESCRIPTION_LENGTH);
   const category = optionalCategory(formData);
+  // Blank fields stay NULL rather than becoming "", so generateMetadata's
+  // "no override -> derive from name/description" fallback keeps working.
+  const metaTitle = optionalText(formData.get("meta_title"), MAX_META_TITLE_LENGTH);
+  const metaDescription = optionalText(
+    formData.get("meta_description"),
+    MAX_META_DESCRIPTION_LENGTH,
+  );
 
   await updateProduct(id, {
     name,
@@ -205,6 +217,8 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
     weightOz,
     taxCode,
     category,
+    metaTitle,
+    metaDescription,
   });
 
   // Image labels and drag order live in the same form (no separate save

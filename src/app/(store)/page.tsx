@@ -1,14 +1,25 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 
 import { listActiveProducts } from "@/lib/products";
 import { listLifestyleImages } from "@/lib/lifestyle";
 import { formatPrice } from "@/lib/product";
 import { getSiteSettings } from "@/lib/settings";
+import { absoluteUrl, jsonLdScript, SITE_NAME } from "@/lib/seo";
 import EmailPopup from "@/components/EmailPopup";
 import LifestyleGallery from "@/components/LifestyleGallery";
 import ProductQuickView from "@/components/ProductQuickView";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * The root layout already supplies the site-wide title/description, but the
+ * homepage needs its own canonical: without one, `/?utm_source=...` and
+ * `/?lookbook=2` are each indexable as separate duplicates of the same page.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default async function Home() {
   // All three reads are independent, so run them concurrently rather than
@@ -21,8 +32,37 @@ export default async function Home() {
     getSiteSettings(),
   ]);
 
+  // Organization + WebSite schema: tells search engines the brand behind the
+  // store and which name to show, rather than inferring it from the domain.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": absoluteUrl("/#organization"),
+        name: SITE_NAME,
+        alternateName: "ID4G",
+        url: absoluteUrl("/"),
+        logo: absoluteUrl("/idfg-logo.webp"),
+        founder: { "@type": "Person", name: "Greg Romano" },
+        sameAs: ["https://instagram.com/id4gospel"],
+      },
+      {
+        "@type": "WebSite",
+        "@id": absoluteUrl("/#website"),
+        url: absoluteUrl("/"),
+        name: SITE_NAME,
+        publisher: { "@id": absoluteUrl("/#organization") },
+      },
+    ],
+  };
+
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(jsonLd) }}
+      />
       {/* Full-bleed hero */}
       <section className="relative overflow-hidden bg-black">
         {/* Paint splatter texture — dripping from top-right, pooling bottom-left */}

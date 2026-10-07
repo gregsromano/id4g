@@ -5,6 +5,7 @@ import { CONTACT_URL } from "@/lib/nav-links";
 import { SMS_CONSENT_TEXT, WELCOME_PERCENT_OFF } from "@/lib/subscribers";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/privacy" },
   title: "Privacy Policy — I'm Down For The Gospel",
   description:
     "How ID4G collects, uses and protects your information, including email and SMS marketing.",

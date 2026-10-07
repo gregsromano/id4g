@@ -15,6 +15,35 @@ orders/fulfillment, product catalog, lifestyle gallery, tracking import, profile
 
 ### Done this session (2026-10-07)
 
+**Technical SEO — the storefront had almost none.** Every one of the seven
+product pages served the ROOT layout's site-wide title and description, so
+Google saw seven duplicates of the homepage and nothing named the product.
+There was no sitemap, no robots.txt, no canonicals, no structured data, and
+no `<h1>` on a product page.
+
+Added: `generateMetadata` per product (title, description, canonical, OG and
+Twitter cards), generated `sitemap.xml` from the live catalog (`force-dynamic`
+so a new product is listed the moment it goes active), `robots.ts` pointing at
+it, canonicals on `/`, `/about`, `/contact`, `/privacy`, `noindex` on
+`/success` (it carries a Stripe session id and belongs in no index), Product
+JSON-LD with price + availability, and Organization/WebSite JSON-LD on the
+homepage. The product name became the `<h1>` — it was an `<h2>` with no `<h1>`
+above it.
+
+**`meta_title`/`meta_description` were DEAD COLUMNS.** Added by
+`20260827000001`, whose own comment claimed `generateMetadata` in
+`products/[slug]/page.tsx` read them — that function did not exist. They were
+never read, never writable, and never populated. Now wired end to end, with a
+`SeoField` editor on the product page that shows a live character count
+against the ~60/155 Google actually displays.
+
+**Two bugs caught only by looking at the rendered output**, not the code:
+a product whose NAME already contains the brand ("BROK3N Tee — I'm Down For
+The Gospel") got it appended twice; and schema/OG images were emitted as
+relative paths (`/shirt-back.png`), which Google rejects in structured data —
+invalidating the whole Offer block rather than just dropping the image. Both
+are absolute and de-duplicated now.
+
 **Google Analytics 4 (`G-BD5PFM2HKH`) on the storefront.** Added to the
 `(store)` layout, NOT the root layout: that one also wraps `/admin`, so the
 tag would have counted Greg's own back-office sessions as traffic and sent

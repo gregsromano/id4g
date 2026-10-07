@@ -66,7 +66,10 @@ export default function ProductPurchasePanel({
   return (
     <div>
       <span className="section-label mb-3">The Drop</span>
-      <h2 className="mb-6 text-4xl sm:text-5xl">{name}</h2>
+      {/* h1, not h2: this is the product page's actual subject, and the page
+          had no h1 at all — search engines use it as the primary signal of
+          what the page is about. Visual size is unchanged. */}
+      <h1 className="mb-6 text-4xl sm:text-5xl">{name}</h1>
 
       <div className="mb-8 flex items-baseline gap-3">
         <span className="text-4xl font-bold text-[var(--text-primary)]">

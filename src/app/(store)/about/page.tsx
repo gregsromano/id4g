@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/about" },
   title: "About Greg Romano — I'm Down For The Gospel",
   description:
     "The story behind I'm Down for the Gospel — Greg Romano's faith, art, and streetwear brand.",
