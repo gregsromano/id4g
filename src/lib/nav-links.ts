@@ -18,3 +18,20 @@ export const NAV_LINKS: NavLinkItem[] = [
   { label: "About Greg Romano", href: "/about" },
   { label: "Contact", href: "/contact" },
 ];
+
+/**
+ * The footer's site map, grouped by section.
+ *
+ * Reuses NAV_LINKS entries rather than retyping labels/hrefs, so the two
+ * can't drift. Privacy Policy is added only here — it's deliberately left
+ * out of NAV_LINKS (it doesn't belong beside Shop and Contact in the header)
+ * but a site map should still list every reachable page.
+ */
+const byLabel = (labels: string[]) =>
+  NAV_LINKS.filter((link) => labels.includes(link.label));
+
+export const SITE_MAP_SECTIONS: { heading: string; links: NavLinkItem[] }[] = [
+  { heading: "Shop", links: byLabel(["Home", "Shop"]) },
+  { heading: "Company", links: byLabel(["About Greg Romano", "Contact", "Custom Orders"]) },
+  { heading: "Legal", links: [{ label: "Privacy Policy", href: "/privacy" }] },
+];

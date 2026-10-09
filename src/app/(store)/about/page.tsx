@@ -75,6 +75,18 @@ export default function AboutPage() {
                   Now I&rsquo;m bringing all of those experiences together with
                   my faith.
                 </p>
+                <p>
+                  See more of his art at{" "}
+                  <a
+                    href="https://www.gregromanoart.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[var(--accent)] underline-offset-4 hover:underline"
+                  >
+                    gregromanoart.com
+                  </a>
+                  .
+                </p>
               </div>
             </div>
 

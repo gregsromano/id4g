@@ -20,6 +20,7 @@ const STATIC_ROUTES: { path: string; changeFrequency: "daily" | "monthly" | "yea
   { path: "/", changeFrequency: "daily", priority: 1 },
   { path: "/about", changeFrequency: "monthly", priority: 0.6 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/sitemap", changeFrequency: "monthly", priority: 0.3 },
   { path: "/privacy", changeFrequency: "yearly", priority: 0.2 },
 ];
 
