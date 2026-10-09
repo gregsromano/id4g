@@ -145,8 +145,28 @@ export default async function Home() {
 
       {/* Cream urgency panel */}
       <section style={{ background: "var(--bg-cream)" }}>
-        <div className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
-          <p className="text-center text-xl font-extrabold uppercase tracking-widest text-black sm:text-2xl lg:text-3xl">
+        <div className="mx-auto max-w-6xl px-6 py-8 sm:py-10 xl:max-w-none">
+          {/*
+            xl:max-w-none: past 1280px this banner breaks out of the site's
+            normal 6xl content column so the single-line text below has the
+            full viewport (minus padding) to grow into, not just 1104px of
+            it — otherwise the font-size formula would overflow once the
+            6xl cap stopped the container from growing with the window.
+
+            Below xl, this wraps to 2-3 lines at the stepped sizes — there's
+            no way around that and still have it read at a glance (the full
+            phrase is ~80 characters; shrunk small enough to fit one line on
+            a phone, it's no longer "bigger," it's illegible).
+
+            From xl up there's finally room: `whitespace-nowrap` forces one
+            line, and the font-size is a `calc()` tied directly to viewport
+            width — not a Tailwind step — tuned (via a Puppeteer measurement
+            of this exact text's rendered width per px of font-size, ~54.43)
+            so it's always the largest size that still fits in exactly one
+            line, growing continuously as the window widens instead of
+            jumping at fixed breakpoints.
+          */}
+          <p className="text-center font-extrabold uppercase tracking-widest text-black text-xl sm:text-2xl lg:text-3xl xl:whitespace-nowrap xl:text-[clamp(1.25rem,calc(1.75vw_-_0.84px),3.5rem)]">
             Hand Made &middot; Unique Distinct Design &middot; No Two Alike
             &middot; Every piece one of a kind
           </p>
