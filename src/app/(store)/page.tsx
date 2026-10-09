@@ -89,7 +89,7 @@ export default async function Home() {
         <div className="absolute inset-y-0 right-[2%] z-[1] hidden w-[60%] sm:block lg:right-[4%] lg:w-[56%]">
           <Image
             src="/shirt-front-back.png"
-            alt=""
+            alt="BROK3N tee, front and back — Psalm 34:18"
             fill
             priority
             className="object-contain object-center"
@@ -126,7 +126,7 @@ export default async function Home() {
               <div className="relative order-1 -mx-6 mb-6 h-[56vh] w-[calc(100%+3rem)] sm:hidden">
                 <Image
                   src="/shirt-front-back.png"
-                  alt=""
+                  alt="BROK3N tee, front and back — Psalm 34:18"
                   fill
                   priority
                   className="object-contain object-center"
