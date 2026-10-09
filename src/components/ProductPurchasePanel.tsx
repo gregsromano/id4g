@@ -106,6 +106,15 @@ export default function ProductPurchasePanel({
       <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
         Add to Cart
       </button>
+
+      {/* Reinforces the homepage's cream banner and the About page's "no two
+          alike" promise right at the point of purchase, where it was
+          otherwise only ever in the page's (invisible) meta description. */}
+      <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+        Hand-made &middot;{" "}
+        <span className="text-[var(--accent)]">One of a kind</span> &middot; No
+        two pieces are exactly alike
+      </p>
     </div>
   );
 }
