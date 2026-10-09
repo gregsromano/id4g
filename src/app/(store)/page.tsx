@@ -145,8 +145,8 @@ export default async function Home() {
 
       {/* Cream urgency panel */}
       <section style={{ background: "var(--bg-cream)" }}>
-        <div className="mx-auto max-w-6xl px-6 py-6">
-          <p className="text-center text-sm font-bold uppercase tracking-widest text-black">
+        <div className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
+          <p className="text-center text-xl font-extrabold uppercase tracking-widest text-black sm:text-2xl lg:text-3xl">
             Hand Made &middot; Unique Distinct Design &middot; No Two Alike
             &middot; Every piece one of a kind
           </p>
