@@ -133,7 +133,7 @@ export default function ProductPurchasePanel({
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
             {options.map((option) => (
-              <p key={option.name} className="text-base text-[var(--text-muted)]">
+              <p key={option.name} className="text-[32px] text-[var(--text-muted)]">
                 {option.name}: <span className="text-[var(--text-primary)]">{selected[option.name]}</span>
               </p>
             ))}
