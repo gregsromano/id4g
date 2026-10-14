@@ -126,44 +126,57 @@ export default function ProductPurchasePanel({
       </div>
 
       {/* A one-of-one piece has exactly one variant, pre-selected above —
-          nothing to pick, so this shows the size as plain info instead of a
-          picker the buyer would have to click with only one option in it. */}
-      {isOneOfOne
-        ? options.map((option) => (
-            <p key={option.name} className="mb-8 text-sm text-[var(--text-muted)]">
-              {option.name}: <span className="text-[var(--text-primary)]">{selected[option.name]}</span>
-            </p>
-          ))
-        : options.map((option) => (
-            <div key={option.name} className="mb-8">
-              <p className="section-label mb-3">Select {option.name}</p>
-              <div className="flex flex-wrap gap-2">
-                {option.values.map((value) => (
-                  <button
-                    key={value}
-                    onClick={() => selectValue(option.name, value)}
-                    className={`h-12 min-w-12 border px-4 text-sm font-semibold transition-colors ${
-                      selected[option.name] === value
-                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
-                        : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
-                    }`}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
+          nothing to pick — so the size sits next to the buy button as plain
+          info instead of a picker the buyer would have to click with only
+          one option in it. */}
+      {isOneOfOne ? (
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            {options.map((option) => (
+              <p key={option.name} className="text-sm text-[var(--text-muted)]">
+                {option.name}: <span className="text-[var(--text-primary)]">{selected[option.name]}</span>
+              </p>
+            ))}
+          </div>
+
+          {sold ? (
+            <div className="border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">
+              Sold &mdash; this piece has been claimed
             </div>
-          ))}
+          ) : (
+            <button onClick={handleAddToCart} className="btn-primary">
+              Buy This Original One of One
+            </button>
+          )}
+        </div>
+      ) : (
+        options.map((option) => (
+          <div key={option.name} className="mb-8">
+            <p className="section-label mb-3">Select {option.name}</p>
+            <div className="flex flex-wrap gap-2">
+              {option.values.map((value) => (
+                <button
+                  key={value}
+                  onClick={() => selectValue(option.name, value)}
+                  className={`h-12 min-w-12 border px-4 text-sm font-semibold transition-colors ${
+                    selected[option.name] === value
+                      ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
+                      : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
 
       {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
-      {isOneOfOne && sold ? (
-        <div className="w-full border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] sm:w-auto">
-          Sold &mdash; this piece has been claimed
-        </div>
-      ) : (
+      {!isOneOfOne && (
         <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
-          {isOneOfOne ? "Buy This Original One of One" : "Add to Cart"}
+          Add to Cart
         </button>
       )}
 
