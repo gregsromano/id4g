@@ -7,8 +7,9 @@ import { isVideoUrl } from "@/lib/media";
 
 import AddImageTile from "./AddImageTile";
 import MoveButtons from "./MoveButtons";
+import VideoPosterPicker from "./VideoPosterPicker";
 
-type ImageItem = { url: string; alt: string };
+type ImageItem = { url: string; alt: string; posterUrl?: string | null };
 
 /**
  * Existing images, drag-reorderable (native HTML5 drag-and-drop — desktop
@@ -108,6 +109,7 @@ export default function ImageReorderGrid({
                   <>
                     <video
                       src={image.url}
+                      poster={image.posterUrl ?? undefined}
                       muted
                       playsInline
                       controls
@@ -140,6 +142,13 @@ export default function ImageReorderGrid({
                 placeholder="Label — Front, Back..."
                 className="mt-2 w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-2 py-1 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
               />
+              {isVideoUrl(image.url) && (
+                <VideoPosterPicker
+                  productId={productId}
+                  videoUrl={image.url}
+                  posterUrl={image.posterUrl}
+                />
+              )}
               {index !== 0 && (
                 <button
                   type="submit"

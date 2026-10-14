@@ -16,6 +16,7 @@ import {
   setCoverImage,
   setProductImages,
   setProductStatus,
+  setVideoPoster,
   updateProduct,
   variantOptionKey,
   type DesiredVariant,
@@ -339,22 +340,16 @@ export async function createProductUploadUrl(
   return { ok: true, path: data.path, token: data.token, publicUrl: pub.publicUrl };
 }
 
-/**
- * Record a file the browser already PUT to storage.
- *
- * Deliberately verifies the object EXISTS before writing the row, rather than
- * trusting the client's word: the signed PUT happens outside this server's
- * sight, so a failed or spoofed upload would otherwise leave a product row
- * pointing at a 404 — which renders as a broken tile on the live storefront.
- */
-export async function attachProductUpload(
-  productId: string,
-  path: string,
-  alt: string,
-): Promise<UploadImagesResult> {
-  await requireAdmin();
-  if (!UUID_RE.test(productId)) return { ok: false, message: "Invalid product id" };
+type VerifiedUpload = { ok: true; publicUrl: string } | { ok: false; message: string };
 
+/**
+ * Confirms a file the browser already PUT to storage actually landed there,
+ * rather than trusting the client's word: the signed PUT happens outside
+ * this server's sight, so a failed or spoofed upload would otherwise leave a
+ * product row pointing at a 404 — which renders as a broken tile on the live
+ * storefront (or, for a poster, silently fails to replace the video's frame).
+ */
+async function verifyProductUpload(productId: string, path: string): Promise<VerifiedUpload> {
   // The path must be the one we handed out for THIS product — never a
   // client-supplied path pointing at another product's folder.
   if (!path.startsWith(`products/${productId}/`)) {
@@ -372,12 +367,61 @@ export async function attachProductUpload(
   }
 
   const { data: pub } = getSupabaseAdmin().storage.from("images").getPublicUrl(path);
+  return { ok: true, publicUrl: pub.publicUrl };
+}
+
+export async function attachProductUpload(
+  productId: string,
+  path: string,
+  alt: string,
+): Promise<UploadImagesResult> {
+  await requireAdmin();
+  if (!UUID_RE.test(productId)) return { ok: false, message: "Invalid product id" };
+
+  const verified = await verifyProductUpload(productId, path);
+  if (!verified.ok) return verified;
+
   await appendProductImages(productId, [
-    { url: pub.publicUrl, alt: alt.slice(0, MAX_IMAGE_ALT_LENGTH) },
+    { url: verified.publicUrl, alt: alt.slice(0, MAX_IMAGE_ALT_LENGTH) },
   ]);
   revalidateProduct(productId);
 
   return { ok: true, message: "Uploaded." };
+}
+
+/**
+ * Attaches a poster image to one video entry — either a frame the admin
+ * captured client-side from the video itself, or a separate image they
+ * uploaded, both of which already went through the same signed-URL path as
+ * any other upload (see createProductUploadUrl/AddImageTile). `videoUrl`
+ * identifies which gallery entry the poster belongs to; it is matched
+ * against the product's own stored images rather than trusted blindly, so a
+ * stale or forged url just does nothing instead of attaching to the wrong
+ * entry (setVideoPoster's .map is a no-op when nothing matches).
+ */
+export async function attachVideoPosterAction(
+  productId: string,
+  videoUrl: string,
+  path: string,
+): Promise<UploadImagesResult> {
+  await requireAdmin();
+  if (!UUID_RE.test(productId)) return { ok: false, message: "Invalid product id" };
+
+  const verified = await verifyProductUpload(productId, path);
+  if (!verified.ok) return verified;
+
+  await setVideoPoster(productId, videoUrl, verified.publicUrl);
+  revalidateProduct(productId);
+
+  return { ok: true, message: "Thumbnail set." };
+}
+
+export async function clearVideoPosterAction(productId: string, videoUrl: string): Promise<void> {
+  await requireAdmin();
+  if (!UUID_RE.test(productId)) throw new Error("Invalid product id");
+
+  await setVideoPoster(productId, videoUrl, null);
+  revalidateProduct(productId);
 }
 
 /**

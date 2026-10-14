@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
 
-type QuickViewImage = { url: string; alt: string };
+type QuickViewImage = { url: string; alt: string; posterUrl?: string | null };
 
 export default function ProductQuickView({
   href,
@@ -49,6 +49,7 @@ export default function ProductQuickView({
                 {isVideoUrl(image.url) ? (
                   <video
                     src={image.url}
+                    poster={image.posterUrl ?? undefined}
                     autoPlay
                     muted
                     loop

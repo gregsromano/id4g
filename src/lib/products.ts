@@ -20,7 +20,13 @@ export type { ProductOption };
 
 export type ProductStatus = "draft" | "active" | "archived";
 
-export type ProductImage = { url: string; alt: string; position: number };
+export type ProductImage = {
+  url: string;
+  alt: string;
+  position: number;
+  /** Still frame shown before a video plays. Meaningless for a photo entry. */
+  posterUrl?: string | null;
+};
 
 export type Product = {
   id: string;
@@ -633,6 +639,42 @@ export async function setCoverImage(productId: string, url: string): Promise<voi
     .eq("id", productId);
 
   if (updateError) fail("set cover image", updateError);
+}
+
+/**
+ * Sets (or, with `null`, clears) the poster frame for one video entry.
+ * Stored on that entry's own `posterUrl` rather than as a separate gallery
+ * item, so removing the video drops its poster for free and reordering
+ * never has to keep the two in sync by hand.
+ */
+export async function setVideoPoster(
+  productId: string,
+  videoUrl: string,
+  posterUrl: string | null,
+): Promise<void> {
+  assertServiceRoleConfigured();
+  const supabase = getSupabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("images")
+    .eq("id", productId)
+    .single();
+
+  if (error) fail("load product images", error);
+
+  const current = Array.isArray((data as { images: unknown }).images)
+    ? ((data as { images: ProductImage[] }).images)
+    : [];
+
+  const images = current.map((img) => (img.url === videoUrl ? { ...img, posterUrl } : img));
+
+  const { error: updateError } = await supabase
+    .from("products")
+    .update({ images, updated_at: new Date().toISOString() })
+    .eq("id", productId);
+
+  if (updateError) fail("set video poster", updateError);
 }
 
 /** Caption/alt text for one image, e.g. "Front", "Back", "Detail". */

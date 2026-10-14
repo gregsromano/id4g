@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
 
-type GalleryImage = { url: string; alt: string };
+type GalleryImage = { url: string; alt: string; posterUrl?: string | null };
 
 export default function ProductGallery({ images }: { images: GalleryImage[] }) {
   const [index, setIndex] = useState(0);
@@ -33,6 +33,7 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
                  fullscreen. Controls stay on so the clip can be paused. */
               <video
                 src={active.url}
+                poster={active.posterUrl ?? undefined}
                 autoPlay
                 muted
                 loop
@@ -93,6 +94,7 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
               {isVideoUrl(image.url) ? (
                 <video
                   src={image.url}
+                  poster={image.posterUrl ?? undefined}
                   muted
                   playsInline
                   preload="metadata"
