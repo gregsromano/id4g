@@ -9,11 +9,25 @@
 
 export const CONTACT_URL = "https://instagram.com/id4gospel";
 
-export type NavLinkItem = { label: string; href: string; external?: boolean };
+export type NavLinkItem = {
+  label: string;
+  href: string;
+  external?: boolean;
+  /** Category sub-links shown as a dropdown under this item (desktop hover, expanded inline on mobile). */
+  children?: { label: string; href: string }[];
+};
 
 export const NAV_LINKS: NavLinkItem[] = [
   { label: "Home", href: "/" },
-  { label: "Shop", href: "/#shop" },
+  {
+    label: "Shop",
+    href: "/#shop",
+    children: [
+      { label: "Hoodies", href: "/shop/hoodies" },
+      { label: "Tees", href: "/shop/tees" },
+      { label: "Hats", href: "/shop/hats" },
+    ],
+  },
   { label: "Custom Orders", href: CONTACT_URL, external: true },
   { label: "About Greg Romano", href: "/about" },
   { label: "Contact", href: "/contact" },

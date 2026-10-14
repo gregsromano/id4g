@@ -207,15 +207,22 @@ function shuffled<T>(items: T[]): T[] {
  * identical either way and the toggle is one readable branch. The page is
  * `force-dynamic`, so this runs per request and a refresh really does
  * re-order — a cached page would shuffle once at build and look broken.
+ *
+ * An optional `category` narrows the grid to one free-text category label
+ * (e.g. the /shop/hoodies, /shop/tees, /shop/hats pages) — same query, same
+ * pin/shuffle behavior, just scoped first.
  */
-export async function listActiveProducts(): Promise<Product[]> {
+export async function listActiveProducts(category?: string): Promise<Product[]> {
   assertServiceRoleConfigured();
 
-  const { data, error } = await getSupabaseAdmin()
+  let query = getSupabaseAdmin()
     .from("products")
     .select(PRODUCT_COLUMNS)
-    .eq("status", "active")
-    .order("position", { ascending: true });
+    .eq("status", "active");
+
+  if (category) query = query.eq("category", category);
+
+  const { data, error } = await query.order("position", { ascending: true });
 
   if (error) fail("list active products", error);
 

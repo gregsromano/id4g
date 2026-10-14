@@ -57,7 +57,23 @@ export default function SiteHeader() {
       {menuOpen && (
         <nav className="flex flex-col gap-4 border-t border-[var(--border)] px-6 py-4 md:hidden">
           {NAV_LINKS.map((link) => (
-            <NavLink key={link.label} {...link} onClick={() => setMenuOpen(false)} mobile />
+            <div key={link.label}>
+              <NavLink {...link} onClick={() => setMenuOpen(false)} mobile />
+              {link.children && link.children.length > 0 && (
+                <div className="ml-4 mt-3 flex flex-col gap-3">
+                  {link.children.map((child) => (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="text-sm font-semibold uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
+                    >
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
       )}
@@ -71,12 +87,14 @@ function NavLink({
   external,
   mobile,
   onClick,
+  children,
 }: {
   label: string;
   href: string;
   external?: boolean;
   mobile?: boolean;
   onClick?: () => void;
+  children?: { label: string; href: string }[];
 }) {
   const className = `font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)] ${
     mobile ? "text-base" : "text-sm"
@@ -93,6 +111,31 @@ function NavLink({
       >
         {label}
       </a>
+    );
+  }
+
+  // Desktop only: a hover dropdown for items with category sub-links (e.g.
+  // Shop -> Hoodies/Tees/Hats). Mobile renders children as its own indented
+  // list right in the slide-down menu instead, since there's no hover there.
+  if (!mobile && children && children.length > 0) {
+    return (
+      <div className="group relative py-2">
+        <Link href={href} onClick={onClick} className={className}>
+          {label}
+        </Link>
+        <div className="invisible absolute left-0 top-full z-50 flex min-w-[160px] flex-col gap-3 border border-[var(--border)] bg-[var(--bg-primary)] p-4 opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+          {children.map((child) => (
+            <Link
+              key={child.href}
+              href={child.href}
+              onClick={onClick}
+              className="text-sm font-bold uppercase tracking-widest text-[var(--text-body)] transition-colors hover:text-[var(--accent)]"
+            >
+              {child.label}
+            </Link>
+          ))}
+        </div>
+      </div>
     );
   }
 
