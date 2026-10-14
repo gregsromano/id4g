@@ -33,9 +33,14 @@ export default function ProductPurchasePanel({
   sold,
 }: Props) {
   const { addItem } = useCart();
-  const [selected, setSelected] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
   const isOneOfOne = category === "One of One";
+  // A one-of-one piece has exactly one variant — nothing to choose, so it
+  // starts pre-selected instead of making the buyer click a size button
+  // that's the only option anyway.
+  const [selected, setSelected] = useState<Record<string, string>>(() =>
+    isOneOfOne ? (variants[0]?.optionValues ?? {}) : {},
+  );
+  const [error, setError] = useState<string | null>(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [customSize, setCustomSize] = useState<string>(STANDARD_SIZES[0].value);
   const [customNote, setCustomNote] = useState("");
@@ -120,26 +125,35 @@ export default function ProductPurchasePanel({
         </span>
       </div>
 
-      {options.map((option) => (
-        <div key={option.name} className="mb-8">
-          <p className="section-label mb-3">Select {option.name}</p>
-          <div className="flex flex-wrap gap-2">
-            {option.values.map((value) => (
-              <button
-                key={value}
-                onClick={() => selectValue(option.name, value)}
-                className={`h-12 min-w-12 border px-4 text-sm font-semibold transition-colors ${
-                  selected[option.name] === value
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
-                    : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
-                }`}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* A one-of-one piece has exactly one variant, pre-selected above —
+          nothing to pick, so this shows the size as plain info instead of a
+          picker the buyer would have to click with only one option in it. */}
+      {isOneOfOne
+        ? options.map((option) => (
+            <p key={option.name} className="mb-8 text-sm text-[var(--text-muted)]">
+              {option.name}: <span className="text-[var(--text-primary)]">{selected[option.name]}</span>
+            </p>
+          ))
+        : options.map((option) => (
+            <div key={option.name} className="mb-8">
+              <p className="section-label mb-3">Select {option.name}</p>
+              <div className="flex flex-wrap gap-2">
+                {option.values.map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => selectValue(option.name, value)}
+                    className={`h-12 min-w-12 border px-4 text-sm font-semibold transition-colors ${
+                      selected[option.name] === value
+                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]"
+                        : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--gold)]"
+                    }`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
 
       {/* Only one size exists for a one-of-one piece — this offers a
           made-to-order recreation in a different size instead, which stays
@@ -210,7 +224,7 @@ export default function ProductPurchasePanel({
         </div>
       ) : (
         <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
-          {isOneOfOne ? "Buy Original One of One" : "Add to Cart"}
+          {isOneOfOne ? "Buy This Original One of One" : "Add to Cart"}
         </button>
       )}
 
