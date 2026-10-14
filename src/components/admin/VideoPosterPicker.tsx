@@ -85,21 +85,35 @@ export default function VideoPosterPicker({
     const canvas = canvasRef.current;
     if (!video || !canvas || !video.videoWidth) return;
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
     startTransition(async () => {
-      const blob: Blob | null = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.9),
-      );
-      if (!blob) {
-        setError("Could not capture that frame.");
-        return;
+      // Pulling a frame onto a canvas from a cross-origin source (the video
+      // lives on Supabase Storage, a different origin than the admin page)
+      // taints the canvas unless the element opted into CORS up front via
+      // `crossOrigin` — and reading a tainted canvas throws a SecurityError
+      // the moment toBlob() is called. Caught here rather than left to
+      // crash: with no error.tsx anywhere in this app, an uncaught client
+      // exception doesn't just fail this dialog, it blanks the entire page.
+      try {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          setError("Could not capture that frame.");
+          return;
+        }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const blob: Blob | null = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.9),
+        );
+        if (!blob) {
+          setError("Could not capture that frame.");
+          return;
+        }
+        await uploadPoster(blob, "image/jpeg");
+      } catch {
+        setError("Could not capture that frame — try uploading an image instead.");
       }
-      await uploadPoster(blob, "image/jpeg");
     });
   }
 
@@ -169,6 +183,12 @@ export default function VideoPosterPicker({
             <video
               ref={videoRef}
               src={videoUrl}
+              // Required for canvas capture: the video is served from
+              // Supabase Storage, a different origin than this admin page,
+              // and without this the canvas we draw it onto is "tainted" —
+              // readable on screen but unreadable by toBlob(), which is
+              // exactly the capture step below needs to do.
+              crossOrigin="anonymous"
               muted
               playsInline
               preload="metadata"
