@@ -129,12 +129,6 @@ export default function ProductGallery({
         </div>
       )}
 
-      {active?.alt && (
-        <p className="mt-2 text-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
-          {active.alt}
-        </p>
-      )}
-
       {/* isVideoUrl is re-checked, not assumed: the button that sets `open`
           is already image-only, but this is the call that would throw if a
           later change ever let a video through. */}
