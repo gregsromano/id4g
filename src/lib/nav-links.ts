@@ -28,6 +28,7 @@ export const NAV_LINKS: NavLinkItem[] = [
       { label: "Hats", href: "/shop/hats" },
     ],
   },
+  { label: "1 of 1", href: "/one-of-one" },
   { label: "Custom Orders", href: CONTACT_URL, external: true },
   { label: "About Greg Romano", href: "/about" },
   { label: "Contact", href: "/contact" },
@@ -45,7 +46,7 @@ const byLabel = (labels: string[]) =>
   NAV_LINKS.filter((link) => labels.includes(link.label));
 
 export const SITE_MAP_SECTIONS: { heading: string; links: NavLinkItem[] }[] = [
-  { heading: "Shop", links: byLabel(["Home", "Shop"]) },
+  { heading: "Shop", links: byLabel(["Home", "Shop", "1 of 1"]) },
   { heading: "Company", links: byLabel(["About Greg Romano", "Contact", "Custom Orders"]) },
   { heading: "Legal", links: [{ label: "Privacy Policy", href: "/privacy" }] },
 ];

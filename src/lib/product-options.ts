@@ -20,6 +20,7 @@ export const PRODUCT_CATEGORIES = [
   "Tank Top",
   "Long Sleeve",
   "Hat",
+  "One of One",
   "Other",
 ] as const;
 
