@@ -26,6 +26,7 @@ export const NAV_LINKS: NavLinkItem[] = [
       { label: "Hoodies", href: "/shop/hoodies" },
       { label: "Tees", href: "/shop/tees" },
       { label: "Hats", href: "/shop/hats" },
+      { label: "1 of 1", href: "/one-of-one" },
     ],
   },
   { label: "1 of 1", href: "/one-of-one" },
