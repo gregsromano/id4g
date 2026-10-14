@@ -155,13 +155,25 @@ export default function ProductPurchasePanel({
             </div>
           ))}
 
+      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+
+      {isOneOfOne && sold ? (
+        <div className="w-full border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] sm:w-auto">
+          Sold &mdash; this piece has been claimed
+        </div>
+      ) : (
+        <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
+          {isOneOfOne ? "Buy This Original One of One" : "Add to Cart"}
+        </button>
+      )}
+
       {/* Only one size exists for a one-of-one piece — this offers a
           made-to-order recreation in a different size instead, which stays
-          available even after the original sells. Placed right under the
-          size area and styled as its own call-out (not a quiet text link)
-          since it's a real alternate path to purchase, not a footnote. */}
+          available even after the original sells. Styled as its own
+          call-out (not a quiet text link) since it's a real alternate path
+          to purchase, not a footnote. */}
       {isOneOfOne && (
-        <div className="mb-8 border-2 border-[var(--accent)] p-4">
+        <div className="mt-8 border-2 border-[var(--accent)] p-4">
           <button
             type="button"
             onClick={() => setCustomOpen((v) => !v)}
@@ -214,18 +226,6 @@ export default function ProductPurchasePanel({
             </div>
           )}
         </div>
-      )}
-
-      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
-
-      {isOneOfOne && sold ? (
-        <div className="w-full border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] sm:w-auto">
-          Sold &mdash; this piece has been claimed
-        </div>
-      ) : (
-        <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
-          {isOneOfOne ? "Buy This Original One of One" : "Add to Cart"}
-        </button>
       )}
 
       {/* Reinforces the homepage's cream banner and the About page's "no two
