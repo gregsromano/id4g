@@ -301,9 +301,15 @@ export type AdminProductSummary = Product & {
   maxPriceCents: number;
 };
 
-/** Admin products list, with a variant-count/price-range rollup per product. */
+/**
+ * Admin products list, with a variant-count/price-range rollup per product.
+ * An optional `category` scopes this to one free-text category (e.g. "One of
+ * One"), same as the storefront's listActiveProducts — used by the Products
+ * page's category tab so an admin can view/reorder just that slice.
+ */
 export async function listAllProductsForAdmin(
   filter: ProductFilter = "all",
+  category?: string,
 ): Promise<AdminProductSummary[]> {
   assertServiceRoleConfigured();
 
@@ -313,6 +319,7 @@ export async function listAllProductsForAdmin(
     .order("position", { ascending: true });
 
   if (filter !== "all") query = query.eq("status", filter);
+  if (category) query = query.eq("category", category);
 
   const { data, error } = await query;
   if (error) fail("list products", error);
@@ -760,10 +767,16 @@ export async function setProductImages(
  * drafts interleaved with an "active" reorder) keep their correct relative
  * placement — the same principle a pairwise swap would preserve, generalized
  * to an arbitrary permutation.
+ *
+ * `category`, when given, narrows the view the same way `listAllProductsForAdmin`
+ * does, so reordering the "One of One" tab only touches that category's own
+ * relative order among themselves — it still shares the single `position`
+ * column with every other product, same as listActiveProducts' category scope.
  */
 export async function reorderProducts(
   orderedIds: string[],
   filter: ProductFilter,
+  category?: string,
 ): Promise<void> {
   assertServiceRoleConfigured();
   const supabase = getSupabaseAdmin();
@@ -773,6 +786,7 @@ export async function reorderProducts(
     .select("id, position")
     .order("position", { ascending: true });
   if (filter !== "all") query = query.eq("status", filter);
+  if (category) query = query.eq("category", category);
 
   const { data, error } = await query;
   if (error) fail("load products for reorder", error);

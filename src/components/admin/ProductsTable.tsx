@@ -43,10 +43,13 @@ function CoverThumb({ url, alt }: { url: string; alt: string }) {
 export default function ProductsTable({
   products: initialProducts,
   filter,
+  category,
   orderInUse = true,
 }: {
   products: AdminProductSummary[];
   filter: ProductFilter;
+  /** Scopes drag-and-drop saves to this category, e.g. the "One of One" tab. */
+  category?: string;
   /**
    * Whether the storefront is actually using this order. False while the
    * shuffle is on, when the order is still editable and still saved — it
@@ -105,6 +108,7 @@ export default function ProductsTable({
       await reorderProductsAction(
         products.map((p) => p.id),
         filter,
+        category,
       );
     });
   }

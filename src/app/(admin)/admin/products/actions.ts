@@ -485,14 +485,18 @@ function isProductFilter(value: unknown): value is ProductFilter {
  * to a <form> — there's no form submission here, just a client callback), so
  * this takes plain arguments rather than FormData.
  */
-export async function reorderProductsAction(ids: string[], filter: ProductFilter): Promise<void> {
+export async function reorderProductsAction(
+  ids: string[],
+  filter: ProductFilter,
+  category?: string,
+): Promise<void> {
   await requireAdmin();
   if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !UUID_RE.test(id))) {
     throw new Error("Invalid product ids");
   }
   if (!isProductFilter(filter)) throw new Error("Invalid filter");
 
-  await reorderProducts(ids, filter);
+  await reorderProducts(ids, filter, category);
   revalidatePath("/admin/products");
   revalidatePath("/");
 }
