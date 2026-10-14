@@ -106,15 +106,17 @@ export default function ProductPurchasePanel({
       <span className="section-label mb-3">The Drop</span>
       {/* h1, not h2: this is the product page's actual subject, and the page
           had no h1 at all — search engines use it as the primary signal of
-          what the page is about. Visual size is unchanged. */}
-      <h1 className="mb-6 text-2xl sm:text-3xl">{name}</h1>
+          what the page is about. The `!` overrides globals.css's h1 rule
+          (clamp(56px, 9vw, 118px), unlayered so it beats a plain Tailwind
+          utility) — same trick the About page's h1 uses. */}
+      <h1 className="mb-6 !text-2xl sm:!text-3xl">{name}</h1>
 
       <div className="mb-8 flex items-baseline gap-3">
         <span className="text-4xl font-bold text-[var(--text-primary)]">
           {formatPrice(displayPriceCents)}
         </span>
         <span className="text-sm text-[var(--text-muted)]">
-          + {formatPrice(shippingCents)} shipping
+          {shippingCents === 0 ? "Free shipping" : `+ ${formatPrice(shippingCents)} shipping`}
         </span>
       </div>
 
@@ -139,38 +141,19 @@ export default function ProductPurchasePanel({
         </div>
       ))}
 
-      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
-
-      {isOneOfOne && sold ? (
-        <div className="w-full border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] sm:w-auto">
-          Sold &mdash; this piece has been claimed
-        </div>
-      ) : (
-        <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
-          {isOneOfOne ? "Buy Original One of One" : "Add to Cart"}
-        </button>
-      )}
-
-      {/* Reinforces the homepage's cream banner and the About page's "no two
-          alike" promise right at the point of purchase, where it was
-          otherwise only ever in the page's (invisible) meta description. */}
-      <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
-        Hand-made &middot;{" "}
-        <span className="text-[var(--accent)]">One of a kind</span> &middot; No
-        two pieces are exactly alike
-      </p>
-
       {/* Only one size exists for a one-of-one piece — this offers a
           made-to-order recreation in a different size instead, which stays
-          available even after the original sells. */}
+          available even after the original sells. Placed right under the
+          size area and styled as its own call-out (not a quiet text link)
+          since it's a real alternate path to purchase, not a footnote. */}
       {isOneOfOne && (
-        <div className="mt-8 border-t border-[var(--border)] pt-6">
+        <div className="mb-8 border-2 border-[var(--accent)] p-4">
           <button
             type="button"
             onClick={() => setCustomOpen((v) => !v)}
-            className="section-label text-left"
+            className="w-full text-left text-lg font-bold uppercase tracking-wide text-[var(--accent)]"
           >
-            {customOpen ? "Hide custom size request" : "Need a different size?"}
+            {customOpen ? "Hide custom size request ↑" : "Need a different size? ↓"}
           </button>
 
           {customOpen && (
@@ -218,6 +201,27 @@ export default function ProductPurchasePanel({
           )}
         </div>
       )}
+
+      {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
+
+      {isOneOfOne && sold ? (
+        <div className="w-full border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] sm:w-auto">
+          Sold &mdash; this piece has been claimed
+        </div>
+      ) : (
+        <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
+          {isOneOfOne ? "Buy Original One of One" : "Add to Cart"}
+        </button>
+      )}
+
+      {/* Reinforces the homepage's cream banner and the About page's "no two
+          alike" promise right at the point of purchase, where it was
+          otherwise only ever in the page's (invisible) meta description. */}
+      <p className="mt-4 text-xs uppercase tracking-widest text-[var(--text-muted)]">
+        Hand-made &middot;{" "}
+        <span className="text-[var(--accent)]">One of a kind</span> &middot; No
+        two pieces are exactly alike
+      </p>
     </div>
   );
 }
