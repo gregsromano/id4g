@@ -13,11 +13,13 @@ export default function ProductQuickView({
   name,
   priceLabel,
   image,
+  sold,
 }: {
   href: string;
   name: string;
   priceLabel: string;
   image: QuickViewImage | undefined;
+  sold?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -76,6 +78,14 @@ export default function ProductQuickView({
             ) : (
               <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
                 No image
+              </div>
+            )}
+
+            {sold && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60">
+                <span className="border-2 border-white px-4 py-1.5 font-[family-name:var(--font-block)] text-lg uppercase tracking-widest text-white">
+                  Sold Out
+                </span>
               </div>
             )}
           </div>

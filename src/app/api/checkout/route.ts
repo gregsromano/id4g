@@ -6,7 +6,13 @@ import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
 
-type IncomingItem = { productId: string; variantId: string; quantity: number };
+type IncomingItem = {
+  productId: string;
+  variantId: string;
+  quantity: number;
+  /** Free-text fulfillment note for a made-to-order recreation — never affects price. */
+  customNote?: string;
+};
 
 type NormalizedLine = {
   variantId: string;
@@ -16,10 +22,14 @@ type NormalizedLine = {
   currency: string;
   productName: string;
   variantLabel: string;
+  customNote: string;
   taxCode: string;
   weightOz: number;
   shippingCents: number;
 };
+
+/** Stripe metadata values are capped at 500 chars; this leaves headroom. */
+const MAX_CUSTOM_NOTE_LENGTH = 300;
 
 /**
  * Validate + normalize the cart the client sent. Prices, product names, tax
@@ -30,7 +40,14 @@ type NormalizedLine = {
 function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[] | null {
   if (!Array.isArray(items) || items.length === 0) return null;
 
-  const merged = new Map<string, { productId: string; quantity: number }>();
+  // Keyed by variantId + customNote (not just variantId): a custom-size
+  // recreation and the plain original are the same variant but different
+  // fulfillment instructions, so they must stay separate order lines rather
+  // than silently combining quantities.
+  const merged = new Map<
+    string,
+    { productId: string; variantId: string; quantity: number; customNote: string }
+  >();
   for (const raw of items as IncomingItem[]) {
     if (!raw || typeof raw.productId !== "string" || typeof raw.variantId !== "string") {
       return null;
@@ -38,24 +55,31 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
     const qty = Number(raw.quantity);
     if (!Number.isInteger(qty) || qty < 1 || qty > 20) return null;
 
-    const existing = merged.get(raw.variantId);
+    const customNote =
+      typeof raw.customNote === "string" ? raw.customNote.trim().slice(0, MAX_CUSTOM_NOTE_LENGTH) : "";
+
+    const key = `${raw.variantId}::${customNote}`;
+    const existing = merged.get(key);
     if (existing) {
       if (existing.productId !== raw.productId) return null;
       existing.quantity += qty;
     } else {
-      merged.set(raw.variantId, { productId: raw.productId, quantity: qty });
+      merged.set(key, { productId: raw.productId, variantId: raw.variantId, quantity: qty, customNote });
     }
   }
 
   const byVariantId = new Map(variants.map((v) => [v.variantId, v]));
   const lines: NormalizedLine[] = [];
 
-  for (const [variantId, { productId, quantity }] of merged) {
+  for (const { productId, variantId, quantity, customNote } of merged.values()) {
     const variant = byVariantId.get(variantId);
     if (!variant) return null;
     // Defense against a spoofed productId/variantId pairing.
     if (variant.productId !== productId) return null;
     if (variant.product.status !== "active") return null;
+    // A sold one-of-one can still be ordered as a custom recreation
+    // (customNote present) but never re-sold as the claimed original.
+    if (variant.product.sold && !customNote) return null;
 
     lines.push({
       variantId,
@@ -65,6 +89,7 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
       currency: variant.product.currency,
       productName: variant.product.name,
       variantLabel: buildVariantLabel(variant.optionValues, variant.product.options),
+      customNote,
       taxCode: variant.product.taxCode,
       weightOz: variant.product.weightOz ?? UNIT_WEIGHT_OZ,
       shippingCents: variant.product.shippingCents,
@@ -100,27 +125,34 @@ export async function POST(req: NextRequest) {
   const currency = normalized[0].currency;
 
   // tax_behavior "exclusive" = tax is added on top of the listed price.
-  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = normalized.map((line) => ({
-    price_data: {
-      currency,
-      unit_amount: line.priceCents,
-      tax_behavior: "exclusive" as const,
-      product_data: {
-        name: line.variantLabel ? `${line.productName} — ${line.variantLabel}` : line.productName,
-        description: line.variantLabel || undefined,
-        tax_code: line.taxCode,
-        metadata: {
-          kind: "product",
-          productId: line.productId,
-          variantId: line.variantId,
-          name: line.productName,
-          variantLabel: line.variantLabel,
-          weightOz: String(line.weightOz),
+  const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = normalized.map((line) => {
+    // A custom-size recreation note takes the place of the (empty, for a
+    // one-of-one) catalog variant label — this is the only plumbing a
+    // custom order needs: it rides the existing variantLabel metadata field
+    // straight through the webhook into the order the admin sees.
+    const displayLabel = line.customNote || line.variantLabel;
+    return {
+      price_data: {
+        currency,
+        unit_amount: line.priceCents,
+        tax_behavior: "exclusive" as const,
+        product_data: {
+          name: displayLabel ? `${line.productName} — ${displayLabel}` : line.productName,
+          description: displayLabel || undefined,
+          tax_code: line.taxCode,
+          metadata: {
+            kind: "product",
+            productId: line.productId,
+            variantId: line.variantId,
+            name: line.productName,
+            variantLabel: displayLabel,
+            weightOz: String(line.weightOz),
+          },
         },
       },
-    },
-    quantity: line.quantity,
-  }));
+      quantity: line.quantity,
+    };
+  });
 
   // One flat shipping charge for the order, sized to whichever distinct
   // product costs the most to ship — same simplification as the cart preview.
@@ -129,7 +161,7 @@ export async function POST(req: NextRequest) {
   // Compact summary stored on the session for a quick read on the success
   // page before the webhook's authoritative expand-based reconstruction.
   const itemsSummary = normalized
-    .map((line) => `${line.variantLabel || line.productName} x${line.quantity}`)
+    .map((line) => `${line.customNote || line.variantLabel || line.productName} x${line.quantity}`)
     .join(", ");
 
   // Turn on any code whose start date has passed, so a scheduled code is

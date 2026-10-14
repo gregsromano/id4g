@@ -42,6 +42,13 @@ export type Product = {
   /** Free-standing label (T-Shirt, Hoodie, ...) — not enforced by the DB. */
   category: string | null;
   /**
+   * Claimed, independent of `status`. Only meaningful for "One of One"
+   * pieces — a sold one stays status=active so it keeps showing on the
+   * storefront with a sold-out treatment instead of disappearing the way
+   * archiving a product does.
+   */
+  sold: boolean;
+  /**
    * Optional SEO overrides for the page <title> and meta description.
    *
    * Null means "derive from the name and description at render time" — see
@@ -87,6 +94,7 @@ const PRODUCT_COLUMNS = [
   "weight_oz",
   "tax_code",
   "category",
+  "sold",
   "meta_title",
   "meta_description",
   "options",
@@ -118,6 +126,7 @@ type ProductRow = {
   weight_oz: number | null;
   tax_code: string;
   category: string | null;
+  sold: boolean;
   meta_title: string | null;
   meta_description: string | null;
   options: unknown;
@@ -150,6 +159,7 @@ function toProduct(row: ProductRow): Product {
     weightOz: row.weight_oz,
     taxCode: row.tax_code,
     category: row.category,
+    sold: row.sold,
     metaTitle: row.meta_title,
     metaDescription: row.meta_description,
     options: Array.isArray(row.options) ? (row.options as ProductOption[]) : [],
@@ -465,6 +475,18 @@ export async function setProductStatus(id: string, status: ProductStatus): Promi
     .eq("id", id);
 
   if (error) fail("update product status", error);
+}
+
+/** Toggles the "claimed" flag on a one-of-one piece. See `Product.sold`. */
+export async function setProductSold(id: string, sold: boolean): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("products")
+    .update({ sold, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) fail("update product sold flag", error);
 }
 
 export type DesiredVariant = {
@@ -786,6 +808,7 @@ export type CheckoutVariant = {
     name: string;
     slug: string;
     status: ProductStatus;
+    sold: boolean;
     currency: string;
     shippingCents: number;
     taxCode: string;
@@ -809,7 +832,7 @@ export async function getVariantsForCheckout(
   const { data, error } = await getSupabaseAdmin()
     .from("product_variants")
     .select(
-      `id, product_id, option_values, price_cents, products (id, name, slug, status, currency, shipping_cents, tax_code, weight_oz, options)`,
+      `id, product_id, option_values, price_cents, products (id, name, slug, status, sold, currency, shipping_cents, tax_code, weight_oz, options)`,
     )
     .in("id", variantIds);
 
@@ -825,6 +848,7 @@ export async function getVariantsForCheckout(
       name: string;
       slug: string;
       status: string;
+      sold: boolean;
       currency: string;
       shipping_cents: number;
       tax_code: string;
@@ -850,6 +874,7 @@ export async function getVariantsForCheckout(
         name: row.products.name,
         slug: row.products.slug,
         status: isProductStatus(row.products.status) ? row.products.status : "draft",
+        sold: row.products.sold,
         currency: row.products.currency,
         shippingCents: row.products.shipping_cents,
         taxCode: row.products.tax_code,

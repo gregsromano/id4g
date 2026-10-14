@@ -15,6 +15,7 @@ import {
   replaceVariants,
   setCoverImage,
   setProductImages,
+  setProductSold,
   setProductStatus,
   setVideoPoster,
   updateProduct,
@@ -463,6 +464,15 @@ export async function setProductStatusAction(formData: FormData): Promise<void> 
   const status = requireStatus(formData);
 
   await setProductStatus(id, status);
+  revalidateProduct(id);
+}
+
+export async function setProductSoldAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = requireId(formData);
+  const sold = String(formData.get("sold") ?? "") === "true";
+
+  await setProductSold(id, sold);
   revalidateProduct(id);
 }
 

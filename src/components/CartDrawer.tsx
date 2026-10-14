@@ -31,6 +31,7 @@ export default function CartDrawer() {
             productId: i.productId,
             variantId: i.variantId,
             quantity: i.quantity,
+            customNote: i.customNote,
           })),
         }),
       });
@@ -90,7 +91,7 @@ export default function CartDrawer() {
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {items.map((item) => (
                 <div
-                  key={`${item.productId}-${item.variantId}`}
+                  key={`${item.productId}-${item.variantId}-${item.customNote ?? ""}`}
                   className="flex gap-4 border-b border-[var(--border)] py-5"
                 >
                   <div className="min-w-0 flex-1">
@@ -100,6 +101,11 @@ export default function CartDrawer() {
                     {item.variantLabel && (
                       <p className="mt-1 text-xs uppercase tracking-widest text-[var(--text-muted)]">
                         {item.variantLabel}
+                      </p>
+                    )}
+                    {item.customNote && (
+                      <p className="mt-1 text-xs uppercase tracking-widest text-[var(--accent)]">
+                        {item.customNote}
                       </p>
                     )}
 
@@ -112,6 +118,7 @@ export default function CartDrawer() {
                             item.productId,
                             item.variantId,
                             item.quantity - 1,
+                            item.customNote,
                           )
                         }
                         className="h-8 w-8 text-[var(--text-body)] transition-colors hover:bg-[var(--bg-section-alt)]"
@@ -128,6 +135,7 @@ export default function CartDrawer() {
                             item.productId,
                             item.variantId,
                             item.quantity + 1,
+                            item.customNote,
                           )
                         }
                         className="h-8 w-8 text-[var(--text-body)] transition-colors hover:bg-[var(--bg-section-alt)]"
@@ -142,7 +150,7 @@ export default function CartDrawer() {
                       {formatPrice(item.priceCents * item.quantity)}
                     </span>
                     <button
-                      onClick={() => removeItem(item.productId, item.variantId)}
+                      onClick={() => removeItem(item.productId, item.variantId, item.customNote)}
                       className="text-xs uppercase tracking-widest text-[var(--text-muted)] transition-colors hover:text-[var(--accent)]"
                     >
                       Remove

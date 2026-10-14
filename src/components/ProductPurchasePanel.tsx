@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/product";
+import { STANDARD_SIZES } from "@/lib/product-options";
 import { buildVariantLabel, variantOptionKey, type ProductOption } from "@/lib/variant";
 
 type Variant = {
@@ -18,6 +19,8 @@ type Props = {
   shippingCents: number;
   options: ProductOption[];
   variants: Variant[];
+  category?: string | null;
+  sold?: boolean;
 };
 
 export default function ProductPurchasePanel({
@@ -26,10 +29,16 @@ export default function ProductPurchasePanel({
   shippingCents,
   options,
   variants,
+  category,
+  sold,
 }: Props) {
   const { addItem } = useCart();
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const isOneOfOne = category === "One of One";
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customSize, setCustomSize] = useState<string>(STANDARD_SIZES[0].value);
+  const [customNote, setCustomNote] = useState("");
 
   const variantByKey = new Map(variants.map((v) => [variantOptionKey(v.optionValues), v]));
   const allSelected = options.every((option) => selected[option.name] !== undefined);
@@ -61,6 +70,35 @@ export default function ProductPurchasePanel({
       priceCents: matchedVariant.priceCents,
       shippingCents,
     });
+  }
+
+  /**
+   * A one-of-one piece exists in exactly one size. This adds the same
+   * variant to the cart with a fulfillment note instead of a different
+   * variant — there's nothing else to select from — so it checks out
+   * through the normal flow but is made to order rather than shipped as the
+   * original. Available even when the original is sold, since it's a
+   * recreation, not the claimed piece.
+   */
+  function handleAddCustomOrder() {
+    const variant = variants[0];
+    if (!variant) return;
+
+    const note = [`Custom size: ${customSize}`, customNote.trim()]
+      .filter(Boolean)
+      .join(" — ");
+
+    addItem({
+      productId,
+      variantId: variant.id,
+      name,
+      variantLabel: "",
+      customNote: note,
+      priceCents: variant.priceCents,
+      shippingCents,
+    });
+    setCustomOpen(false);
+    setCustomNote("");
   }
 
   return (
@@ -103,9 +141,15 @@ export default function ProductPurchasePanel({
 
       {error && <p className="mb-4 text-sm text-red-400">{error}</p>}
 
-      <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
-        Add to Cart
-      </button>
+      {isOneOfOne && sold ? (
+        <div className="w-full border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)] sm:w-auto">
+          Sold &mdash; this piece has been claimed
+        </div>
+      ) : (
+        <button onClick={handleAddToCart} className="btn-primary w-full sm:w-auto">
+          {isOneOfOne ? "Buy Original One of One" : "Add to Cart"}
+        </button>
+      )}
 
       {/* Reinforces the homepage's cream banner and the About page's "no two
           alike" promise right at the point of purchase, where it was
@@ -115,6 +159,65 @@ export default function ProductPurchasePanel({
         <span className="text-[var(--accent)]">One of a kind</span> &middot; No
         two pieces are exactly alike
       </p>
+
+      {/* Only one size exists for a one-of-one piece — this offers a
+          made-to-order recreation in a different size instead, which stays
+          available even after the original sells. */}
+      {isOneOfOne && (
+        <div className="mt-8 border-t border-[var(--border)] pt-6">
+          <button
+            type="button"
+            onClick={() => setCustomOpen((v) => !v)}
+            className="section-label text-left"
+          >
+            {customOpen ? "Hide custom size request" : "Need a different size?"}
+          </button>
+
+          {customOpen && (
+            <div className="mt-4">
+              <p className="mb-4 text-sm text-[var(--text-body)]">
+                This is a one-of-one piece, made in a single size. We can make
+                you a custom recreation as close to the original as possible,
+                in the size you need.
+              </p>
+
+              <label className="mb-4 block">
+                <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                  Size
+                </span>
+                <select
+                  value={customSize}
+                  onChange={(e) => setCustomSize(e.target.value)}
+                  className="h-12 w-full border border-[var(--border)] bg-[var(--bg-primary)] px-3 text-sm text-[var(--text-primary)]"
+                >
+                  {STANDARD_SIZES.map((size) => (
+                    <option key={size.value} value={size.value}>
+                      {size.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="mb-4 block">
+                <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                  Notes (optional)
+                </span>
+                <textarea
+                  value={customNote}
+                  onChange={(e) => setCustomNote(e.target.value)}
+                  rows={3}
+                  maxLength={300}
+                  className="w-full border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                />
+              </label>
+
+              <button onClick={handleAddCustomOrder} className="btn-outline w-full sm:w-auto">
+                Add Custom Size to Cart
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -223,6 +223,7 @@ export default function ProductsTable({
                   <Td>
                     <span className="text-xs uppercase tracking-widest text-[var(--text-muted)]">
                       {product.status}
+                      {product.sold ? " · Sold" : ""}
                     </span>
                   </Td>
                   <Td>
@@ -273,6 +274,7 @@ export default function ProductsTable({
                       {product.status} · {product.variantCount} variant
                       {product.variantCount === 1 ? "" : "s"}
                       {product.category ? ` · ${product.category}` : ""}
+                      {product.sold ? " · Sold" : ""}
                     </p>
                   </div>
                 </div>

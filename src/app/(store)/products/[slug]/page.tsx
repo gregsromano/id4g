@@ -136,7 +136,7 @@ export default async function ProductDetailPage({
 
       <section className="border-b border-[var(--border)]">
         <div className="mx-auto grid max-w-6xl gap-10 px-6 pb-16 sm:pb-24 lg:grid-cols-2 lg:items-start lg:gap-16">
-          <ProductGallery images={images} />
+          <ProductGallery images={images} sold={product.sold} />
 
           <ProductPurchasePanel
             productId={product.id}
@@ -148,6 +148,8 @@ export default async function ProductDetailPage({
               optionValues: v.optionValues,
               priceCents: v.priceCents,
             }))}
+            category={product.category}
+            sold={product.sold}
           />
         </div>
 

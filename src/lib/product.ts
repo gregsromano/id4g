@@ -9,6 +9,8 @@ export type CartItem = {
   variantId: string;
   name: string;
   variantLabel: string;
+  /** Free-text fulfillment note for a made-to-order recreation, e.g. "Custom size: L". */
+  customNote?: string;
   priceCents: number;
   shippingCents: number;
   quantity: number;

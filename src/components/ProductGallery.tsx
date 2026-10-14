@@ -7,7 +7,13 @@ import { isVideoUrl } from "@/lib/media";
 
 type GalleryImage = { url: string; alt: string; posterUrl?: string | null };
 
-export default function ProductGallery({ images }: { images: GalleryImage[] }) {
+export default function ProductGallery({
+  images,
+  sold,
+}: {
+  images: GalleryImage[];
+  sold?: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const active = images[index];
@@ -73,6 +79,14 @@ export default function ProductGallery({ images }: { images: GalleryImage[] }) {
         ) : (
           <div className="flex h-full w-full items-center justify-center text-xs uppercase tracking-widest text-[var(--text-muted)]">
             No image
+          </div>
+        )}
+
+        {sold && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60">
+            <span className="border-2 border-white px-6 py-2 font-[family-name:var(--font-block)] text-2xl uppercase tracking-widest text-white sm:text-3xl">
+              Sold Out
+            </span>
           </div>
         )}
       </div>

@@ -26,17 +26,22 @@ type CartContextValue = {
   isOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
-  /** Add a variant to the cart (merges quantity if that variant is already present). */
+  /** Add a variant to the cart (merges quantity if that exact line — including any custom note — is already present). */
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  setQuantity: (productId: string, variantId: string, quantity: number) => void;
-  removeItem: (productId: string, variantId: string) => void;
+  setQuantity: (productId: string, variantId: string, quantity: number, customNote?: string) => void;
+  removeItem: (productId: string, variantId: string, customNote?: string) => void;
   clear: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-function lineKey(productId: string, variantId: string) {
-  return `${productId}::${variantId}`;
+/**
+ * Includes `customNote` so a made-to-order recreation (see ProductPurchasePanel's
+ * custom-size flow) never merges with the plain original — same productId/variantId,
+ * different fulfillment instructions.
+ */
+function lineKey(productId: string, variantId: string, customNote?: string) {
+  return `${productId}::${variantId}::${customNote ?? ""}`;
 }
 
 /** Guard against malformed data coming out of localStorage. */
@@ -107,13 +112,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       addItem: (item, quantity = 1) => {
         if (quantity <= 0) return;
         setItems((prev) => {
-          const key = lineKey(item.productId, item.variantId);
+          const key = lineKey(item.productId, item.variantId, item.customNote);
           const existing = prev.find(
-            (i) => lineKey(i.productId, i.variantId) === key,
+            (i) => lineKey(i.productId, i.variantId, i.customNote) === key,
           );
           if (existing) {
             return prev.map((i) =>
-              lineKey(i.productId, i.variantId) === key
+              lineKey(i.productId, i.variantId, i.customNote) === key
                 ? { ...i, quantity: i.quantity + quantity }
                 : i,
             );
@@ -122,21 +127,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         });
         setIsOpen(true);
       },
-      setQuantity: (productId, variantId, quantity) => {
+      setQuantity: (productId, variantId, quantity, customNote) => {
         setItems((prev) => {
-          const key = lineKey(productId, variantId);
+          const key = lineKey(productId, variantId, customNote);
           if (quantity <= 0) {
-            return prev.filter((i) => lineKey(i.productId, i.variantId) !== key);
+            return prev.filter((i) => lineKey(i.productId, i.variantId, i.customNote) !== key);
           }
           return prev.map((i) =>
-            lineKey(i.productId, i.variantId) === key ? { ...i, quantity } : i,
+            lineKey(i.productId, i.variantId, i.customNote) === key ? { ...i, quantity } : i,
           );
         });
       },
-      removeItem: (productId, variantId) => {
-        const key = lineKey(productId, variantId);
+      removeItem: (productId, variantId, customNote) => {
+        const key = lineKey(productId, variantId, customNote);
         setItems((prev) =>
-          prev.filter((i) => lineKey(i.productId, i.variantId) !== key),
+          prev.filter((i) => lineKey(i.productId, i.variantId, i.customNote) !== key),
         );
       },
       clear: () => setItems([]),

@@ -29,6 +29,7 @@ export default function ShopCategorySection({
                 name={product.name}
                 priceLabel={formatPrice(product.priceCents)}
                 image={product.images[0]}
+                sold={product.sold}
               />
             ))}
           </div>

@@ -14,6 +14,7 @@ import {
   saveProductDetails,
   saveVariantPrices,
   setCoverImageAction,
+  setProductSoldAction,
   setProductStatusAction,
 } from "../actions";
 
@@ -310,6 +311,25 @@ export default async function AdminProductEditPage({
           )}
         </div>
       </section>
+
+      {/* Availability — only meaningful for one-of-one pieces: a sold one
+          stays active and visible, just with a sold-out treatment, rather
+          than disappearing the way archiving does. */}
+      {product.category === "One of One" && (
+        <section className="mt-6 flex flex-wrap items-center justify-between gap-4 border border-[var(--border)] p-6">
+          <div>
+            <span className="section-label">Availability</span>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">
+              {product.sold
+                ? "Shown with a SOLD OUT overlay; no longer purchasable as the original."
+                : "Visible and purchasable as the original one-of-one piece."}
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <SoldButton id={product.id} sold={!product.sold} label={product.sold ? "Mark as Available" : "Mark as Sold"} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -347,6 +367,29 @@ function StatusButton({
             ? "border-[var(--border)] text-[var(--text-muted)] hover:border-red-400 hover:text-red-400"
             : "border-[var(--border)] text-[var(--text-body)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
         }`}
+      >
+        {label}
+      </button>
+    </form>
+  );
+}
+
+function SoldButton({
+  id,
+  sold,
+  label,
+}: {
+  id: string;
+  sold: boolean;
+  label: string;
+}) {
+  return (
+    <form action={setProductSoldAction}>
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="sold" value={String(sold)} />
+      <button
+        type="submit"
+        className="border border-[var(--border)] px-4 py-3 text-xs uppercase tracking-widest text-[var(--text-body)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)]"
       >
         {label}
       </button>
