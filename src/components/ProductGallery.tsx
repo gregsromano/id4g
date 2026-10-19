@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
+import SoldOverlay from "@/components/SoldOverlay";
 
 type GalleryImage = { url: string; alt: string; posterUrl?: string | null };
 
@@ -82,13 +83,7 @@ export default function ProductGallery({
           </div>
         )}
 
-        {sold && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60">
-            <span className="border-2 border-white px-6 py-2 font-[family-name:var(--font-block)] text-2xl uppercase tracking-widest text-white sm:text-3xl">
-              Sold Out
-            </span>
-          </div>
-        )}
+        {sold && <SoldOverlay />}
       </div>
 
       {images.length > 1 && (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
+import SoldOverlay from "@/components/SoldOverlay";
 
 type QuickViewImage = { url: string; alt: string; posterUrl?: string | null };
 
@@ -76,13 +77,7 @@ export default function ProductQuickView({
               </div>
             )}
 
-            {sold && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60">
-                <span className="border-2 border-white px-4 py-1.5 font-[family-name:var(--font-block)] text-lg uppercase tracking-widest text-white">
-                  Sold Out
-                </span>
-              </div>
-            )}
+            {sold && <SoldOverlay size="sm" />}
           </div>
           <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
             {name}
