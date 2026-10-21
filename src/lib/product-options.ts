@@ -25,6 +25,13 @@ export const PRODUCT_CATEGORIES = [
 ] as const;
 
 /**
+ * Flat price of a made-to-order custom version of a one-of-one, whatever the
+ * original sold for. Shared by the product page and `/api/checkout`, which
+ * charges this server-side for any line carrying a custom note.
+ */
+export const CUSTOM_VERSION_PRICE_CENTS = 15000;
+
+/**
  * Standard size codes offered as a pick-list in SizeOptionsField, instead of
  * typing "Size: S, M, L" by hand. The stored value is still the short code
  * (matches sizes already used across cart/checkout/orders) — the label is

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useCart } from "@/lib/cart-context";
 import { formatPrice } from "@/lib/product";
-import { STANDARD_SIZES } from "@/lib/product-options";
+import { CUSTOM_VERSION_PRICE_CENTS, STANDARD_SIZES } from "@/lib/product-options";
 import { buildVariantLabel, variantOptionKey, type ProductOption } from "@/lib/variant";
 
 type Variant = {
@@ -48,7 +48,11 @@ export default function ProductPurchasePanel({
   const variantByKey = new Map(variants.map((v) => [variantOptionKey(v.optionValues), v]));
   const allSelected = options.every((option) => selected[option.name] !== undefined);
   const matchedVariant = allSelected ? variantByKey.get(variantOptionKey(selected)) : undefined;
-  const displayPriceCents = matchedVariant?.priceCents ?? variants[0]?.priceCents ?? 0;
+  // Once the original is claimed the only thing left to buy is a custom
+  // version, so that's the price the headline shows.
+  const displayPriceCents = sold
+    ? CUSTOM_VERSION_PRICE_CENTS
+    : (matchedVariant?.priceCents ?? variants[0]?.priceCents ?? 0);
 
   function selectValue(optionName: string, value: string) {
     setSelected((prev) => ({ ...prev, [optionName]: value }));
@@ -99,7 +103,7 @@ export default function ProductPurchasePanel({
       name,
       variantLabel: "",
       customNote: note,
-      priceCents: variant.priceCents,
+      priceCents: CUSTOM_VERSION_PRICE_CENTS,
       shippingCents,
     });
     setCustomOpen(false);
@@ -263,7 +267,7 @@ export default function ProductPurchasePanel({
               </p>
 
               <button onClick={handleAddCustomOrder} className="btn-primary w-full sm:w-auto">
-                Buy Now
+                Buy Now &mdash; {formatPrice(CUSTOM_VERSION_PRICE_CENTS)}
               </button>
             </div>
           )}

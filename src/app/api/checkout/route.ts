@@ -5,12 +5,13 @@ import { getVariantsForCheckout, type CheckoutVariant } from "@/lib/products";
 import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
+import { CUSTOM_VERSION_PRICE_CENTS } from "@/lib/product-options";
 
 type IncomingItem = {
   productId: string;
   variantId: string;
   quantity: number;
-  /** Free-text fulfillment note for a made-to-order recreation — never affects price. */
+  /** Free-text fulfillment note marking a made-to-order recreation, priced at CUSTOM_VERSION_PRICE_CENTS. */
   customNote?: string;
 };
 
@@ -85,7 +86,7 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
       variantId,
       productId,
       quantity,
-      priceCents: variant.priceCents,
+      priceCents: customNote ? CUSTOM_VERSION_PRICE_CENTS : variant.priceCents,
       currency: variant.product.currency,
       productName: variant.product.name,
       variantLabel: buildVariantLabel(variant.optionValues, variant.product.options),
