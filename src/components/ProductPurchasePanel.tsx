@@ -197,7 +197,7 @@ export default function ProductPurchasePanel({
                 onClick={() => setCustomOpen((v) => !v)}
                 className="btn-primary w-full !px-4 !py-6 !text-base !font-extrabold !tracking-wide sm:!text-xl"
               >
-                {customOpen ? "Hide custom order ↑" : "Order a custom version →"}
+                {customOpen ? "Custom Version ↑" : "Order a custom version →"}
               </button>
               <p className="mt-4 text-lg text-[var(--text-body)]">
                 Made just for you, in your size. Inspired by this piece, with
@@ -216,15 +216,11 @@ export default function ProductPurchasePanel({
 
           {customOpen && (
             <div className={sold ? "mt-6 border border-[var(--border)] p-4" : "mt-4"}>
-              <p className="mb-4 text-sm text-[var(--text-body)]">
-                This is a one-of-one piece, made in a single size. We can make
-                you a custom recreation as close to the original as possible,
-                in the size you need.
-              </p>
-
+              {/* Size first: it's the one thing the buyer has to choose, so it
+                  sits right under the button that opened the form. */}
               <label className="mb-4 block">
-                <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
-                  Size
+                <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-[var(--text-primary)]">
+                  Choose Size
                 </span>
                 <select
                   value={customSize}
@@ -239,6 +235,12 @@ export default function ProductPurchasePanel({
                 </select>
               </label>
 
+              <p className="mb-4 text-sm text-[var(--text-body)]">
+                This is a one-of-one piece, made in a single size. We can make
+                you a custom recreation as close to the original as possible,
+                in the size you need.
+              </p>
+
               <label className="mb-4 block">
                 <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
                   Notes (optional)
@@ -252,8 +254,16 @@ export default function ProductPurchasePanel({
                 />
               </label>
 
-              <button onClick={handleAddCustomOrder} className="btn-outline w-full sm:w-auto">
-                Add Custom Size to Cart
+              <p className="mb-4 border-l-2 border-[var(--accent)] pl-3 text-sm text-[var(--text-body)]">
+                <span className="font-bold uppercase tracking-wide text-[var(--text-primary)]">
+                  All sales final.
+                </span>{" "}
+                Every custom version is made to order just for you, so custom
+                orders can&rsquo;t be refunded.
+              </p>
+
+              <button onClick={handleAddCustomOrder} className="btn-primary w-full sm:w-auto">
+                Buy Now
               </button>
             </div>
           )}
