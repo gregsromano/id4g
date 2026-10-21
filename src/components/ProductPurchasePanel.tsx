@@ -140,8 +140,8 @@ export default function ProductPurchasePanel({
           </div>
 
           {sold ? (
-            <div className="border border-[var(--border)] px-6 py-4 text-center text-sm font-bold uppercase tracking-widest text-[var(--text-muted)]">
-              Sold &mdash; this piece has been claimed
+            <div className="flex-1 border border-[var(--border)] px-6 py-4 text-center font-[family-name:var(--font-block)] text-xl uppercase tracking-wide text-[var(--text-muted)]">
+              Sold &mdash; this one of one has been claimed
             </div>
           ) : (
             <button onClick={handleAddToCart} className="btn-primary">
@@ -186,17 +186,36 @@ export default function ProductPurchasePanel({
           call-out (not a quiet text link) since it's a real alternate path
           to purchase, not a footnote. */}
       {isOneOfOne && (
-        <div className="mt-8 border-2 border-[var(--accent)] p-4">
-          <button
-            type="button"
-            onClick={() => setCustomOpen((v) => !v)}
-            className="w-full text-left text-lg font-bold uppercase tracking-wide text-[var(--accent)]"
-          >
-            {customOpen ? "Hide custom size request ↑" : "Need a different size? ↓"}
-          </button>
+        <div className={sold ? "" : "mt-8 border-2 border-[var(--accent)] p-4"}>
+          {/* Once the original is claimed the custom version is the only way
+              to buy, so it becomes the page's primary button rather than a
+              secondary call-out. */}
+          {sold ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setCustomOpen((v) => !v)}
+                className="btn-primary w-full !px-4 !py-6 !text-base !font-extrabold !tracking-wide sm:!text-xl"
+              >
+                {customOpen ? "Hide custom order ↑" : "Order a custom version →"}
+              </button>
+              <p className="mt-4 text-lg text-[var(--text-body)]">
+                Made just for you, in your size. Inspired by this piece, with
+                unique handmade details.
+              </p>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCustomOpen((v) => !v)}
+              className="w-full text-left text-lg font-bold uppercase tracking-wide text-[var(--accent)]"
+            >
+              {customOpen ? "Hide custom size request ↑" : "Need a different size? ↓"}
+            </button>
+          )}
 
           {customOpen && (
-            <div className="mt-4">
+            <div className={sold ? "mt-6 border border-[var(--border)] p-4" : "mt-4"}>
               <p className="mb-4 text-sm text-[var(--text-body)]">
                 This is a one-of-one piece, made in a single size. We can make
                 you a custom recreation as close to the original as possible,
