@@ -1,3 +1,5 @@
+import { CUSTOM_VERSION_PRICE_CENTS } from "./product-options";
+
 /**
  * A single line in the cart: one variant of one product, with a quantity.
  * `name`/`variantLabel`/`priceCents`/`shippingCents` are snapshots taken at
@@ -18,6 +20,15 @@ export type CartItem = {
 
 export function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+/**
+ * The price a shopper can actually pay for a product right now. A sold
+ * one-of-one can only be bought as a custom version, so listings show that
+ * price instead of the claimed original's.
+ */
+export function currentPriceCents(product: { priceCents: number; sold?: boolean }) {
+  return product.sold ? CUSTOM_VERSION_PRICE_CENTS : product.priceCents;
 }
 
 /** Subtotal of goods only (no shipping). */
