@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { SITE_MAP_SECTIONS } from "@/lib/nav-links";
+import type { SiteMapSection } from "@/lib/nav-links";
 
-export default function SiteFooter() {
+export default function SiteFooter({ sections }: { sections: SiteMapSection[] }) {
   const year = new Date().getFullYear();
 
   return (
@@ -30,7 +30,7 @@ export default function SiteFooter() {
             Site Map
           </Link>
           <div className="grid grid-cols-2 gap-x-10 gap-y-8 sm:grid-cols-3">
-            {SITE_MAP_SECTIONS.map((section) => (
+            {sections.map((section) => (
               <div key={section.heading}>
                 <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-[var(--text-body)]">
                   {section.heading}

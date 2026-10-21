@@ -46,6 +46,8 @@ export type SiteSettings = {
    * the manual `position` order already decides what comes first.
    */
   pinnedProductId: string | null;
+  /** NAV_LINKS ids switched off in /admin/menu; empty shows the full menu. */
+  hiddenNavItems: string[];
 };
 
 /**
@@ -61,6 +63,7 @@ const DEFAULTS: SiteSettings = {
   randomizeLifestyle: false,
   emailPopupEnabled: false,
   pinnedProductId: null,
+  hiddenNavItems: [],
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -69,7 +72,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
     .select(
-      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id",
+      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items",
     )
     .eq("id", SETTINGS_ID)
     .maybeSingle();
@@ -81,6 +84,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     randomize_lifestyle: boolean;
     email_popup_enabled: boolean;
     pinned_product_id: string | null;
+    hidden_nav_items: string[] | null;
   };
 
   return {
@@ -88,6 +92,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     randomizeLifestyle: Boolean(row.randomize_lifestyle),
     emailPopupEnabled: Boolean(row.email_popup_enabled),
     pinnedProductId: row.pinned_product_id ?? null,
+    hiddenNavItems: Array.isArray(row.hidden_nav_items) ? row.hidden_nav_items : [],
   };
 }
 
@@ -180,6 +185,28 @@ export async function setRandomizeProducts(enabled: boolean): Promise<void> {
 
   if (error) {
     console.error("[settings] failed to save randomize_products", {
+      message: error.message,
+    });
+    throw new Error("Failed to save setting");
+  }
+}
+
+export async function setHiddenNavItems(ids: string[]): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      {
+        id: SETTINGS_ID,
+        hidden_nav_items: ids,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save hidden_nav_items", {
       message: error.message,
     });
     throw new Error("Failed to save setting");

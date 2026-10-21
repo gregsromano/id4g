@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import CartButton from "./CartButton";
-import { NAV_LINKS } from "@/lib/nav-links";
+import type { NavLinkItem } from "@/lib/nav-links";
 
 /**
  * No dedicated Custom Orders page/flow exists yet, so it routes to the one
@@ -14,7 +14,7 @@ import { NAV_LINKS } from "@/lib/nav-links";
  */
 
 
-export default function SiteHeader() {
+export default function SiteHeader({ links }: { links: NavLinkItem[] }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -31,7 +31,7 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <NavLink key={link.label} {...link} />
           ))}
         </nav>
@@ -56,7 +56,7 @@ export default function SiteHeader() {
 
       {menuOpen && (
         <nav className="flex flex-col gap-4 border-t border-[var(--border)] px-6 py-4 md:hidden">
-          {NAV_LINKS.map((link) => (
+          {links.map((link) => (
             <div key={link.label}>
               <NavLink {...link} onClick={() => setMenuOpen(false)} mobile />
               {link.children && link.children.length > 0 && (

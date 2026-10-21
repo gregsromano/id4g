@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { SITE_MAP_SECTIONS } from "@/lib/nav-links";
+import { siteMapSections } from "@/lib/nav-links";
 import { listActiveProducts } from "@/lib/products";
+import { getSiteSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,8 @@ export default async function SiteMapPage() {
   } catch (error) {
     console.error("[sitemap page] failed to list products", error);
   }
+  // Never throws — falls back to the full menu.
+  const { hiddenNavItems } = await getSiteSettings();
 
   return (
     <main className="flex-1 bg-[var(--bg-primary)]">
@@ -38,7 +41,7 @@ export default async function SiteMapPage() {
         </h1>
 
         <div className="mt-10 space-y-10">
-          {SITE_MAP_SECTIONS.map((section) => (
+          {siteMapSections(hiddenNavItems).map((section) => (
             <Section key={section.heading} title={section.heading}>
               {section.links.map((link) => (
                 <li key={link.label}>

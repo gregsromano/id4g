@@ -12,6 +12,7 @@ const LINKS = [
   { href: "/admin/lifestyle", label: "Lifestyle" },
   { href: "/admin/discounts", label: "Discounts" },
   { href: "/admin/email", label: "Email" },
+  { href: "/admin/menu", label: "Menu" },
   { href: "/admin/import", label: "Tracking" },
   { href: "/admin/profile", label: "Profile" },
 ];
@@ -87,8 +88,13 @@ export default function AdminNav({
             ID4G <span className="hidden xl:inline">Fulfillment</span>
           </span>
 
+          {/* Profile is left out of the desktop row: the avatar beside Log out
+              already links there, and adding "Menu" as an eighth link made
+              the row ~57px too wide at 1280px. Dropping the duplicate keeps
+              the full row fitting at `xl` without moving the breakpoint. The
+              phone menu below still lists Profile. */}
           <nav className="hidden items-center gap-6 xl:flex xl:gap-8">
-            {LINKS.map((link) => (
+            {LINKS.filter((link) => link.href !== "/admin/profile").map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
