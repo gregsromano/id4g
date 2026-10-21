@@ -15,12 +15,15 @@ export default function ProductQuickView({
   priceLabel,
   image,
   sold,
+  compact,
 }: {
   href: string;
   name: string;
   priceLabel: string;
   image: QuickViewImage | undefined;
   sold?: boolean;
+  /** Smaller card for the homepage's dense 5-across rows. */
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -79,10 +82,16 @@ export default function ProductQuickView({
 
             {sold && <SoldOverlay size="sm" />}
           </div>
-          <h3 className="mt-4 text-lg font-semibold text-[var(--text-primary)]">
+          <h3
+            className={`font-semibold text-[var(--text-primary)] ${
+              compact ? "mt-3 text-sm leading-snug" : "mt-4 text-lg"
+            }`}
+          >
             {name}
           </h3>
-          <p className="mt-1 text-sm text-[var(--text-muted)]">{priceLabel}</p>
+          <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-xs" : "text-sm"}`}>
+            {priceLabel}
+          </p>
         </Link>
 
         {image && !isVideoUrl(image.url) && (

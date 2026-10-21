@@ -182,17 +182,37 @@ export default async function Home() {
           {products.length === 0 ? (
             <p className="text-sm text-[var(--text-muted)]">Nothing in stock right now.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-16 lg:grid-cols-3">
-              {products.map((product) => (
-                <ProductQuickView
-                  key={product.id}
-                  href={`/products/${product.slug}`}
-                  name={product.name}
-                  priceLabel={formatPrice(currentPriceCents(product))}
-                  image={product.images[0]}
-                />
-              ))}
-            </div>
+            <>
+              {/* Three featured pieces up top at full size, then everything
+                  else in denser rows of five so more of the drop fits on
+                  screen without scrolling past giant tiles. */}
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-x-16 lg:grid-cols-3">
+                {products.slice(0, 3).map((product) => (
+                  <ProductQuickView
+                    key={product.id}
+                    href={`/products/${product.slug}`}
+                    name={product.name}
+                    priceLabel={formatPrice(currentPriceCents(product))}
+                    image={product.images[0]}
+                  />
+                ))}
+              </div>
+
+              {products.length > 3 && (
+                <div className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+                  {products.slice(3).map((product) => (
+                    <ProductQuickView
+                      key={product.id}
+                      href={`/products/${product.slug}`}
+                      name={product.name}
+                      priceLabel={formatPrice(currentPriceCents(product))}
+                      image={product.images[0]}
+                      compact
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
