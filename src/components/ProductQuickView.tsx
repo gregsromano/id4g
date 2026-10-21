@@ -89,7 +89,7 @@ export default function ProductQuickView({
           >
             {name}
           </h3>
-          <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-xs" : "text-sm"}`}>
+          <p className={`mt-1 font-bold text-[var(--accent)] ${compact ? "text-base" : "text-xl"}`}>
             {priceLabel}
           </p>
         </Link>
