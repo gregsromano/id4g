@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 
 import {
+  removeSitewideSaleAction,
   saveSitewideSaleAction,
   setSitewideSaleEnabledAction,
   type SitewideSaleState,
@@ -38,6 +39,26 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
   const [percent, setPercent] = useState(sale.percentOff === null ? "" : String(sale.percentOff));
   const [startIso, setStartIso] = useState(sale.startsAt ?? "");
   const [endIso, setEndIso] = useState(sale.endsAt ?? "");
+  const [removing, startRemoving] = useTransition();
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const router = useRouter();
+
+  function removeSale() {
+    if (!window.confirm("Remove the site-wide sale? Regular prices will show right away.")) return;
+    setRemoveError(null);
+    startRemoving(async () => {
+      const result = await removeSitewideSaleAction();
+      if (result && "error" in result) {
+        setRemoveError(result.error);
+        return;
+      }
+      setPercent("");
+      setStartIso("");
+      setEndIso("");
+      router.refresh();
+    });
+  }
+
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -64,7 +85,13 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
             get whichever price is lower. Custom versions of one-of-ones keep their price.
           </p>
         </div>
-        <EnabledSwitch enabled={sale.enabled} hasSavedSale={sale.percentOff !== null} />
+        {/* Keyed on the saved state so Remove (which switches it off on the
+            server) resets the switch instead of leaving it showing On. */}
+        <EnabledSwitch
+          key={`${sale.enabled}-${sale.percentOff}`}
+          enabled={sale.enabled}
+          hasSavedSale={sale.percentOff !== null}
+        />
       </div>
 
       {status && (
@@ -161,11 +188,26 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
 
         {endError && <p className="mt-3 text-sm text-red-400">{endError}</p>}
         {state && "error" in state && <p className="mt-3 text-sm text-red-400">{state.error}</p>}
+        {removeError && <p className="mt-3 text-sm text-red-400">{removeError}</p>}
 
         <div className="mt-5 flex flex-wrap items-center gap-4">
-          <button type="submit" disabled={pending || !!endError} className="btn-primary !py-3">
+          <button
+            type="submit"
+            disabled={pending || removing || !!endError}
+            className="btn-primary !py-3"
+          >
             {pending ? "Saving…" : "Save site-wide sale"}
           </button>
+          {sale.percentOff !== null && (
+            <button
+              type="button"
+              onClick={removeSale}
+              disabled={pending || removing}
+              className="btn-outline !py-3"
+            >
+              {removing ? "Removing…" : "Remove sale"}
+            </button>
+          )}
           {state && "ok" in state && !pending && (
             <span className="text-xs uppercase tracking-widest text-[var(--accent)]">Saved</span>
           )}

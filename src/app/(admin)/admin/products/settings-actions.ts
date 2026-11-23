@@ -150,3 +150,22 @@ export async function setSitewideSaleEnabledAction(enabled: boolean): Promise<Si
   revalidatePath("/admin/products");
   return { ok: true };
 }
+
+/**
+ * Remove the site-wide sale: clear its percent and dates and switch it off,
+ * in one step, so nothing is left half-set to surprise anyone later.
+ */
+export async function removeSitewideSaleAction(): Promise<SitewideSaleState> {
+  await requireAdmin();
+
+  try {
+    await setSitewideSale({ percentOff: null, startsAt: null, endsAt: null });
+    await setSitewideSaleEnabled(false);
+  } catch {
+    return { error: "Could not remove the sale. Try again." };
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/products");
+  return { ok: true };
+}
