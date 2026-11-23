@@ -113,40 +113,45 @@ export default function BannerForm({
         <EnabledSwitch enabled={banner.enabled} />
       </div>
 
-      {!banner.enabled && banner.text && (
-        <p className="mt-4 border-l-2 border-[var(--border)] pl-3 text-sm text-[var(--text-muted)]">
-          <strong className="text-[var(--text-primary)]">Switched off</strong> — the banner is
-          hidden. Its text, dates and style are kept for when you switch it back on.
-        </p>
-      )}
-
-      {banner.enabled && status && banner.text && (
+      {/* Always say what shoppers see right now, and why — a banner that
+          silently isn't showing (no saved text, switch off) is the
+          confusing case. Reflects what's SAVED, not unsaved edits. */}
+      {mounted && (
         <p
           className={`mt-4 border-l-2 pl-3 text-sm ${
-            status === "live"
+            banner.enabled && banner.text && status === "live"
               ? "border-[var(--accent)] text-[var(--text-primary)]"
-              : "border-[var(--border)] text-[var(--text-muted)]"
+              : "border-amber-400 text-[var(--text-muted)]"
           }`}
         >
-          {status === "live" && (
+          {!banner.text ? (
+            <>
+              <strong className="text-[var(--text-primary)]">Not showing</strong> — there&rsquo;s
+              no banner text saved. Type your text below and click <em>Save banner</em>
+              {!banner.enabled ? ", then turn the switch on" : ""}.
+            </>
+          ) : !banner.enabled ? (
+            <>
+              <strong className="text-[var(--text-primary)]">Not showing — the switch is off.</strong>{" "}
+              Turn it on (top right) to show the banner. Its text, dates and style are kept.
+            </>
+          ) : status === "live" ? (
             <>
               <strong className="text-[var(--accent)]">Showing now</strong>
               {banner.endsAt ? ` until ${formatWhen(banner.endsAt)}` : " until you remove it"}.
             </>
-          )}
-          {status === "scheduled" && banner.startsAt && (
+          ) : status === "scheduled" && banner.startsAt ? (
             <>
-              <strong className="text-[var(--text-primary)]">Scheduled</strong> — starts{" "}
-              {formatWhen(banner.startsAt)}
+              <strong className="text-[var(--text-primary)]">Not showing yet — scheduled</strong> to
+              start {formatWhen(banner.startsAt)}
               {banner.endsAt ? `, ends ${formatWhen(banner.endsAt)}` : ""}.
             </>
-          )}
-          {status === "ended" && banner.endsAt && (
+          ) : status === "ended" && banner.endsAt ? (
             <>
-              <strong className="text-[var(--text-primary)]">Ended</strong>{" "}
-              {formatWhen(banner.endsAt)} — it&rsquo;s no longer showing.
+              <strong className="text-[var(--text-primary)]">Not showing — ended</strong>{" "}
+              {formatWhen(banner.endsAt)}. Clear or change the end date and save to show it again.
             </>
-          )}
+          ) : null}
         </p>
       )}
 
