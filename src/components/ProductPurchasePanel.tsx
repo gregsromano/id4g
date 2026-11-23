@@ -18,7 +18,10 @@ type Props = {
   name: string;
   /** Shipping now — the sale shipping price while a sale with one is live. */
   shippingCents: number;
-  /** Normal shipping, shown struck through when sale shipping is lower. */
+  /**
+   * Normal shipping, for a custom version's cart line (it isn't part of the
+   * sale). Deliberately not shown next to the sale shipping on the page.
+   */
   regularShippingCents?: number;
   options: ProductOption[];
   variants: Variant[];
@@ -157,12 +160,6 @@ export default function ProductPurchasePanel({
         )}
         <span className="text-sm text-[var(--text-muted)]">
           {shippingCents === 0 ? "Free shipping" : `+ ${formatPrice(shippingCents)} shipping`}
-          {shippingCents < regularShippingCents && (
-            <span className="ml-1 line-through">
-              <span className="sr-only">Regular shipping </span>
-              {formatPrice(regularShippingCents)}
-            </span>
-          )}
         </span>
       </div>
 
