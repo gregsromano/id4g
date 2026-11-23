@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin-dal";
 import { normalizeHex } from "@/lib/banner-style";
-import { setPinnedProduct, setRandomizeProducts, setSaleBadgeColors } from "@/lib/settings";
+import {
+  setPinnedProduct,
+  setRandomizeProducts,
+  setSaleBadgeColors,
+  setSitewideSale,
+  setSitewideSaleEnabled,
+} from "@/lib/settings";
 
 /**
  * Server action for the storefront ordering toggle.
@@ -80,6 +86,66 @@ export async function saveSaleBadgeColorsAction(
   }
 
   // Every storefront page can show a SALE tag; the colors ride on the layout.
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/products");
+  return { ok: true };
+}
+
+export type SitewideSaleState = { error: string } | { ok: true } | null;
+
+function parseIso(value: FormDataEntryValue | null): string | null | "invalid" {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  const ms = Date.parse(text);
+  return Number.isNaN(ms) ? "invalid" : new Date(ms).toISOString();
+}
+
+/**
+ * Percent and dates of the site-wide sale. The dates arrive as exact ISO
+ * moments — SitewideSaleForm converts what was typed in the browser's
+ * timezone. A blank percent clears the sale (dates included).
+ */
+export async function saveSitewideSaleAction(
+  _prev: SitewideSaleState,
+  formData: FormData,
+): Promise<SitewideSaleState> {
+  await requireAdmin();
+
+  const percentText = String(formData.get("percent") ?? "").trim().replace(/%$/, "");
+  const percentOff = percentText ? Number(percentText) : null;
+  if (percentOff !== null && (!Number.isInteger(percentOff) || percentOff < 1 || percentOff > 90)) {
+    return { error: "Enter a whole percent from 1 to 90." };
+  }
+
+  const startsAt = percentOff === null ? null : parseIso(formData.get("starts_at"));
+  const endsAt = percentOff === null ? null : parseIso(formData.get("ends_at"));
+  if (startsAt === "invalid" || endsAt === "invalid") return { error: "That date isn't valid." };
+  if (startsAt && endsAt && Date.parse(endsAt) <= Date.parse(startsAt)) {
+    return { error: "The sale has to end after it starts." };
+  }
+
+  try {
+    await setSitewideSale({ percentOff, startsAt, endsAt });
+  } catch {
+    return { error: "Could not save that. Try again." };
+  }
+
+  // Every price on the storefront can change.
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/products");
+  return { ok: true };
+}
+
+/** The site-wide sale's on/off switch — saves on its own the moment it's flipped. */
+export async function setSitewideSaleEnabledAction(enabled: boolean): Promise<SitewideSaleState> {
+  await requireAdmin();
+
+  try {
+    await setSitewideSaleEnabled(enabled);
+  } catch {
+    return { error: "Could not save that. Try again." };
+  }
+
   revalidatePath("/", "layout");
   revalidatePath("/admin/products");
   return { ok: true };

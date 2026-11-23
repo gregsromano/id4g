@@ -192,7 +192,7 @@ export default async function Home() {
                     key={product.id}
                     href={`/products/${product.slug}`}
                     name={product.name}
-                    {...listingPriceLabels(product)}
+                    {...listingPriceLabels(product, settings.sitewideSale)}
                     image={product.images[0]}
                   />
                 ))}
@@ -205,7 +205,7 @@ export default async function Home() {
                       key={product.id}
                       href={`/products/${product.slug}`}
                       name={product.name}
-                      {...listingPriceLabels(product)}
+                      {...listingPriceLabels(product, settings.sitewideSale)}
                       image={product.images[0]}
                       compact
                     />

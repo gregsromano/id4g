@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useCart } from "@/lib/cart-context";
-import { formatPrice } from "@/lib/product";
+import { applySales, formatPrice } from "@/lib/product";
 import { CUSTOM_VERSION_PRICE_CENTS, STANDARD_SIZES } from "@/lib/product-options";
 import { buildVariantLabel, variantOptionKey, type ProductOption } from "@/lib/variant";
 
@@ -33,6 +33,8 @@ type Props = {
    * show a sale that has ended — and checkout re-checks it regardless.
    */
   liveSalePriceCents?: number | null;
+  /** The site-wide percent off when that sale is live right now, else null. Also decided on the server. */
+  livePercentOff?: number | null;
 };
 
 export default function ProductPurchasePanel({
@@ -45,6 +47,7 @@ export default function ProductPurchasePanel({
   category,
   sold,
   liveSalePriceCents = null,
+  livePercentOff = null,
 }: Props) {
   const { addItem } = useCart();
   const isOneOfOne = category === "One of One";
@@ -62,9 +65,9 @@ export default function ProductPurchasePanel({
   const variantByKey = new Map(variants.map((v) => [variantOptionKey(v.optionValues), v]));
   const allSelected = options.every((option) => selected[option.name] !== undefined);
   const matchedVariant = allSelected ? variantByKey.get(variantOptionKey(selected)) : undefined;
-  // A sale only ever lowers a size's price — same rule as priceWithSale.
+  // Best live price per size — the same applySales rule checkout uses.
   const withSale = (regularCents: number) =>
-    liveSalePriceCents === null ? regularCents : Math.min(regularCents, liveSalePriceCents);
+    applySales(regularCents, liveSalePriceCents, livePercentOff);
   const regularPriceCents = matchedVariant?.priceCents ?? variants[0]?.priceCents ?? 0;
   // Once the original is claimed the only thing left to buy is a custom
   // version, so that's the price the headline shows.

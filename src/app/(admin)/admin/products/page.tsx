@@ -5,6 +5,7 @@ import { getSiteSettings } from "@/lib/settings";
 import ProductsTable from "@/components/admin/ProductsTable";
 import RandomizeToggle from "@/components/admin/RandomizeToggle";
 import SaleBadgeColorsForm from "@/components/admin/SaleBadgeColorsForm";
+import SitewideSaleForm from "@/components/admin/SitewideSaleForm";
 
 export const dynamic = "force-dynamic";
 
@@ -81,7 +82,18 @@ export default async function AdminProductsPage({
         products={pinnable.map((product) => ({ id: product.id, name: product.name }))}
       />
 
-      <SaleBadgeColorsForm colors={settings.saleBadge} />
+      {/* Store-wide sale settings in one box: the site-wide sale itself and
+          the look of the SALE tag it (and every product sale) shows. Each
+          part keeps its own Save so one can't overwrite the other. */}
+      <section className="mt-8 border border-[var(--border)] p-5">
+        <span className="section-label">Sales</span>
+        <div className="mt-4">
+          <SitewideSaleForm sale={settings.sitewideSale} />
+        </div>
+        <div className="mt-6 border-t border-[var(--border)] pt-6">
+          <SaleBadgeColorsForm colors={settings.saleBadge} />
+        </div>
+      </section>
 
       <nav className="mt-8 flex flex-wrap gap-6 border-b border-[var(--border)] pb-4">
         <Link
@@ -132,6 +144,7 @@ export default async function AdminProductsPage({
         category={category}
         orderInUse={!settings.randomizeProducts}
         now={now}
+        sitewideSale={settings.sitewideSale}
       />
     </div>
   );

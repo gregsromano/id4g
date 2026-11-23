@@ -9,6 +9,7 @@ import {
   normalizeHex,
   type BannerStyle,
 } from "./banner-style";
+import type { SitewideSale } from "./product";
 import { windowStatus } from "./schedule";
 import { assertServiceRoleConfigured, getSupabaseAdmin } from "./supabase";
 
@@ -62,6 +63,8 @@ export type SiteSettings = {
   banner: AnnouncementBanner;
   /** Colors of the SALE tag on product cards and pages. */
   saleBadge: SaleBadgeColors;
+  /** Store-wide percent-off sale; see livePercentOff in lib/product.ts. */
+  sitewideSale: SitewideSale;
 };
 
 /** Long enough for a sale or shipping note; short enough to stay one or two lines on a phone. */
@@ -112,6 +115,7 @@ const DEFAULTS: SiteSettings = {
     style: DEFAULT_BANNER_STYLE,
   },
   saleBadge: DEFAULT_SALE_BADGE,
+  sitewideSale: { percentOff: null, enabled: false, startsAt: null, endsAt: null },
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -120,7 +124,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
     .select(
-      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items, banner_text, banner_starts_at, banner_ends_at, banner_enabled, banner_bg_color, banner_text_color, banner_bold, banner_font_size, banner_font, sale_badge_bg_color, sale_badge_text_color",
+      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items, banner_text, banner_starts_at, banner_ends_at, banner_enabled, banner_bg_color, banner_text_color, banner_bold, banner_font_size, banner_font, sale_badge_bg_color, sale_badge_text_color, sitewide_sale_percent, sitewide_sale_enabled, sitewide_sale_starts_at, sitewide_sale_ends_at",
     )
     .eq("id", SETTINGS_ID)
     .maybeSingle();
@@ -144,6 +148,10 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     banner_font: string | null;
     sale_badge_bg_color: string | null;
     sale_badge_text_color: string | null;
+    sitewide_sale_percent: number | null;
+    sitewide_sale_enabled: boolean | null;
+    sitewide_sale_starts_at: string | null;
+    sitewide_sale_ends_at: string | null;
   };
 
   return {
@@ -168,6 +176,12 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     saleBadge: {
       bgColor: normalizeHex(row.sale_badge_bg_color ?? "") ?? DEFAULT_SALE_BADGE.bgColor,
       textColor: normalizeHex(row.sale_badge_text_color ?? "") ?? DEFAULT_SALE_BADGE.textColor,
+    },
+    sitewideSale: {
+      percentOff: row.sitewide_sale_percent ?? null,
+      enabled: row.sitewide_sale_enabled ?? false,
+      startsAt: row.sitewide_sale_starts_at,
+      endsAt: row.sitewide_sale_ends_at,
     },
   };
 }
@@ -352,6 +366,47 @@ export async function setSaleBadgeColors(colors: SaleBadgeColors): Promise<void>
 
   if (error) {
     console.error("[settings] failed to save sale badge colors", { message: error.message });
+    throw new Error("Failed to save setting");
+  }
+}
+
+/** Percent and window of the site-wide sale. The on/off switch is separate (setSitewideSaleEnabled). */
+export async function setSitewideSale(
+  sale: Pick<SitewideSale, "percentOff" | "startsAt" | "endsAt">,
+): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      {
+        id: SETTINGS_ID,
+        sitewide_sale_percent: sale.percentOff,
+        sitewide_sale_starts_at: sale.startsAt,
+        sitewide_sale_ends_at: sale.endsAt,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save site-wide sale", { message: error.message });
+    throw new Error("Failed to save setting");
+  }
+}
+
+export async function setSitewideSaleEnabled(enabled: boolean): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      { id: SETTINGS_ID, sitewide_sale_enabled: enabled, updated_at: new Date().toISOString() },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save sitewide_sale_enabled", { message: error.message });
     throw new Error("Failed to save setting");
   }
 }

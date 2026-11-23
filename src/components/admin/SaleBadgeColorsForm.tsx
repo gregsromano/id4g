@@ -24,7 +24,7 @@ export default function SaleBadgeColorsForm({ colors }: { colors: SaleBadgeColor
   const lowContrast = contrastRatio(bgColor, textColor) < 4.5;
 
   return (
-    <form id="sale-tag-color" action={action} className="mt-8 scroll-mt-6 border border-[var(--border)] p-5">
+    <form id="sale-tag-color" action={action} className="scroll-mt-6">
       <h2 className="!text-base !normal-case text-[var(--text-primary)]">Sale tag color</h2>
       <p className="mt-1 max-w-prose text-sm text-[var(--text-muted)]">
         The SALE tag on product cards and product pages while a product is on sale. Set a

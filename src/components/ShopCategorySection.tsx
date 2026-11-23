@@ -1,9 +1,10 @@
 import { listingPriceLabels } from "@/lib/product";
 import type { Product } from "@/lib/products";
+import { getSiteSettings } from "@/lib/settings";
 import ProductQuickView from "@/components/ProductQuickView";
 
 /** Product grid for a single-category shop page — same markup as the homepage's #shop section, scoped to one category. */
-export default function ShopCategorySection({
+export default async function ShopCategorySection({
   eyebrow,
   title,
   products,
@@ -12,6 +13,10 @@ export default function ShopCategorySection({
   title: string;
   products: Product[];
 }) {
+  // Read here rather than threaded through all four category pages. Never
+  // throws — a settings failure just means no site-wide discount shows.
+  const { sitewideSale } = await getSiteSettings();
+
   return (
     <section className="border-b border-[var(--border)]">
       <div className="mx-auto max-w-6xl px-6 py-16 sm:py-24">
@@ -27,7 +32,7 @@ export default function ShopCategorySection({
                 key={product.id}
                 href={`/products/${product.slug}`}
                 name={product.name}
-                {...listingPriceLabels(product)}
+                {...listingPriceLabels(product, sitewideSale)}
                 image={product.images[0]}
                 sold={product.sold}
               />

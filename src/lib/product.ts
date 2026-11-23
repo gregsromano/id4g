@@ -46,32 +46,80 @@ export function saleStatus(sale: SaleWindow, now: number = Date.now()): SaleStat
   return windowStatus(sale.saleStartsAt, sale.saleEndsAt, now);
 }
 
+/** The store-wide percent-off sale, set on /admin/products. */
+export type SitewideSale = {
+  /** 1–90; null means no site-wide sale is set up. */
+  percentOff: number | null;
+  /** The admin's on/off switch. */
+  enabled: boolean;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
+/** Where the site-wide sale stands at `now` — same states as a product sale. */
+export function sitewideSaleStatus(sale: SitewideSale, now: number = Date.now()): SaleStatus {
+  if (sale.percentOff === null) return "none";
+  if (!sale.enabled) return "off";
+  return windowStatus(sale.startsAt, sale.endsAt, now);
+}
+
+/** The site-wide percent off in effect at `now`, or null. */
+export function livePercentOff(
+  sale: SitewideSale | null | undefined,
+  now: number = Date.now(),
+): number | null {
+  if (!sale || sitewideSaleStatus(sale, now) !== "live") return null;
+  return sale.percentOff;
+}
+
 /**
- * What one size actually costs at `now`: the sale price while the sale is
- * live, but never more than that size's own regular price — a sale can only
- * lower a price. The single rule the storefront and /api/checkout share, so
- * the price a shopper sees is the price Stripe charges.
+ * The best price from whatever is live: the regular price, the product's own
+ * sale price, or the site-wide percent off — whichever is LOWEST. Sales never
+ * stack, and a sale can only lower a price. Pure, so the product page can run
+ * it per size in the browser with values the server already decided are live.
+ */
+export function applySales(
+  regularCents: number,
+  productSaleCents: number | null,
+  percentOff: number | null,
+): number {
+  let best = regularCents;
+  if (productSaleCents !== null) best = Math.min(best, productSaleCents);
+  if (percentOff !== null) best = Math.min(best, Math.round((regularCents * (100 - percentOff)) / 100));
+  return best;
+}
+
+/**
+ * What one size actually costs at `now`. The single rule the storefront and
+ * /api/checkout share, so the price a shopper sees is the price Stripe
+ * charges.
  */
 export function priceWithSale(
   regularCents: number,
   sale: SaleWindow,
   now: number = Date.now(),
+  sitewide?: SitewideSale | null,
 ): number {
-  if (saleStatus(sale, now) !== "live" || sale.salePriceCents === null) return regularCents;
-  return Math.min(regularCents, sale.salePriceCents);
+  const productSale =
+    saleStatus(sale, now) === "live" && sale.salePriceCents !== null ? sale.salePriceCents : null;
+  return applySales(regularCents, productSale, livePercentOff(sitewide, now));
 }
+
+type PricedProduct = { priceCents: number; sold?: boolean } & Partial<SaleWindow>;
 
 /**
  * The price a shopper can actually pay for a product right now. A sold
  * one-of-one can only be bought as a custom version, so listings show that
- * price instead of the claimed original's; otherwise a live sale applies.
+ * price instead of the claimed original's; otherwise the best live sale
+ * (product or site-wide) applies.
  */
 export function currentPriceCents(
-  product: { priceCents: number; sold?: boolean } & Partial<SaleWindow>,
+  product: PricedProduct,
+  sitewide?: SitewideSale | null,
   now: number = Date.now(),
 ) {
   if (product.sold) return CUSTOM_VERSION_PRICE_CENTS;
-  return priceWithSale(product.priceCents, toSaleWindow(product), now);
+  return priceWithSale(product.priceCents, toSaleWindow(product), now, sitewide);
 }
 
 /**
@@ -79,10 +127,11 @@ export function currentPriceCents(
  * null when nothing is discounted (no live sale, or a sold one-of-one).
  */
 export function compareAtPriceCents(
-  product: { priceCents: number; sold?: boolean } & Partial<SaleWindow>,
+  product: PricedProduct,
+  sitewide?: SitewideSale | null,
   now: number = Date.now(),
 ): number | null {
-  const current = currentPriceCents(product, now);
+  const current = currentPriceCents(product, sitewide, now);
   return !product.sold && current < product.priceCents ? product.priceCents : null;
 }
 
@@ -92,12 +141,13 @@ export function compareAtPriceCents(
  * ending mid-render can't pair a sale price with no strikethrough.
  */
 export function listingPriceLabels(
-  product: { priceCents: number; sold?: boolean } & Partial<SaleWindow>,
+  product: PricedProduct,
+  sitewide?: SitewideSale | null,
   now: number = Date.now(),
 ): { priceLabel: string; compareAtLabel: string | null } {
-  const compareAt = compareAtPriceCents(product, now);
+  const compareAt = compareAtPriceCents(product, sitewide, now);
   return {
-    priceLabel: formatPrice(currentPriceCents(product, now)),
+    priceLabel: formatPrice(currentPriceCents(product, sitewide, now)),
     compareAtLabel: compareAt === null ? null : formatPrice(compareAt),
   };
 }

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { currentPriceCents, saleStatus, shippingWithSale } from "@/lib/product";
+import { currentPriceCents, livePercentOff, saleStatus, shippingWithSale } from "@/lib/product";
+import { getSiteSettings } from "@/lib/settings";
 import { getProductBySlug } from "@/lib/products";
 import { absoluteUrl, jsonLdScript, SITE_NAME, toMetaDescription } from "@/lib/seo";
 import DescriptionText from "@/components/DescriptionText";
@@ -82,7 +83,10 @@ export default async function ProductDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, { sitewideSale }] = await Promise.all([
+    getProductBySlug(slug),
+    getSiteSettings(),
+  ]);
 
   if (!product) notFound();
 
@@ -111,7 +115,7 @@ export default async function ProductDetailPage({
       url: absoluteUrl(`/products/${product.slug}`),
       priceCurrency: product.currency.toUpperCase(),
       // Schema.org wants a decimal string, not cents.
-      price: (currentPriceCents(product) / 100).toFixed(2),
+      price: (currentPriceCents(product, sitewideSale) / 100).toFixed(2),
       availability:
         product.status === "active"
           ? "https://schema.org/InStock"
@@ -153,6 +157,7 @@ export default async function ProductDetailPage({
             category={product.category}
             sold={product.sold}
             liveSalePriceCents={saleStatus(product) === "live" ? product.salePriceCents : null}
+            livePercentOff={livePercentOff(sitewideSale)}
           />
         </div>
 

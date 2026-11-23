@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { reorderProductsAction } from "@/app/(admin)/admin/products/actions";
-import { formatPrice, saleStatus } from "@/lib/product";
+import { formatPrice, livePercentOff, saleStatus, type SitewideSale } from "@/lib/product";
 import { isVideoUrl } from "@/lib/media";
 import MoveButtons from "./MoveButtons";
 import type { AdminProductSummary, ProductFilter } from "@/lib/products";
@@ -46,6 +46,7 @@ export default function ProductsTable({
   category,
   orderInUse = true,
   now,
+  sitewideSale,
 }: {
   products: AdminProductSummary[];
   filter: ProductFilter;
@@ -63,7 +64,10 @@ export default function ProductsTable({
    * agree on whether a sale is live.
    */
   now: number;
+  /** Shown in the Sale column for products the site-wide sale is discounting. */
+  sitewideSale?: SitewideSale;
 }) {
+  const sitewidePercent = livePercentOff(sitewideSale, now);
   const [products, setProducts] = useState(initialProducts);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -244,7 +248,7 @@ export default function ProductsTable({
                       : `${formatPrice(product.minPriceCents)} – ${formatPrice(product.maxPriceCents)}`}
                   </Td>
                   <Td>
-                    <SaleCell product={product} now={now} />
+                    <SaleCell product={product} now={now} sitewidePercent={sitewidePercent} />
                   </Td>
                   <Td>{product.variantCount}</Td>
                 </tr>
@@ -292,7 +296,12 @@ export default function ProductsTable({
                       {product.sold ? " · Sold" : ""}
                     </p>
                     <div className="mt-2">
-                      <SaleCell product={product} now={now} hideNone />
+                      <SaleCell
+                        product={product}
+                        now={now}
+                        sitewidePercent={sitewidePercent}
+                        hideNone
+                      />
                     </div>
                   </div>
                 </div>
@@ -330,13 +339,25 @@ function SaleCell({
   product,
   now,
   hideNone = false,
+  sitewidePercent = null,
 }: {
   product: AdminProductSummary;
   now: number;
   hideNone?: boolean;
+  /** The live site-wide percent off, if any. */
+  sitewidePercent?: number | null;
 }) {
   const status = saleStatus(product, now);
+  // A live site-wide sale covers every product that isn't a sold one-of-one;
+  // say so when the product has no live sale of its own.
+  const sitewideNote =
+    sitewidePercent !== null && !product.sold ? (
+      <span className="mt-1 block whitespace-nowrap text-xs text-[var(--accent)]">
+        Site-wide {sitewidePercent}% off
+      </span>
+    ) : null;
   if (status === "none" || product.salePriceCents === null) {
+    if (sitewideNote) return sitewideNote;
     return hideNone ? null : <span className="text-xs text-[var(--text-muted)]">—</span>;
   }
 
@@ -378,6 +399,7 @@ function SaleCell({
               : "Ended"}
       </span>
       <span className="mt-1 block whitespace-nowrap text-xs text-[var(--text-muted)]">{detail}</span>
+      {sitewideNote}
     </div>
   );
 }

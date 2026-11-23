@@ -5,6 +5,7 @@ import { getVariantsForCheckout, type CheckoutVariant } from "@/lib/products";
 import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
+import { getSiteSettings, type SiteSettings } from "@/lib/settings";
 import { CUSTOM_VERSION_PRICE_CENTS } from "@/lib/product-options";
 import { priceWithSale, shippingWithSale } from "@/lib/product";
 
@@ -39,7 +40,11 @@ const MAX_CUSTOM_NOTE_LENGTH = 300;
  * trusted from the request body. A mismatched productId/variantId pairing, an
  * unknown variant, or a non-active product all invalidate the whole cart.
  */
-function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[] | null {
+function normalize(
+  items: unknown,
+  variants: CheckoutVariant[],
+  sitewideSale: SiteSettings["sitewideSale"],
+): NormalizedLine[] | null {
   if (!Array.isArray(items) || items.length === 0) return null;
 
   // Keyed by variantId + customNote (not just variantId): a custom-size
@@ -96,7 +101,7 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
       // actually charged. Custom versions keep their flat price.
       priceCents: customNote
         ? CUSTOM_VERSION_PRICE_CENTS
-        : priceWithSale(variant.priceCents, variant.product, now),
+        : priceWithSale(variant.priceCents, variant.product, now, sitewideSale),
       currency: variant.product.currency,
       productName: variant.product.name,
       variantLabel: buildVariantLabel(variant.optionValues, variant.product.options),
@@ -130,8 +135,13 @@ export async function POST(req: NextRequest) {
       ]
     : [];
 
-  const variants = await getVariantsForCheckout(requestedVariantIds);
-  const normalized = normalize(body?.items, variants);
+  // Independent reads. getSiteSettings never throws — it falls back to
+  // defaults, which means no site-wide discount rather than a failed checkout.
+  const [variants, { sitewideSale }] = await Promise.all([
+    getVariantsForCheckout(requestedVariantIds),
+    getSiteSettings(),
+  ]);
+  const normalized = normalize(body?.items, variants, sitewideSale);
 
   if (!normalized) {
     return NextResponse.json({ error: "Invalid cart" }, { status: 400 });
