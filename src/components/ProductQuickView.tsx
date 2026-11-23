@@ -14,6 +14,7 @@ export default function ProductQuickView({
   name,
   priceLabel,
   compareAtLabel,
+  saleTagLabel,
   image,
   sold,
   compact,
@@ -23,6 +24,8 @@ export default function ProductQuickView({
   priceLabel: string;
   /** Regular price, shown struck through, when the product is on sale. */
   compareAtLabel?: string | null;
+  /** Text of the SALE tag, e.g. "20% off sale"; see saleTagLabel in lib/product. */
+  saleTagLabel?: string | null;
   image: QuickViewImage | undefined;
   sold?: boolean;
   /** Smaller card for the homepage's dense 5-across rows. */
@@ -84,13 +87,13 @@ export default function ProductQuickView({
             )}
 
             {sold && <SoldOverlay size="sm" />}
-            {compareAtLabel && !sold && (
+            {compareAtLabel && (
               <span
                 className={`absolute left-2 top-2 bg-[var(--sale-bg,var(--accent))] font-bold uppercase tracking-widest text-[var(--sale-fg,var(--on-accent))] ${
                   compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
                 }`}
               >
-                Sale
+                {saleTagLabel ?? "Sale"}
               </span>
             )}
           </div>

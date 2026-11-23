@@ -84,8 +84,8 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
         <div>
           <h2 className="!text-base !normal-case text-[var(--text-primary)]">Site-wide sale</h2>
           <p className="mt-1 max-w-prose text-sm text-[var(--text-muted)]">
-            A percent off every product at once. If a product also has its own sale, shoppers
-            get whichever price is lower. Custom versions of one-of-ones keep their price.
+            A percent off every product at once, including custom versions of one-of-ones. If
+            a product also has its own sale, shoppers get whichever price is lower.
           </p>
         </div>
         {/* Keyed on the saved state so Remove (which switches it off on the

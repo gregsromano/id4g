@@ -6,14 +6,13 @@ import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
 import { getSiteSettings, type SiteSettings } from "@/lib/settings";
-import { CUSTOM_VERSION_PRICE_CENTS } from "@/lib/product-options";
-import { priceWithSale, shippingWithSale } from "@/lib/product";
+import { customVersionPriceCents, priceWithSale, shippingWithSale } from "@/lib/product";
 
 type IncomingItem = {
   productId: string;
   variantId: string;
   quantity: number;
-  /** Free-text fulfillment note marking a made-to-order recreation, priced at CUSTOM_VERSION_PRICE_CENTS. */
+  /** Free-text fulfillment note marking a made-to-order recreation, priced by customVersionPriceCents. */
   customNote?: string;
 };
 
@@ -98,9 +97,9 @@ function normalize(
       // A live sale lowers unit_amount itself rather than attaching a Stripe
       // coupon: the `discounts` param can't be combined with
       // allow_promotion_codes, and Stripe Tax then computes on the price
-      // actually charged. Custom versions keep their flat price.
+      // actually charged. Custom versions get only the site-wide percent.
       priceCents: customNote
-        ? CUSTOM_VERSION_PRICE_CENTS
+        ? customVersionPriceCents(sitewideSale, now)
         : priceWithSale(variant.priceCents, variant.product, now, sitewideSale),
       currency: variant.product.currency,
       productName: variant.product.name,

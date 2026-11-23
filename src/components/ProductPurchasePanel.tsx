@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { useCart } from "@/lib/cart-context";
-import { applySales, formatPrice } from "@/lib/product";
+import { applySales, formatPrice, saleTagLabel } from "@/lib/product";
 import { CUSTOM_VERSION_PRICE_CENTS, STANDARD_SIZES } from "@/lib/product-options";
 import { buildVariantLabel, variantOptionKey, type ProductOption } from "@/lib/variant";
 
@@ -71,8 +71,12 @@ export default function ProductPurchasePanel({
   const regularPriceCents = matchedVariant?.priceCents ?? variants[0]?.priceCents ?? 0;
   // Once the original is claimed the only thing left to buy is a custom
   // version, so that's the price the headline shows.
-  const displayPriceCents = sold ? CUSTOM_VERSION_PRICE_CENTS : withSale(regularPriceCents);
-  const compareAtCents = !sold && displayPriceCents < regularPriceCents ? regularPriceCents : null;
+  // A custom version takes only the site-wide percent (same rule as
+  // customVersionPriceCents); a sold piece's headline is that price.
+  const customPriceCents = applySales(CUSTOM_VERSION_PRICE_CENTS, null, livePercentOff);
+  const displayPriceCents = sold ? customPriceCents : withSale(regularPriceCents);
+  const headlineRegularCents = sold ? CUSTOM_VERSION_PRICE_CENTS : regularPriceCents;
+  const compareAtCents = displayPriceCents < headlineRegularCents ? headlineRegularCents : null;
 
   function selectValue(optionName: string, value: string) {
     setSelected((prev) => ({ ...prev, [optionName]: value }));
@@ -123,7 +127,7 @@ export default function ProductPurchasePanel({
       name,
       variantLabel: "",
       customNote: note,
-      priceCents: CUSTOM_VERSION_PRICE_CENTS,
+      priceCents: customPriceCents,
       // A custom version isn't part of the product's sale — checkout charges
       // it normal shipping, so the cart should show the same.
       shippingCents: regularShippingCents,
@@ -157,7 +161,7 @@ export default function ProductPurchasePanel({
               {formatPrice(compareAtCents)}
             </span>
             <span className="bg-[var(--sale-bg,var(--accent))] px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-[var(--sale-fg,var(--on-accent))]">
-              Sale
+              {saleTagLabel(compareAtCents, displayPriceCents)}
             </span>
           </>
         )}
@@ -304,7 +308,7 @@ export default function ProductPurchasePanel({
               </p>
 
               <button onClick={handleAddCustomOrder} className="btn-primary w-full sm:w-auto">
-                Buy Now &mdash; {formatPrice(CUSTOM_VERSION_PRICE_CENTS)}
+                Buy Now &mdash; {formatPrice(customPriceCents)}
               </button>
             </div>
           )}

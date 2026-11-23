@@ -348,10 +348,10 @@ function SaleCell({
   sitewidePercent?: number | null;
 }) {
   const status = saleStatus(product, now);
-  // A live site-wide sale covers every product that isn't a sold one-of-one;
-  // say so when the product has no live sale of its own.
+  // A live site-wide sale covers every product (a sold one-of-one through its
+  // custom version); say so when the product has no live sale of its own.
   const sitewideNote =
-    sitewidePercent !== null && !product.sold ? (
+    sitewidePercent !== null ? (
       <span className="mt-1 block whitespace-nowrap text-xs text-[var(--accent)]">
         Site-wide {sitewidePercent}% off
       </span>

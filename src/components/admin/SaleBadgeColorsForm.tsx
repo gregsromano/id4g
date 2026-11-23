@@ -42,7 +42,7 @@ export default function SaleBadgeColorsForm({ colors }: { colors: SaleBadgeColor
             className="inline-flex h-11 items-center px-3 text-xs font-bold uppercase tracking-widest"
             style={{ backgroundColor: bgColor, color: textColor }}
           >
-            Sale
+            20% off sale
           </span>
         </div>
       </div>

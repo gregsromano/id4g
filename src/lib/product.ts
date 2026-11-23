@@ -108,6 +108,18 @@ export function priceWithSale(
 type PricedProduct = { priceCents: number; sold?: boolean } & Partial<SaleWindow>;
 
 /**
+ * A made-to-order custom version of a one-of-one: its flat price, less the
+ * site-wide percent while that sale is live. A product's own sale price
+ * doesn't apply — that's a price for the original piece.
+ */
+export function customVersionPriceCents(
+  sitewide?: SitewideSale | null,
+  now: number = Date.now(),
+): number {
+  return applySales(CUSTOM_VERSION_PRICE_CENTS, null, livePercentOff(sitewide, now));
+}
+
+/**
  * The price a shopper can actually pay for a product right now. A sold
  * one-of-one can only be bought as a custom version, so listings show that
  * price instead of the claimed original's; otherwise the best live sale
@@ -118,13 +130,14 @@ export function currentPriceCents(
   sitewide?: SitewideSale | null,
   now: number = Date.now(),
 ) {
-  if (product.sold) return CUSTOM_VERSION_PRICE_CENTS;
+  if (product.sold) return customVersionPriceCents(sitewide, now);
   return priceWithSale(product.priceCents, toSaleWindow(product), now, sitewide);
 }
 
 /**
  * The regular price to show struck through next to `currentPriceCents`, or
- * null when nothing is discounted (no live sale, or a sold one-of-one).
+ * null when nothing is discounted. For a sold one-of-one that's the custom
+ * version's flat price.
  */
 export function compareAtPriceCents(
   product: PricedProduct,
@@ -132,7 +145,8 @@ export function compareAtPriceCents(
   now: number = Date.now(),
 ): number | null {
   const current = currentPriceCents(product, sitewide, now);
-  return !product.sold && current < product.priceCents ? product.priceCents : null;
+  const regular = product.sold ? CUSTOM_VERSION_PRICE_CENTS : product.priceCents;
+  return current < regular ? regular : null;
 }
 
 /**
@@ -144,12 +158,25 @@ export function listingPriceLabels(
   product: PricedProduct,
   sitewide?: SitewideSale | null,
   now: number = Date.now(),
-): { priceLabel: string; compareAtLabel: string | null } {
+): { priceLabel: string; compareAtLabel: string | null; saleTagLabel: string | null } {
   const compareAt = compareAtPriceCents(product, sitewide, now);
+  const current = currentPriceCents(product, sitewide, now);
   return {
-    priceLabel: formatPrice(currentPriceCents(product, sitewide, now)),
+    priceLabel: formatPrice(current),
     compareAtLabel: compareAt === null ? null : formatPrice(compareAt),
+    saleTagLabel: compareAt === null ? null : saleTagLabel(compareAt, current),
   };
+}
+
+/**
+ * Text for the SALE tag: the real discount, e.g. "20% off sale" — worked out
+ * from the prices rather than taken from a setting, so a site-wide 20% reads
+ * 20%, and a product's own sale shows its own percent. Rounded to a whole
+ * percent; a discount that rounds to 0% just says "Sale".
+ */
+export function saleTagLabel(regularCents: number, currentCents: number): string {
+  const percent = Math.round(((regularCents - currentCents) / regularCents) * 100);
+  return percent >= 1 ? `${percent}% off sale` : "Sale";
 }
 
 /**
