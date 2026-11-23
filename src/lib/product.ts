@@ -30,9 +30,11 @@ export type SaleWindow = {
   saleStartsAt: string | null;
   /** ISO timestamp; null means the sale runs until it is removed. */
   saleEndsAt: string | null;
+  /** The admin's on/off switch; off keeps the sale saved but not applied. Defaults to on. */
+  saleEnabled?: boolean;
 };
 
-export type SaleStatus = "none" | "scheduled" | "live" | "ended";
+export type SaleStatus = "none" | "off" | "scheduled" | "live" | "ended";
 
 /**
  * Where a sale stands at `now`. The window is start-inclusive and
@@ -40,6 +42,7 @@ export type SaleStatus = "none" | "scheduled" | "live" | "ended";
  */
 export function saleStatus(sale: SaleWindow, now: number = Date.now()): SaleStatus {
   if (sale.salePriceCents === null) return "none";
+  if (sale.saleEnabled === false) return "off";
   return windowStatus(sale.saleStartsAt, sale.saleEndsAt, now);
 }
 
@@ -120,6 +123,7 @@ function toSaleWindow(value: Partial<SaleWindow>): SaleWindow {
     salePriceCents: value.salePriceCents ?? null,
     saleStartsAt: value.saleStartsAt ?? null,
     saleEndsAt: value.saleEndsAt ?? null,
+    saleEnabled: value.saleEnabled ?? true,
   };
 }
 

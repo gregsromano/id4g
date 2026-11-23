@@ -348,7 +348,9 @@ function SaleCell({
         ? " + free ship"
         : ` + ${formatPrice(product.saleShippingCents)} ship`);
   const detail =
-    status === "live"
+    status === "off"
+      ? `${price} · switched off`
+      : status === "live"
       ? product.saleEndsAt
         ? `${price} · ends ${formatSaleTime(product.saleEndsAt)}`
         : `${price} · no end date`
@@ -367,7 +369,13 @@ function SaleCell({
             : "border border-[var(--border)] text-[var(--text-muted)]"
         }`}
       >
-        {status === "live" ? "On sale" : status === "scheduled" ? "Scheduled" : "Ended"}
+        {status === "live"
+          ? "On sale"
+          : status === "scheduled"
+            ? "Scheduled"
+            : status === "off"
+              ? "Off"
+              : "Ended"}
       </span>
       <span className="mt-1 block whitespace-nowrap text-xs text-[var(--text-muted)]">{detail}</span>
     </div>

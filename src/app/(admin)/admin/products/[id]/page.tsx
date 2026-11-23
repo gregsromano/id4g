@@ -168,8 +168,9 @@ export default async function AdminProductEditPage({
         <section className="mt-6 border border-[var(--border)] p-6">
           <span className="section-label">Sale</span>
           <p className="mt-2 max-w-prose text-sm text-[var(--text-muted)]">
-            Put this product on sale for a set time. Shoppers see the regular
-            price crossed out next to the sale price.
+            Put this product on sale — with the switch, or for a set time with
+            dates. Shoppers see the regular price crossed out next to the sale
+            price.
           </p>
           {/* The tag color is one setting for every product, so it lives on
               the Products page — this link is how you find it from here. */}
@@ -185,6 +186,8 @@ export default async function AdminProductEditPage({
               saleStartsAt={product.saleStartsAt}
               saleEndsAt={product.saleEndsAt}
               saleShippingCents={product.saleShippingCents}
+              saleEnabled={product.saleEnabled}
+              productId={product.id}
               regularPriceCents={product.priceCents}
             />
           </div>

@@ -15,6 +15,7 @@ import {
   replaceVariants,
   setCoverImage,
   setProductImages,
+  setProductSaleEnabled,
   setProductSold,
   setProductStatus,
   setVideoPoster,
@@ -511,6 +512,30 @@ export async function setProductStatusAction(formData: FormData): Promise<void> 
 
   await setProductStatus(id, status);
   revalidateProduct(id);
+}
+
+/**
+ * The Sale section's on/off switch. Called directly (not via the details
+ * form) so it takes effect the moment it's flipped and never rides along
+ * with — or gets overwritten by — the main Save.
+ */
+export async function setProductSaleEnabledAction(
+  id: string,
+  enabled: boolean,
+): Promise<{ error: string } | { ok: true }> {
+  await requireAdmin();
+  if (typeof id !== "string" || !id) return { error: "Missing product." };
+
+  try {
+    await setProductSaleEnabled(id, enabled);
+  } catch {
+    return { error: "Could not save that. Try again." };
+  }
+
+  revalidateProduct(id);
+  // Sale prices show on every storefront listing, not just "/".
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export async function setProductSoldAction(formData: FormData): Promise<void> {

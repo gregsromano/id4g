@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
+
+import { setProductSaleEnabledAction } from "@/app/(admin)/admin/products/actions";
 
 import { formatPrice, saleStatus, type SaleWindow } from "@/lib/product";
 import { formatWhen, isoToLocalInput, localInputToIso, localTimeZoneName } from "@/lib/schedule";
@@ -29,8 +32,14 @@ export default function SaleFields({
   saleStartsAt,
   saleEndsAt,
   saleShippingCents,
+  saleEnabled = true,
   regularPriceCents,
-}: SaleWindow & { saleShippingCents: number | null; regularPriceCents: number }) {
+  productId,
+}: SaleWindow & {
+  saleShippingCents: number | null;
+  regularPriceCents: number;
+  productId: string;
+}) {
   const dirtyCtx = useDirty();
   const priceRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLInputElement>(null);
@@ -95,13 +104,27 @@ export default function SaleFields({
   }
 
   // Status of what is SAVED — i.e. what shoppers see right now.
-  const saved: SaleWindow = { salePriceCents, saleStartsAt, saleEndsAt };
+  const saved: SaleWindow = { salePriceCents, saleStartsAt, saleEndsAt, saleEnabled };
   const status = mounted ? saleStatus(saved) : null;
   const timeZone = mounted ? localTimeZoneName() : null;
 
   return (
     <div>
-      {status && status !== "none" && salePriceCents !== null && (
+      <SaleSwitch
+        productId={productId}
+        enabled={saleEnabled}
+        hasSavedSale={salePriceCents !== null}
+      />
+
+      {status === "off" && salePriceCents !== null && (
+        <p className="mb-4 border-l-2 border-[var(--border)] pl-3 text-sm text-[var(--text-muted)]">
+          <strong className="text-[var(--text-primary)]">Sale is off</strong> — the regular price
+          is showing. Switch it on to bring back the {formatPrice(salePriceCents)} sale
+          {saleStartsAt || saleEndsAt ? " (its dates still apply)" : " right away"}.
+        </p>
+      )}
+
+      {status && status !== "none" && status !== "off" && salePriceCents !== null && (
         <p
           className={`mb-4 border-l-2 pl-3 text-sm ${
             status === "live"
@@ -118,7 +141,7 @@ export default function SaleFields({
                 : saleShippingCents === 0
                   ? " with free shipping"
                   : ` with ${formatPrice(saleShippingCents)} shipping`}
-              {saleEndsAt ? ` until ${formatWhen(saleEndsAt)}` : " until you remove it"}.
+              {saleEndsAt ? ` until ${formatWhen(saleEndsAt)}` : " until you switch it off"}.
             </>
           )}
           {status === "scheduled" && saleStartsAt && (
@@ -212,7 +235,7 @@ export default function SaleFields({
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-[var(--text-muted)]">
-          Blank start = starts as soon as you save. Blank end = runs until you remove it.
+          Dates are optional — leave both blank and just use the switch. Blank start = starts right away; blank end = runs until you switch it off.
           {timeZone ? ` Times are ${timeZone}.` : ""} Every size sells at the sale price
           (never above its regular price), and the regular price returns on its own at the
           end time. Sale shipping: enter 0 for free shipping during the sale, or leave it
@@ -228,6 +251,80 @@ export default function SaleFields({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The sale's on/off switch. Saves the moment it's flipped (its own server
+ * action, not the main Save), so it's the quick way to run a sale with no
+ * dates: set a price, Save, then flip this on and off as needed. It's a
+ * plain button, so flipping it doesn't mark the edit form as unsaved.
+ */
+function SaleSwitch({
+  productId,
+  enabled,
+  hasSavedSale,
+}: {
+  productId: string;
+  enabled: boolean;
+  hasSavedSale: boolean;
+}) {
+  const [on, setOn] = useState(enabled);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, startSaving] = useTransition();
+  const router = useRouter();
+
+  function toggle() {
+    const next = !on;
+    setOn(next);
+    setError(null);
+    startSaving(async () => {
+      const result = await setProductSaleEnabledAction(productId, next);
+      if ("error" in result) {
+        setOn(!next); // roll back to what the server still has
+        setError(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="mb-4 flex items-center justify-between gap-4 border border-[var(--border)] p-4">
+      <div>
+        <p className="text-sm font-semibold text-[var(--text-primary)]">Sale on / off</p>
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+          {!hasSavedSale
+            ? "Enter a sale price below and click Save first."
+            : saving
+              ? "Saving…"
+              : on
+                ? "On — no dates needed. Switch off any time; the sale stays saved."
+                : "Off — regular price showing. The sale stays saved for next time."}
+        </p>
+        {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={hasSavedSale && on}
+        aria-label="Sale on or off"
+        onClick={toggle}
+        disabled={!hasSavedSale || saving}
+        className={`relative h-11 w-[72px] shrink-0 border transition-colors disabled:opacity-40 ${
+          hasSavedSale && on
+            ? "border-[var(--accent)] bg-[var(--accent)]/20"
+            : "border-[var(--border)] bg-transparent"
+        }`}
+      >
+        {/* 44px tall hit area: the admin's touch-target floor. */}
+        <span
+          className={`absolute top-1/2 h-8 w-8 -translate-y-1/2 transition-all ${
+            hasSavedSale && on ? "left-[34px] bg-[var(--accent)]" : "left-1 bg-[var(--text-muted)]"
+          }`}
+        />
+      </button>
     </div>
   );
 }

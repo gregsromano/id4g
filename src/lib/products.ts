@@ -64,6 +64,8 @@ export type Product = {
   saleEndsAt: string | null;
   /** Shipping while the sale is live; null keeps normal shipping. */
   saleShippingCents: number | null;
+  /** The sale's on/off switch; off keeps it saved but not applied. */
+  saleEnabled: boolean;
   options: ProductOption[];
   images: ProductImage[];
   /** Manual storefront display order — lower shows first. */
@@ -107,6 +109,7 @@ const PRODUCT_COLUMNS = [
   "sale_starts_at",
   "sale_ends_at",
   "sale_shipping_cents",
+  "sale_enabled",
   "options",
   "images",
   "position",
@@ -143,6 +146,7 @@ type ProductRow = {
   sale_starts_at: string | null;
   sale_ends_at: string | null;
   sale_shipping_cents: number | null;
+  sale_enabled: boolean | null;
   options: unknown;
   images: unknown;
   position: number;
@@ -180,6 +184,7 @@ function toProduct(row: ProductRow): Product {
     saleStartsAt: row.sale_starts_at,
     saleEndsAt: row.sale_ends_at,
     saleShippingCents: row.sale_shipping_cents,
+    saleEnabled: row.sale_enabled ?? true,
     options: Array.isArray(row.options) ? (row.options as ProductOption[]) : [],
     images: Array.isArray(row.images) ? (row.images as ProductImage[]) : [],
     position: row.position,
@@ -511,6 +516,17 @@ export async function setProductStatus(id: string, status: ProductStatus): Promi
 }
 
 /** Toggles the "claimed" flag on a one-of-one piece. See `Product.sold`. */
+/** The sale's on/off switch. Writes nothing else, so an unsaved edit form can't be clobbered. */
+export async function setProductSaleEnabled(id: string, enabled: boolean): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("products")
+    .update({ sale_enabled: enabled, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) fail("set product sale enabled", error);
+}
+
 export async function setProductSold(id: string, sold: boolean): Promise<void> {
   assertServiceRoleConfigured();
 
@@ -858,6 +874,7 @@ export type CheckoutVariant = {
     saleStartsAt: string | null;
     saleEndsAt: string | null;
     saleShippingCents: number | null;
+    saleEnabled: boolean;
   };
 };
 
@@ -876,7 +893,7 @@ export async function getVariantsForCheckout(
   const { data, error } = await getSupabaseAdmin()
     .from("product_variants")
     .select(
-      `id, product_id, option_values, price_cents, products (id, name, slug, status, sold, currency, shipping_cents, tax_code, weight_oz, options, sale_price_cents, sale_starts_at, sale_ends_at, sale_shipping_cents)`,
+      `id, product_id, option_values, price_cents, products (id, name, slug, status, sold, currency, shipping_cents, tax_code, weight_oz, options, sale_price_cents, sale_starts_at, sale_ends_at, sale_shipping_cents, sale_enabled)`,
     )
     .in("id", variantIds);
 
@@ -902,6 +919,7 @@ export async function getVariantsForCheckout(
       sale_starts_at: string | null;
       sale_ends_at: string | null;
       sale_shipping_cents: number | null;
+      sale_enabled: boolean | null;
     } | null;
   };
 
@@ -931,6 +949,7 @@ export async function getVariantsForCheckout(
         saleStartsAt: row.products.sale_starts_at,
         saleEndsAt: row.products.sale_ends_at,
         saleShippingCents: row.products.sale_shipping_cents,
+        saleEnabled: row.products.sale_enabled ?? true,
         options: Array.isArray(row.products.options)
           ? (row.products.options as ProductOption[])
           : [],
