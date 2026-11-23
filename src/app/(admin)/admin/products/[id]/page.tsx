@@ -176,6 +176,7 @@ export default async function AdminProductEditPage({
               salePriceCents={product.salePriceCents}
               saleStartsAt={product.saleStartsAt}
               saleEndsAt={product.saleEndsAt}
+              saleShippingCents={product.saleShippingCents}
               regularPriceCents={product.priceCents}
             />
           </div>

@@ -6,7 +6,7 @@ import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
 import { CUSTOM_VERSION_PRICE_CENTS } from "@/lib/product-options";
-import { priceWithSale } from "@/lib/product";
+import { priceWithSale, shippingWithSale } from "@/lib/product";
 
 type IncomingItem = {
   productId: string;
@@ -103,7 +103,11 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
       customNote,
       taxCode: variant.product.taxCode,
       weightOz: variant.product.weightOz ?? UNIT_WEIGHT_OZ,
-      shippingCents: variant.product.shippingCents,
+      // Sale shipping applies to the product's own sale, not to a custom
+      // version, which is priced on its own terms.
+      shippingCents: customNote
+        ? variant.product.shippingCents
+        : shippingWithSale(variant.product.shippingCents, variant.product, now),
     });
   }
 

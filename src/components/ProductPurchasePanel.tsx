@@ -16,7 +16,10 @@ type Variant = {
 type Props = {
   productId: string;
   name: string;
+  /** Shipping now — the sale shipping price while a sale with one is live. */
   shippingCents: number;
+  /** Normal shipping, shown struck through when sale shipping is lower. */
+  regularShippingCents?: number;
   options: ProductOption[];
   variants: Variant[];
   category?: string | null;
@@ -33,6 +36,7 @@ export default function ProductPurchasePanel({
   productId,
   name,
   shippingCents,
+  regularShippingCents = shippingCents,
   options,
   variants,
   category,
@@ -114,7 +118,9 @@ export default function ProductPurchasePanel({
       variantLabel: "",
       customNote: note,
       priceCents: CUSTOM_VERSION_PRICE_CENTS,
-      shippingCents,
+      // A custom version isn't part of the product's sale — checkout charges
+      // it normal shipping, so the cart should show the same.
+      shippingCents: regularShippingCents,
     });
     setCustomOpen(false);
     setCustomNote("");
@@ -151,6 +157,12 @@ export default function ProductPurchasePanel({
         )}
         <span className="text-sm text-[var(--text-muted)]">
           {shippingCents === 0 ? "Free shipping" : `+ ${formatPrice(shippingCents)} shipping`}
+          {shippingCents < regularShippingCents && (
+            <span className="ml-1 line-through">
+              <span className="sr-only">Regular shipping </span>
+              {formatPrice(regularShippingCents)}
+            </span>
+          )}
         </span>
       </div>
 

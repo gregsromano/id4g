@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { currentPriceCents, saleStatus } from "@/lib/product";
+import { currentPriceCents, saleStatus, shippingWithSale } from "@/lib/product";
 import { getProductBySlug } from "@/lib/products";
 import { absoluteUrl, jsonLdScript, SITE_NAME, toMetaDescription } from "@/lib/seo";
 import DescriptionText from "@/components/DescriptionText";
@@ -142,7 +142,8 @@ export default async function ProductDetailPage({
           <ProductPurchasePanel
             productId={product.id}
             name={product.name}
-            shippingCents={product.shippingCents}
+            shippingCents={product.sold ? product.shippingCents : shippingWithSale(product.shippingCents, product)}
+            regularShippingCents={product.shippingCents}
             options={product.options}
             variants={product.variants.map((v) => ({
               id: v.id,

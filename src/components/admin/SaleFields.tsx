@@ -28,13 +28,17 @@ export default function SaleFields({
   salePriceCents,
   saleStartsAt,
   saleEndsAt,
+  saleShippingCents,
   regularPriceCents,
-}: SaleWindow & { regularPriceCents: number }) {
+}: SaleWindow & { saleShippingCents: number | null; regularPriceCents: number }) {
   const dirtyCtx = useDirty();
   const priceRef = useRef<HTMLInputElement>(null);
   const endRef = useRef<HTMLInputElement>(null);
 
   const [price, setPrice] = useState(salePriceCents === null ? "" : (salePriceCents / 100).toFixed(2));
+  const [shipping, setShipping] = useState(
+    saleShippingCents === null ? "" : (saleShippingCents / 100).toFixed(2),
+  );
   const [startIso, setStartIso] = useState(saleStartsAt ?? "");
   const [endIso, setEndIso] = useState(saleEndsAt ?? "");
   const [priceError, setPriceError] = useState<string | null>(null);
@@ -83,6 +87,7 @@ export default function SaleFields({
 
   function clearSale() {
     setPrice("");
+    setShipping("");
     setStartIso("");
     setEndIso("");
     // Programmatic changes don't fire the form's native change event.
@@ -108,6 +113,11 @@ export default function SaleFields({
             <>
               <strong className="text-[var(--accent)]">On sale now</strong> at{" "}
               {formatPrice(salePriceCents)}
+              {saleShippingCents === null
+                ? ""
+                : saleShippingCents === 0
+                  ? " with free shipping"
+                  : ` with ${formatPrice(saleShippingCents)} shipping`}
               {saleEndsAt ? ` until ${formatWhen(saleEndsAt)}` : " until you remove it"}.
             </>
           )}
@@ -127,7 +137,7 @@ export default function SaleFields({
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
             Sale price (USD)
@@ -140,6 +150,29 @@ export default function SaleFields({
             inputMode="decimal"
             placeholder="No sale"
             className={inputClass}
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
+            Sale shipping (USD)
+          </span>
+          <input
+            name="sale_shipping"
+            value={price.trim() ? shipping : ""}
+            onChange={(e) => {
+              setShipping(e.target.value);
+              const n = Number(e.target.value);
+              e.target.setCustomValidity(
+                e.target.value.trim() && (!Number.isFinite(n) || n < 0)
+                  ? "Enter a shipping price of $0 or more, or leave it blank."
+                  : "",
+              );
+            }}
+            disabled={!price.trim()}
+            inputMode="decimal"
+            placeholder="Normal shipping"
+            className={`${inputClass} disabled:opacity-40`}
           />
         </label>
 
@@ -182,7 +215,8 @@ export default function SaleFields({
           Blank start = starts as soon as you save. Blank end = runs until you remove it.
           {timeZone ? ` Times are ${timeZone}.` : ""} Every size sells at the sale price
           (never above its regular price), and the regular price returns on its own at the
-          end time.
+          end time. Sale shipping: enter 0 for free shipping during the sale, or leave it
+          blank to keep normal shipping.
         </p>
         {(price || startIso || endIso) && (
           <button

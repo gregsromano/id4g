@@ -340,7 +340,13 @@ function SaleCell({
     return hideNone ? null : <span className="text-xs text-[var(--text-muted)]">—</span>;
   }
 
-  const price = formatPrice(product.salePriceCents);
+  const price =
+    formatPrice(product.salePriceCents) +
+    (product.saleShippingCents === null
+      ? ""
+      : product.saleShippingCents === 0
+        ? " + free ship"
+        : ` + ${formatPrice(product.saleShippingCents)} ship`);
   const detail =
     status === "live"
       ? product.saleEndsAt

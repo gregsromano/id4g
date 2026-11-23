@@ -114,7 +114,7 @@ const MIN_SALE_PRICE_CENTS = 50;
 function parseSale(formData: FormData, regularCents: number) {
   const salePriceCents = parsePriceDollars(formData.get("sale_price"));
   if (salePriceCents === null) {
-    return { salePriceCents: null, saleStartsAt: null, saleEndsAt: null };
+    return { salePriceCents: null, saleStartsAt: null, saleEndsAt: null, saleShippingCents: null };
   }
   if (salePriceCents < MIN_SALE_PRICE_CENTS) throw new Error("Sale price must be at least $0.50");
   if (salePriceCents >= regularCents) throw new Error("Sale price must be below the base price");
@@ -126,7 +126,12 @@ function parseSale(formData: FormData, regularCents: number) {
     throw new Error("Sale must end after it starts");
   }
 
-  return { salePriceCents, saleStartsAt, saleEndsAt };
+  // Blank = normal shipping during the sale; parsePriceDollars rejects negatives.
+  const saleShippingText = String(formData.get("sale_shipping") ?? "").trim();
+  const saleShippingCents = parsePriceDollars(saleShippingText);
+  if (saleShippingText && saleShippingCents === null) throw new Error("Invalid sale shipping");
+
+  return { salePriceCents, saleStartsAt, saleEndsAt, saleShippingCents };
 }
 
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {

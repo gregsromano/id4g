@@ -99,6 +99,22 @@ export function listingPriceLabels(
   };
 }
 
+/**
+ * What shipping costs for a product at `now`: its sale shipping price while
+ * the sale is live and one is set, else its normal shipping. Shared by the
+ * product page and /api/checkout, like priceWithSale.
+ */
+export function shippingWithSale(
+  regularShippingCents: number,
+  sale: SaleWindow & { saleShippingCents: number | null },
+  now: number = Date.now(),
+): number {
+  if (sale.saleShippingCents === null || saleStatus(sale, now) !== "live") {
+    return regularShippingCents;
+  }
+  return sale.saleShippingCents;
+}
+
 function toSaleWindow(value: Partial<SaleWindow>): SaleWindow {
   return {
     salePriceCents: value.salePriceCents ?? null,
