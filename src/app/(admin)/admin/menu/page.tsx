@@ -1,6 +1,7 @@
+import BannerForm from "@/components/admin/BannerForm";
 import MenuVisibilityList from "@/components/admin/MenuVisibilityList";
 import { NAV_LINKS } from "@/lib/nav-links";
-import { getSiteSettings } from "@/lib/settings";
+import { getSiteSettings, MAX_BANNER_LENGTH } from "@/lib/settings";
 
 // Shows the live state of each switch, so it must never be served stale.
 export const dynamic = "force-dynamic";
@@ -19,6 +20,10 @@ export default async function AdminMenuPage() {
           has the link — it just isn&rsquo;t in the menu.
         </p>
       </div>
+
+      <BannerForm banner={settings.banner} maxLength={MAX_BANNER_LENGTH} />
+
+      <h2 className="mt-12 !text-base !normal-case text-[var(--text-primary)]">Menu items</h2>
 
       <MenuVisibilityList
         items={NAV_LINKS.map((link) => ({

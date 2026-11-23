@@ -1,5 +1,6 @@
 import "server-only";
 
+import { windowStatus } from "./schedule";
 import { assertServiceRoleConfigured, getSupabaseAdmin } from "./supabase";
 
 /**
@@ -48,7 +49,25 @@ export type SiteSettings = {
   pinnedProductId: string | null;
   /** NAV_LINKS ids switched off in /admin/menu; empty shows the full menu. */
   hiddenNavItems: string[];
+  /** Announcement shown under the storefront menu; see `liveBannerText`. */
+  banner: AnnouncementBanner;
 };
+
+/** Long enough for a sale or shipping note; short enough to stay one or two lines on a phone. */
+export const MAX_BANNER_LENGTH = 160;
+
+export type AnnouncementBanner = {
+  /** Null means no banner. */
+  text: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
+/** The banner text to show at `now`, or null when there is none or it is outside its window. */
+export function liveBannerText(banner: AnnouncementBanner, now: number = Date.now()): string | null {
+  if (!banner.text) return null;
+  return windowStatus(banner.startsAt, banner.endsAt, now) === "live" ? banner.text : null;
+}
 
 /**
  * Falls back to the shipped defaults rather than throwing.
@@ -64,6 +83,7 @@ const DEFAULTS: SiteSettings = {
   emailPopupEnabled: false,
   pinnedProductId: null,
   hiddenNavItems: [],
+  banner: { text: null, startsAt: null, endsAt: null },
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -72,7 +92,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
     .select(
-      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items",
+      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items, banner_text, banner_starts_at, banner_ends_at",
     )
     .eq("id", SETTINGS_ID)
     .maybeSingle();
@@ -85,6 +105,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     email_popup_enabled: boolean;
     pinned_product_id: string | null;
     hidden_nav_items: string[] | null;
+    banner_text: string | null;
+    banner_starts_at: string | null;
+    banner_ends_at: string | null;
   };
 
   return {
@@ -93,6 +116,11 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     emailPopupEnabled: Boolean(row.email_popup_enabled),
     pinnedProductId: row.pinned_product_id ?? null,
     hiddenNavItems: Array.isArray(row.hidden_nav_items) ? row.hidden_nav_items : [],
+    banner: {
+      text: row.banner_text?.trim() || null,
+      startsAt: row.banner_starts_at,
+      endsAt: row.banner_ends_at,
+    },
   };
 }
 
@@ -207,6 +235,30 @@ export async function setHiddenNavItems(ids: string[]): Promise<void> {
 
   if (error) {
     console.error("[settings] failed to save hidden_nav_items", {
+      message: error.message,
+    });
+    throw new Error("Failed to save setting");
+  }
+}
+
+export async function setAnnouncementBanner(banner: AnnouncementBanner): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      {
+        id: SETTINGS_ID,
+        banner_text: banner.text,
+        banner_starts_at: banner.startsAt,
+        banner_ends_at: banner.endsAt,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save announcement banner", {
       message: error.message,
     });
     throw new Error("Failed to save setting");

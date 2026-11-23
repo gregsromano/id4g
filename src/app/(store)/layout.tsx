@@ -6,7 +6,7 @@ import CartDrawer from "@/components/CartDrawer";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { siteMapSections, visibleNavLinks } from "@/lib/nav-links";
-import { getSiteSettings } from "@/lib/settings";
+import { getSiteSettings, liveBannerText } from "@/lib/settings";
 
 /** Google Analytics 4 measurement ID. */
 const GA_ID = "G-BD5PFM2HKH";
@@ -33,7 +33,7 @@ export default async function StoreLayout({
   // disappears from every page at once, rather than lingering on pages that
   // were prerendered at build time until the next deploy.
   await connection();
-  const { hiddenNavItems } = await getSiteSettings();
+  const { hiddenNavItems, banner } = await getSiteSettings();
 
   return (
     <CartProvider>
@@ -55,7 +55,7 @@ export default async function StoreLayout({
           gtag('config', '${GA_ID}');
         `}
       </Script>
-      <SiteHeader links={visibleNavLinks(hiddenNavItems)} />
+      <SiteHeader links={visibleNavLinks(hiddenNavItems)} bannerText={liveBannerText(banner)} />
       {children}
       <SiteFooter sections={siteMapSections(hiddenNavItems)} />
       <CartDrawer />

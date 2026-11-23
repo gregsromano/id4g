@@ -3,35 +3,11 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { formatPrice, saleStatus, type SaleWindow } from "@/lib/product";
+import { formatWhen, isoToLocalInput, localInputToIso, localTimeZoneName } from "@/lib/schedule";
 import { useDirty } from "./UnsavedChangesForm";
 
 const inputClass =
   "w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]";
-
-/** ISO timestamp -> "YYYY-MM-DDTHH:mm" in the browser's own timezone, for a datetime-local input. */
-function isoToLocalInput(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** The reverse: a datetime-local value is read in the browser's timezone, which is what Greg meant. */
-function localInputToIso(value: string): string {
-  if (!value) return "";
-  const ms = new Date(value).getTime();
-  return Number.isNaN(ms) ? "" : new Date(ms).toISOString();
-}
-
-function formatWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 /**
  * Sale price plus an optional start and end, inside the product editor's
@@ -116,11 +92,7 @@ export default function SaleFields({
   // Status of what is SAVED — i.e. what shoppers see right now.
   const saved: SaleWindow = { salePriceCents, saleStartsAt, saleEndsAt };
   const status = mounted ? saleStatus(saved) : null;
-  const timeZone = mounted
-    ? new Intl.DateTimeFormat(undefined, { timeZoneName: "short" })
-        .formatToParts(new Date())
-        .find((part) => part.type === "timeZoneName")?.value
-    : null;
+  const timeZone = mounted ? localTimeZoneName() : null;
 
   return (
     <div>

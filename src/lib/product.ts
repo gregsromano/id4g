@@ -1,4 +1,5 @@
 import { CUSTOM_VERSION_PRICE_CENTS } from "./product-options";
+import { windowStatus } from "./schedule";
 
 /**
  * A single line in the cart: one variant of one product, with a quantity.
@@ -39,9 +40,7 @@ export type SaleStatus = "none" | "scheduled" | "live" | "ended";
  */
 export function saleStatus(sale: SaleWindow, now: number = Date.now()): SaleStatus {
   if (sale.salePriceCents === null) return "none";
-  if (sale.saleStartsAt && now < Date.parse(sale.saleStartsAt)) return "scheduled";
-  if (sale.saleEndsAt && now >= Date.parse(sale.saleEndsAt)) return "ended";
-  return "live";
+  return windowStatus(sale.saleStartsAt, sale.saleEndsAt, now);
 }
 
 /**

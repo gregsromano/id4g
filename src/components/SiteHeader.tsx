@@ -14,7 +14,14 @@ import type { NavLinkItem } from "@/lib/nav-links";
  */
 
 
-export default function SiteHeader({ links }: { links: NavLinkItem[] }) {
+export default function SiteHeader({
+  links,
+  bannerText,
+}: {
+  links: NavLinkItem[];
+  /** Announcement from /admin/menu, already checked against its schedule; null hides it. */
+  bannerText?: string | null;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -76,6 +83,14 @@ export default function SiteHeader({ links }: { links: NavLinkItem[] }) {
             </div>
           ))}
         </nav>
+      )}
+
+      {/* Inside the sticky header, so it stays right under the menu while
+          the page scrolls. Static text, not a marquee. */}
+      {bannerText && (
+        <p className="bg-[var(--accent)] px-6 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-[var(--on-accent)] sm:text-sm">
+          {bannerText}
+        </p>
       )}
     </header>
   );
