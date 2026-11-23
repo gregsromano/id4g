@@ -27,6 +27,16 @@ function isFilter(value: string | undefined): value is ProductFilter {
  */
 const CATEGORY_TABS = [{ value: "One of One", label: "One of One" }];
 
+/**
+ * The moment this request is rendered, for the table's Sale column. A
+ * module-level helper, not inline in the component: reading the clock is
+ * deliberate here (the page is force-dynamic, rendered per request), and
+ * passing the value down keeps the server and browser renders in agreement.
+ */
+async function requestTime(): Promise<number> {
+  return Date.now();
+}
+
 export default async function AdminProductsPage({
   searchParams,
 }: {
@@ -41,10 +51,11 @@ export default async function AdminProductsPage({
   // The pin list is fetched separately and always unfiltered: building it
   // from the filtered view emptied the dropdown on the Draft/Archived tabs,
   // which made an already-pinned product look unset.
-  const [products, pinnable, settings] = await Promise.all([
+  const [products, pinnable, settings, now] = await Promise.all([
     listAllProductsForAdmin(filter, category),
     listAllProductsForAdmin("active"),
     getSiteSettings(),
+    requestTime(),
   ]);
 
   return (
@@ -120,6 +131,7 @@ export default async function AdminProductsPage({
         filter={filter}
         category={category}
         orderInUse={!settings.randomizeProducts}
+        now={now}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { reorderProductsAction } from "@/app/(admin)/admin/products/actions";
-import { formatPrice } from "@/lib/product";
+import { formatPrice, saleStatus } from "@/lib/product";
 import { isVideoUrl } from "@/lib/media";
 import MoveButtons from "./MoveButtons";
 import type { AdminProductSummary, ProductFilter } from "@/lib/products";
@@ -45,6 +45,7 @@ export default function ProductsTable({
   filter,
   category,
   orderInUse = true,
+  now,
 }: {
   products: AdminProductSummary[];
   filter: ProductFilter;
@@ -56,6 +57,12 @@ export default function ProductsTable({
    * just is not what shoppers see until the shuffle is turned back off.
    */
   orderInUse?: boolean;
+  /**
+   * The server's clock when the page rendered, for the Sale column. Passed in
+   * rather than read here so the server render and the browser's hydration
+   * agree on whether a sale is live.
+   */
+  now: number;
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -166,6 +173,7 @@ export default function ProductsTable({
               <Th>Category</Th>
               <Th>Status</Th>
               <Th>Price</Th>
+              <Th>Sale</Th>
               <Th>Variants</Th>
             </tr>
           </thead>
@@ -235,6 +243,9 @@ export default function ProductsTable({
                       ? formatPrice(product.minPriceCents)
                       : `${formatPrice(product.minPriceCents)} – ${formatPrice(product.maxPriceCents)}`}
                   </Td>
+                  <Td>
+                    <SaleCell product={product} now={now} />
+                  </Td>
                   <Td>{product.variantCount}</Td>
                 </tr>
               );
@@ -280,6 +291,9 @@ export default function ProductsTable({
                       {product.category ? ` · ${product.category}` : ""}
                       {product.sold ? " · Sold" : ""}
                     </p>
+                    <div className="mt-2">
+                      <SaleCell product={product} now={now} hideNone />
+                    </div>
                   </div>
                 </div>
                 <MoveButtons
@@ -293,6 +307,63 @@ export default function ProductsTable({
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+/**
+ * Pacific time with a fixed locale: the table renders on the server (UTC)
+ * and again in the browser, and the two must print the same string.
+ */
+function formatSaleTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** Whether a product's sale is on now, scheduled, ended, or absent — with the price and dates. */
+function SaleCell({
+  product,
+  now,
+  hideNone = false,
+}: {
+  product: AdminProductSummary;
+  now: number;
+  hideNone?: boolean;
+}) {
+  const status = saleStatus(product, now);
+  if (status === "none" || product.salePriceCents === null) {
+    return hideNone ? null : <span className="text-xs text-[var(--text-muted)]">—</span>;
+  }
+
+  const price = formatPrice(product.salePriceCents);
+  const detail =
+    status === "live"
+      ? product.saleEndsAt
+        ? `${price} · ends ${formatSaleTime(product.saleEndsAt)}`
+        : `${price} · no end date`
+      : status === "scheduled" && product.saleStartsAt
+        ? `${price} · starts ${formatSaleTime(product.saleStartsAt)}`
+        : product.saleEndsAt
+          ? `${price} · ended ${formatSaleTime(product.saleEndsAt)}`
+          : price;
+
+  return (
+    <div>
+      <span
+        className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${
+          status === "live"
+            ? "bg-[var(--accent)] text-[var(--on-accent)]"
+            : "border border-[var(--border)] text-[var(--text-muted)]"
+        }`}
+      >
+        {status === "live" ? "On sale" : status === "scheduled" ? "Scheduled" : "Ended"}
+      </span>
+      <span className="mt-1 block whitespace-nowrap text-xs text-[var(--text-muted)]">{detail}</span>
     </div>
   );
 }
