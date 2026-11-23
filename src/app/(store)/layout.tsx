@@ -6,7 +6,7 @@ import CartDrawer from "@/components/CartDrawer";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { siteMapSections, visibleNavLinks } from "@/lib/nav-links";
-import { getSiteSettings, liveBannerText } from "@/lib/settings";
+import { getSiteSettings, liveBanner } from "@/lib/settings";
 
 /** Google Analytics 4 measurement ID. */
 const GA_ID = "G-BD5PFM2HKH";
@@ -55,7 +55,7 @@ export default async function StoreLayout({
           gtag('config', '${GA_ID}');
         `}
       </Script>
-      <SiteHeader links={visibleNavLinks(hiddenNavItems)} bannerText={liveBannerText(banner)} />
+      <SiteHeader links={visibleNavLinks(hiddenNavItems)} banner={liveBanner(banner)} />
       {children}
       <SiteFooter sections={siteMapSections(hiddenNavItems)} />
       <CartDrawer />

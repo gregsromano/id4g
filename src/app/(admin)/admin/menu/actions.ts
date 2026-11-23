@@ -4,7 +4,14 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin-dal";
 import { NAV_ITEM_IDS } from "@/lib/nav-links";
-import { getSiteSettings, MAX_BANNER_LENGTH, setAnnouncementBanner, setHiddenNavItems } from "@/lib/settings";
+import { isBannerFont, isBannerSize, normalizeHex } from "@/lib/banner-style";
+import {
+  getSiteSettings,
+  MAX_BANNER_LENGTH,
+  setAnnouncementBanner,
+  setBannerEnabled,
+  setHiddenNavItems,
+} from "@/lib/settings";
 
 export type MenuItemState = { error: string } | { ok: true } | null;
 
@@ -73,13 +80,42 @@ export async function saveBannerAction(_prev: BannerState, formData: FormData): 
     return { error: "The banner has to end after it starts." };
   }
 
+  const bgColor = normalizeHex(String(formData.get("bg_color") ?? ""));
+  const textColor = normalizeHex(String(formData.get("text_color") ?? ""));
+  if (!bgColor || !textColor) return { error: "Colors must be hex codes like #24E0FF." };
+  const size = formData.get("font_size");
+  const font = formData.get("font");
+  if (!isBannerSize(size) || !isBannerFont(font)) return { error: "Pick a font and size." };
+
   try {
-    await setAnnouncementBanner({ text: text || null, startsAt, endsAt });
+    const { banner } = await getSiteSettings();
+    await setAnnouncementBanner({
+      text: text || null,
+      startsAt,
+      endsAt,
+      enabled: banner.enabled,
+      style: { bgColor, textColor, bold: formData.get("bold") === "on", size, font },
+    });
   } catch {
     return { error: "Could not save that. Try again." };
   }
 
   // The banner lives in the storefront layout, so every store page changes.
+  revalidatePath("/", "layout");
+  revalidatePath("/admin/menu");
+  return { ok: true };
+}
+
+/** The banner's on/off switch — saves on its own, like the other admin switches. */
+export async function setBannerEnabledAction(enabled: boolean): Promise<BannerState> {
+  await requireAdmin();
+
+  try {
+    await setBannerEnabled(enabled);
+  } catch {
+    return { error: "Could not save that. Try again." };
+  }
+
   revalidatePath("/", "layout");
   revalidatePath("/admin/menu");
   return { ok: true };

@@ -1,5 +1,12 @@
 import "server-only";
 
+import {
+  DEFAULT_BANNER_STYLE,
+  isBannerFont,
+  isBannerSize,
+  normalizeHex,
+  type BannerStyle,
+} from "./banner-style";
 import { windowStatus } from "./schedule";
 import { assertServiceRoleConfigured, getSupabaseAdmin } from "./supabase";
 
@@ -61,12 +68,22 @@ export type AnnouncementBanner = {
   text: string | null;
   startsAt: string | null;
   endsAt: string | null;
+  /** Off hides the banner but keeps its text, schedule and style. */
+  enabled: boolean;
+  style: BannerStyle;
 };
 
-/** The banner text to show at `now`, or null when there is none or it is outside its window. */
-export function liveBannerText(banner: AnnouncementBanner, now: number = Date.now()): string | null {
-  if (!banner.text) return null;
-  return windowStatus(banner.startsAt, banner.endsAt, now) === "live" ? banner.text : null;
+/**
+ * The banner to draw at `now`, or null: no text, switched off, or outside
+ * its schedule.
+ */
+export function liveBanner(
+  banner: AnnouncementBanner,
+  now: number = Date.now(),
+): { text: string; style: BannerStyle } | null {
+  if (!banner.text || !banner.enabled) return null;
+  if (windowStatus(banner.startsAt, banner.endsAt, now) !== "live") return null;
+  return { text: banner.text, style: banner.style };
 }
 
 /**
@@ -83,7 +100,13 @@ const DEFAULTS: SiteSettings = {
   emailPopupEnabled: false,
   pinnedProductId: null,
   hiddenNavItems: [],
-  banner: { text: null, startsAt: null, endsAt: null },
+  banner: {
+    text: null,
+    startsAt: null,
+    endsAt: null,
+    enabled: true,
+    style: DEFAULT_BANNER_STYLE,
+  },
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
@@ -92,7 +115,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const { data, error } = await getSupabaseAdmin()
     .from("site_settings")
     .select(
-      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items, banner_text, banner_starts_at, banner_ends_at",
+      "randomize_products, randomize_lifestyle, email_popup_enabled, pinned_product_id, hidden_nav_items, banner_text, banner_starts_at, banner_ends_at, banner_enabled, banner_bg_color, banner_text_color, banner_bold, banner_font_size, banner_font",
     )
     .eq("id", SETTINGS_ID)
     .maybeSingle();
@@ -108,6 +131,12 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     banner_text: string | null;
     banner_starts_at: string | null;
     banner_ends_at: string | null;
+    banner_enabled: boolean | null;
+    banner_bg_color: string | null;
+    banner_text_color: string | null;
+    banner_bold: boolean | null;
+    banner_font_size: string | null;
+    banner_font: string | null;
   };
 
   return {
@@ -120,6 +149,14 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       text: row.banner_text?.trim() || null,
       startsAt: row.banner_starts_at,
       endsAt: row.banner_ends_at,
+      enabled: row.banner_enabled ?? true,
+      style: {
+        bgColor: normalizeHex(row.banner_bg_color ?? "") ?? DEFAULT_BANNER_STYLE.bgColor,
+        textColor: normalizeHex(row.banner_text_color ?? "") ?? DEFAULT_BANNER_STYLE.textColor,
+        bold: row.banner_bold ?? DEFAULT_BANNER_STYLE.bold,
+        size: isBannerSize(row.banner_font_size) ? row.banner_font_size : DEFAULT_BANNER_STYLE.size,
+        font: isBannerFont(row.banner_font) ? row.banner_font : DEFAULT_BANNER_STYLE.font,
+      },
     },
   };
 }
@@ -252,6 +289,12 @@ export async function setAnnouncementBanner(banner: AnnouncementBanner): Promise
         banner_text: banner.text,
         banner_starts_at: banner.startsAt,
         banner_ends_at: banner.endsAt,
+        banner_enabled: banner.enabled,
+        banner_bg_color: banner.style.bgColor,
+        banner_text_color: banner.style.textColor,
+        banner_bold: banner.style.bold,
+        banner_font_size: banner.style.size,
+        banner_font: banner.style.font,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" },
@@ -261,6 +304,22 @@ export async function setAnnouncementBanner(banner: AnnouncementBanner): Promise
     console.error("[settings] failed to save announcement banner", {
       message: error.message,
     });
+    throw new Error("Failed to save setting");
+  }
+}
+
+export async function setBannerEnabled(enabled: boolean): Promise<void> {
+  assertServiceRoleConfigured();
+
+  const { error } = await getSupabaseAdmin()
+    .from("site_settings")
+    .upsert(
+      { id: SETTINGS_ID, banner_enabled: enabled, updated_at: new Date().toISOString() },
+      { onConflict: "id" },
+    );
+
+  if (error) {
+    console.error("[settings] failed to save banner_enabled", { message: error.message });
     throw new Error("Failed to save setting");
   }
 }

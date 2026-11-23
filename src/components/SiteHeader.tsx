@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import CartButton from "./CartButton";
+import { bannerPresentation, type BannerStyle } from "@/lib/banner-style";
 import type { NavLinkItem } from "@/lib/nav-links";
 
 /**
@@ -16,12 +17,13 @@ import type { NavLinkItem } from "@/lib/nav-links";
 
 export default function SiteHeader({
   links,
-  bannerText,
+  banner,
 }: {
   links: NavLinkItem[];
-  /** Announcement from /admin/menu, already checked against its schedule; null hides it. */
-  bannerText?: string | null;
+  /** Announcement from /admin/menu, already checked against its switch and schedule; null hides it. */
+  banner?: { text: string; style: BannerStyle } | null;
 }) {
+  const bannerLook = banner ? bannerPresentation(banner.style) : null;
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -87,9 +89,9 @@ export default function SiteHeader({
 
       {/* Inside the sticky header, so it stays right under the menu while
           the page scrolls. Static text, not a marquee. */}
-      {bannerText && (
-        <p className="bg-[var(--accent)] px-6 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-[var(--on-accent)] sm:text-sm">
-          {bannerText}
+      {banner && bannerLook && (
+        <p className={bannerLook.className} style={bannerLook.style}>
+          {banner.text}
         </p>
       )}
     </header>
