@@ -171,6 +171,14 @@ export default async function AdminProductEditPage({
             Put this product on sale for a set time. Shoppers see the regular
             price crossed out next to the sale price.
           </p>
+          {/* The tag color is one setting for every product, so it lives on
+              the Products page — this link is how you find it from here. */}
+          <GuardedLink
+            href="/admin/products#sale-tag-color"
+            className="mt-2 inline-flex min-h-11 items-center text-xs uppercase tracking-widest text-[var(--accent)] hover:underline"
+          >
+            Change the SALE tag&rsquo;s color &rarr;
+          </GuardedLink>
           <div className="mt-4">
             <SaleFields
               salePriceCents={product.salePriceCents}
