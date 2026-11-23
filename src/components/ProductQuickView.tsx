@@ -86,7 +86,7 @@ export default function ProductQuickView({
             {sold && <SoldOverlay size="sm" />}
             {compareAtLabel && !sold && (
               <span
-                className={`absolute left-2 top-2 bg-[var(--accent)] font-bold uppercase tracking-widest text-[var(--on-accent)] ${
+                className={`absolute left-2 top-2 bg-[var(--sale-bg,var(--accent))] font-bold uppercase tracking-widest text-[var(--sale-fg,var(--on-accent))] ${
                   compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
                 }`}
               >

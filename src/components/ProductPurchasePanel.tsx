@@ -144,7 +144,7 @@ export default function ProductPurchasePanel({
               <span className="sr-only">Regular price </span>
               {formatPrice(compareAtCents)}
             </span>
-            <span className="bg-[var(--accent)] px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-[var(--on-accent)]">
+            <span className="bg-[var(--sale-bg,var(--accent))] px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-[var(--sale-fg,var(--on-accent))]">
               Sale
             </span>
           </>

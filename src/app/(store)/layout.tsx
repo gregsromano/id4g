@@ -33,7 +33,7 @@ export default async function StoreLayout({
   // disappears from every page at once, rather than lingering on pages that
   // were prerendered at build time until the next deploy.
   await connection();
-  const { hiddenNavItems, banner } = await getSiteSettings();
+  const { hiddenNavItems, banner, saleBadge } = await getSiteSettings();
 
   return (
     <CartProvider>
@@ -55,10 +55,24 @@ export default async function StoreLayout({
           gtag('config', '${GA_ID}');
         `}
       </Script>
-      <SiteHeader links={visibleNavLinks(hiddenNavItems)} banner={liveBanner(banner)} />
-      {children}
-      <SiteFooter sections={siteMapSections(hiddenNavItems)} />
-      <CartDrawer />
+      {/* The SALE tag colors from /admin/products, as CSS variables every tag
+          below reads. `contents` keeps this wrapper out of the body's flex
+          layout; custom properties still inherit through it. Values are
+          validated #rrggbb (see normalizeHex), never free text. */}
+      <div
+        className="contents"
+        style={
+          {
+            "--sale-bg": saleBadge.bgColor,
+            "--sale-fg": saleBadge.textColor,
+          } as React.CSSProperties
+        }
+      >
+        <SiteHeader links={visibleNavLinks(hiddenNavItems)} banner={liveBanner(banner)} />
+        {children}
+        <SiteFooter sections={siteMapSections(hiddenNavItems)} />
+        <CartDrawer />
+      </div>
     </CartProvider>
   );
 }

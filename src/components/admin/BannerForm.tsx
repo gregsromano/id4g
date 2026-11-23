@@ -14,11 +14,11 @@ import {
   bannerPresentation,
   contrastRatio,
   DEFAULT_BANNER_STYLE,
-  normalizeHex,
   type BannerFont,
   type BannerSize,
 } from "@/lib/banner-style";
 import type { AnnouncementBanner } from "@/lib/settings";
+import ColorField from "./ColorField";
 import {
   formatWhen,
   isoToLocalInput,
@@ -301,63 +301,6 @@ export default function BannerForm({
           )}
         </div>
       </form>
-    </div>
-  );
-}
-
-/**
- * A color wheel and a hex box for the same color. The wheel is the
- * browser's own picker (a color wheel on Mac); the hex box accepts
- * "#24E0FF", "24e0ff" or "#2ef" and only updates the color once it's a
- * valid code, so a half-typed value never reaches the form.
- */
-function ColorField({
-  label,
-  name,
-  value,
-  onChange,
-}: {
-  label: string;
-  name: string;
-  value: string;
-  onChange: (hex: string) => void;
-}) {
-  const [draft, setDraft] = useState(value.toUpperCase());
-  const [lastValue, setLastValue] = useState(value);
-  // Follow outside changes (the wheel, "Reset") without an effect.
-  if (value !== lastValue) {
-    setLastValue(value);
-    setDraft(value.toUpperCase());
-  }
-  const valid = normalizeHex(draft) !== null;
-
-  return (
-    <div>
-      <span className={labelClass}>{label}</span>
-      <div className="flex items-center gap-3">
-        <input
-          type="color"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          aria-label={`${label} — color wheel`}
-          className="h-11 w-14 shrink-0 cursor-pointer border border-[var(--border)] bg-transparent p-1"
-        />
-        <input
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            const hex = normalizeHex(e.target.value);
-            if (hex) onChange(hex);
-          }}
-          onBlur={() => setDraft(value.toUpperCase())}
-          aria-label={`${label} — hex code`}
-          aria-invalid={!valid}
-          spellCheck={false}
-          maxLength={7}
-          className={`${inputClass} h-11 font-mono uppercase ${valid ? "" : "!border-red-400"}`}
-        />
-      </div>
-      <input type="hidden" name={name} value={value} />
     </div>
   );
 }

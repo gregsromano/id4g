@@ -4,6 +4,7 @@ import { listAllProductsForAdmin, type ProductFilter } from "@/lib/products";
 import { getSiteSettings } from "@/lib/settings";
 import ProductsTable from "@/components/admin/ProductsTable";
 import RandomizeToggle from "@/components/admin/RandomizeToggle";
+import SaleBadgeColorsForm from "@/components/admin/SaleBadgeColorsForm";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,8 @@ export default async function AdminProductsPage({
         // meaningfully hold first place on it.
         products={pinnable.map((product) => ({ id: product.id, name: product.name }))}
       />
+
+      <SaleBadgeColorsForm colors={settings.saleBadge} />
 
       <nav className="mt-8 flex flex-wrap gap-6 border-b border-[var(--border)] pb-4">
         <Link

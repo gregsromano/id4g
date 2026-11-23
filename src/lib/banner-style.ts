@@ -9,6 +9,10 @@
 export const DEFAULT_BANNER_BG = "#24e0ff";
 export const DEFAULT_BANNER_TEXT = "#04131a";
 
+/** The SALE tag's original colors — the same accent pair as the banner. */
+export const DEFAULT_SALE_BADGE = { bgColor: DEFAULT_BANNER_BG, textColor: DEFAULT_BANNER_TEXT };
+export type SaleBadgeColors = { bgColor: string; textColor: string };
+
 const HEX_RE = /^#[0-9a-f]{6}$/i;
 
 /** "#RRGGBB" lowercased, or null if it isn't one. Also accepts "RRGGBB" and "#RGB". */
