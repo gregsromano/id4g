@@ -89,6 +89,46 @@ function parsePriceDollars(value: FormDataEntryValue | null): number | null {
   return Math.round(dollars * 100);
 }
 
+/**
+ * An ISO timestamp from SaleFields' hidden inputs. The browser converts the
+ * date/time Greg typed into an exact moment before submitting (a bare
+ * datetime-local value would be read as UTC on Vercel), so this only has to
+ * parse it. Blank -> null; anything unparseable is rejected.
+ */
+function parseIsoTimestamp(value: FormDataEntryValue | null): string | null | "invalid" {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  const ms = Date.parse(text);
+  return Number.isNaN(ms) ? "invalid" : new Date(ms).toISOString();
+}
+
+/** Stripe refuses a charge under $0.50. */
+const MIN_SALE_PRICE_CENTS = 50;
+
+/**
+ * The sale fields from the product editor. A blank sale price clears the
+ * whole sale, dates included, so a removed sale can't linger half-set.
+ * SaleFields validates all of this in the browser first; these throws are
+ * the backstop for a request that skipped it.
+ */
+function parseSale(formData: FormData, regularCents: number) {
+  const salePriceCents = parsePriceDollars(formData.get("sale_price"));
+  if (salePriceCents === null) {
+    return { salePriceCents: null, saleStartsAt: null, saleEndsAt: null };
+  }
+  if (salePriceCents < MIN_SALE_PRICE_CENTS) throw new Error("Sale price must be at least $0.50");
+  if (salePriceCents >= regularCents) throw new Error("Sale price must be below the base price");
+
+  const saleStartsAt = parseIsoTimestamp(formData.get("sale_starts_at"));
+  const saleEndsAt = parseIsoTimestamp(formData.get("sale_ends_at"));
+  if (saleStartsAt === "invalid" || saleEndsAt === "invalid") throw new Error("Invalid sale date");
+  if (saleStartsAt && saleEndsAt && Date.parse(saleEndsAt) <= Date.parse(saleStartsAt)) {
+    throw new Error("Sale must end after it starts");
+  }
+
+  return { salePriceCents, saleStartsAt, saleEndsAt };
+}
+
 function parseOptionalInt(value: FormDataEntryValue | null): number | null {
   const text = String(value ?? "").trim();
   if (!text) return null;
@@ -221,6 +261,7 @@ export async function saveProductDetails(formData: FormData): Promise<void> {
     category,
     metaTitle,
     metaDescription,
+    ...parseSale(formData, priceCents),
   });
 
   // Image labels and drag order live in the same form (no separate save

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { currentPriceCents } from "@/lib/product";
+import { currentPriceCents, saleStatus } from "@/lib/product";
 import { getProductBySlug } from "@/lib/products";
 import { absoluteUrl, jsonLdScript, SITE_NAME, toMetaDescription } from "@/lib/seo";
 import DescriptionText from "@/components/DescriptionText";
@@ -151,6 +151,7 @@ export default async function ProductDetailPage({
             }))}
             category={product.category}
             sold={product.sold}
+            liveSalePriceCents={saleStatus(product) === "live" ? product.salePriceCents : null}
           />
         </div>
 

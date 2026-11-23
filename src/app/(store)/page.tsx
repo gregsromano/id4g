@@ -3,7 +3,7 @@ import Image from "next/image";
 
 import { listActiveProducts } from "@/lib/products";
 import { listLifestyleImages } from "@/lib/lifestyle";
-import { currentPriceCents, formatPrice } from "@/lib/product";
+import { listingPriceLabels } from "@/lib/product";
 import { getSiteSettings } from "@/lib/settings";
 import { absoluteUrl, jsonLdScript, SITE_NAME } from "@/lib/seo";
 import EmailPopup from "@/components/EmailPopup";
@@ -192,7 +192,7 @@ export default async function Home() {
                     key={product.id}
                     href={`/products/${product.slug}`}
                     name={product.name}
-                    priceLabel={formatPrice(currentPriceCents(product))}
+                    {...listingPriceLabels(product)}
                     image={product.images[0]}
                   />
                 ))}
@@ -205,7 +205,7 @@ export default async function Home() {
                       key={product.id}
                       href={`/products/${product.slug}`}
                       name={product.name}
-                      priceLabel={formatPrice(currentPriceCents(product))}
+                      {...listingPriceLabels(product)}
                       image={product.images[0]}
                       compact
                     />

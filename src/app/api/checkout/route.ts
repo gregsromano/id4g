@@ -6,6 +6,7 @@ import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
 import { CUSTOM_VERSION_PRICE_CENTS } from "@/lib/product-options";
+import { priceWithSale } from "@/lib/product";
 
 type IncomingItem = {
   productId: string;
@@ -71,6 +72,9 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
 
   const byVariantId = new Map(variants.map((v) => [v.variantId, v]));
   const lines: NormalizedLine[] = [];
+  // One clock reading for the whole cart, so a sale ending mid-request
+  // can't price two lines of the same product differently.
+  const now = Date.now();
 
   for (const { productId, variantId, quantity, customNote } of merged.values()) {
     const variant = byVariantId.get(variantId);
@@ -86,7 +90,13 @@ function normalize(items: unknown, variants: CheckoutVariant[]): NormalizedLine[
       variantId,
       productId,
       quantity,
-      priceCents: customNote ? CUSTOM_VERSION_PRICE_CENTS : variant.priceCents,
+      // A live sale lowers unit_amount itself rather than attaching a Stripe
+      // coupon: the `discounts` param can't be combined with
+      // allow_promotion_codes, and Stripe Tax then computes on the price
+      // actually charged. Custom versions keep their flat price.
+      priceCents: customNote
+        ? CUSTOM_VERSION_PRICE_CENTS
+        : priceWithSale(variant.priceCents, variant.product, now),
       currency: variant.product.currency,
       productName: variant.product.name,
       variantLabel: buildVariantLabel(variant.optionValues, variant.product.options),

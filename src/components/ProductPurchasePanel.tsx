@@ -21,6 +21,12 @@ type Props = {
   variants: Variant[];
   category?: string | null;
   sold?: boolean;
+  /**
+   * The product's sale price when a sale is live right now, else null.
+   * Decided on the server at render time, so the shopper's own clock can't
+   * show a sale that has ended — and checkout re-checks it regardless.
+   */
+  liveSalePriceCents?: number | null;
 };
 
 export default function ProductPurchasePanel({
@@ -31,6 +37,7 @@ export default function ProductPurchasePanel({
   variants,
   category,
   sold,
+  liveSalePriceCents = null,
 }: Props) {
   const { addItem } = useCart();
   const isOneOfOne = category === "One of One";
@@ -48,11 +55,14 @@ export default function ProductPurchasePanel({
   const variantByKey = new Map(variants.map((v) => [variantOptionKey(v.optionValues), v]));
   const allSelected = options.every((option) => selected[option.name] !== undefined);
   const matchedVariant = allSelected ? variantByKey.get(variantOptionKey(selected)) : undefined;
+  // A sale only ever lowers a size's price — same rule as priceWithSale.
+  const withSale = (regularCents: number) =>
+    liveSalePriceCents === null ? regularCents : Math.min(regularCents, liveSalePriceCents);
+  const regularPriceCents = matchedVariant?.priceCents ?? variants[0]?.priceCents ?? 0;
   // Once the original is claimed the only thing left to buy is a custom
   // version, so that's the price the headline shows.
-  const displayPriceCents = sold
-    ? CUSTOM_VERSION_PRICE_CENTS
-    : (matchedVariant?.priceCents ?? variants[0]?.priceCents ?? 0);
+  const displayPriceCents = sold ? CUSTOM_VERSION_PRICE_CENTS : withSale(regularPriceCents);
+  const compareAtCents = !sold && displayPriceCents < regularPriceCents ? regularPriceCents : null;
 
   function selectValue(optionName: string, value: string) {
     setSelected((prev) => ({ ...prev, [optionName]: value }));
@@ -76,7 +86,7 @@ export default function ProductPurchasePanel({
       variantId: matchedVariant.id,
       name,
       variantLabel: buildVariantLabel(selected, options),
-      priceCents: matchedVariant.priceCents,
+      priceCents: withSale(matchedVariant.priceCents),
       shippingCents,
     });
   }
@@ -120,10 +130,25 @@ export default function ProductPurchasePanel({
           utility) — same trick the About page's h1 uses. */}
       <h1 className="mb-6 !text-2xl sm:!text-3xl">{name}</h1>
 
-      <div className="mb-8 flex items-baseline gap-3">
-        <span className="text-4xl font-bold text-[var(--text-primary)]">
+      <div className="mb-8 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span
+          className={`text-4xl font-bold ${
+            compareAtCents !== null ? "text-[var(--accent)]" : "text-[var(--text-primary)]"
+          }`}
+        >
           {formatPrice(displayPriceCents)}
         </span>
+        {compareAtCents !== null && (
+          <>
+            <span className="text-xl text-[var(--text-muted)] line-through">
+              <span className="sr-only">Regular price </span>
+              {formatPrice(compareAtCents)}
+            </span>
+            <span className="bg-[var(--accent)] px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-[var(--on-accent)]">
+              Sale
+            </span>
+          </>
+        )}
         <span className="text-sm text-[var(--text-muted)]">
           {shippingCents === 0 ? "Free shipping" : `+ ${formatPrice(shippingCents)} shipping`}
         </span>

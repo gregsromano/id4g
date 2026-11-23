@@ -6,6 +6,7 @@ import { optionsToText, PRODUCT_CATEGORIES } from "@/lib/product-options";
 import ImageReorderGrid from "@/components/admin/ImageReorderGrid";
 import SeoField from "@/components/admin/SeoField";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import SaleFields from "@/components/admin/SaleFields";
 import SaveButton from "@/components/admin/SaveButton";
 import SizeOptionsField from "@/components/admin/SizeOptionsField";
 import UnsavedChangesForm, { GuardedLink } from "@/components/admin/UnsavedChangesForm";
@@ -160,6 +161,23 @@ export default async function AdminProductEditPage({
               />
             </Field>
           </div>
+          </div>
+        </section>
+
+        {/* Sale — inside the same form, saved by the top Save button. */}
+        <section className="mt-6 border border-[var(--border)] p-6">
+          <span className="section-label">Sale</span>
+          <p className="mt-2 max-w-prose text-sm text-[var(--text-muted)]">
+            Put this product on sale for a set time. Shoppers see the regular
+            price crossed out next to the sale price.
+          </p>
+          <div className="mt-4">
+            <SaleFields
+              salePriceCents={product.salePriceCents}
+              saleStartsAt={product.saleStartsAt}
+              saleEndsAt={product.saleEndsAt}
+              regularPriceCents={product.priceCents}
+            />
           </div>
         </section>
 

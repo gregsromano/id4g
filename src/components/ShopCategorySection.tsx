@@ -1,4 +1,4 @@
-import { currentPriceCents, formatPrice } from "@/lib/product";
+import { listingPriceLabels } from "@/lib/product";
 import type { Product } from "@/lib/products";
 import ProductQuickView from "@/components/ProductQuickView";
 
@@ -27,7 +27,7 @@ export default function ShopCategorySection({
                 key={product.id}
                 href={`/products/${product.slug}`}
                 name={product.name}
-                priceLabel={formatPrice(currentPriceCents(product))}
+                {...listingPriceLabels(product)}
                 image={product.images[0]}
                 sold={product.sold}
               />

@@ -13,6 +13,7 @@ export default function ProductQuickView({
   href,
   name,
   priceLabel,
+  compareAtLabel,
   image,
   sold,
   compact,
@@ -20,6 +21,8 @@ export default function ProductQuickView({
   href: string;
   name: string;
   priceLabel: string;
+  /** Regular price, shown struck through, when the product is on sale. */
+  compareAtLabel?: string | null;
   image: QuickViewImage | undefined;
   sold?: boolean;
   /** Smaller card for the homepage's dense 5-across rows. */
@@ -81,6 +84,15 @@ export default function ProductQuickView({
             )}
 
             {sold && <SoldOverlay size="sm" />}
+            {compareAtLabel && !sold && (
+              <span
+                className={`absolute left-2 top-2 bg-[var(--accent)] font-bold uppercase tracking-widest text-[var(--on-accent)] ${
+                  compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-xs"
+                }`}
+              >
+                Sale
+              </span>
+            )}
           </div>
           <h3
             className={`font-semibold text-[var(--text-primary)] ${
@@ -91,6 +103,16 @@ export default function ProductQuickView({
           </h3>
           <p className={`mt-1 font-bold text-[var(--accent)] ${compact ? "text-base" : "text-xl"}`}>
             {priceLabel}
+            {compareAtLabel && (
+              <span
+                className={`ml-2 font-normal text-[var(--text-muted)] line-through ${
+                  compact ? "text-xs" : "text-sm"
+                }`}
+              >
+                <span className="sr-only">Regular price </span>
+                {compareAtLabel}
+              </span>
+            )}
           </p>
         </Link>
 
