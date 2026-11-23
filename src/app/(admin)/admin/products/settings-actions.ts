@@ -169,3 +169,26 @@ export async function removeSitewideSaleAction(): Promise<SitewideSaleState> {
   revalidatePath("/admin/products");
   return { ok: true };
 }
+
+/**
+ * The switch flipped ON: saves whatever percent and dates are typed in the
+ * box right now and switches the sale on, in one step — so there's no
+ * separate Save to remember first. Same validation as the Save button.
+ */
+export async function turnOnSitewideSaleAction(draft: {
+  percent: string;
+  startsAt: string;
+  endsAt: string;
+}): Promise<SitewideSaleState> {
+  await requireAdmin();
+  if (!String(draft.percent ?? "").trim()) return { error: "Enter a percent off first." };
+
+  const formData = new FormData();
+  formData.set("percent", String(draft.percent ?? ""));
+  formData.set("starts_at", String(draft.startsAt ?? ""));
+  formData.set("ends_at", String(draft.endsAt ?? ""));
+  const saved = await saveSitewideSaleAction(null, formData);
+  if (saved && "error" in saved) return saved;
+
+  return setSitewideSaleEnabledAction(true);
+}

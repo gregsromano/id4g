@@ -3,10 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 
-import { setProductSaleEnabledAction } from "@/app/(admin)/admin/products/actions";
+import {
+  setProductSaleEnabledAction,
+  turnOnProductSaleAction,
+} from "@/app/(admin)/admin/products/actions";
 
 import { formatPrice, saleStatus, type SaleWindow } from "@/lib/product";
 import { formatWhen, isoToLocalInput, localInputToIso, localTimeZoneName } from "@/lib/schedule";
+import DateTimeField from "./DateTimeField";
 import { useDirty } from "./UnsavedChangesForm";
 
 const inputClass =
@@ -42,7 +46,6 @@ export default function SaleFields({
 }) {
   const dirtyCtx = useDirty();
   const priceRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLInputElement>(null);
 
   const [price, setPrice] = useState(salePriceCents === null ? "" : (salePriceCents / 100).toFixed(2));
   const [shipping, setShipping] = useState(
@@ -66,8 +69,7 @@ export default function SaleFields({
   // edit is taken into account.
   useEffect(() => {
     const priceInput = priceRef.current;
-    const endInput = endRef.current;
-    if (!priceInput || !endInput) return;
+    if (!priceInput) return;
 
     let nextPriceError: string | null = null;
     if (price.trim()) {
@@ -83,15 +85,18 @@ export default function SaleFields({
         nextPriceError = `The sale price has to be below the base price (${formatPrice(baseCents)}).`;
       }
     }
-    priceInput.setCustomValidity(nextPriceError ?? "");
     setPriceError(nextPriceError);
 
     const nextEndError =
       startIso && endIso && Date.parse(endIso) <= Date.parse(startIso)
         ? "The sale has to end after it starts."
         : null;
-    endInput.setCustomValidity(nextEndError ?? "");
     setEndError(nextEndError);
+
+    // Both problems block Save through the price field: the date boxes swap
+    // between a text box and the native picker (see DateTimeField), so the
+    // price input is the one stable field to hang the browser's message on.
+    priceInput.setCustomValidity(nextPriceError ?? nextEndError ?? "");
   }, [price, startIso, endIso, regularPriceCents]);
 
   function clearSale() {
@@ -110,10 +115,12 @@ export default function SaleFields({
 
   return (
     <div>
+      {/* Keyed on the saved state so it re-syncs after a save or refresh. */}
       <SaleSwitch
+        key={`${saleEnabled}-${salePriceCents}`}
         productId={productId}
-        enabled={saleEnabled}
-        hasSavedSale={salePriceCents !== null}
+        enabled={saleEnabled && salePriceCents !== null}
+        draft={{ price, shipping, startsAt: startIso, endsAt: endIso }}
       />
 
       {status === "off" && salePriceCents !== null && (
@@ -203,10 +210,13 @@ export default function SaleFields({
           <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
             Starts
           </span>
-          <input
-            type="datetime-local"
+          <DateTimeField
+            label="Starts"
             value={mounted ? isoToLocalInput(startIso || null) : ""}
-            onChange={(e) => setStartIso(localInputToIso(e.target.value))}
+            onChange={(v) => {
+              setStartIso(localInputToIso(v));
+              dirtyCtx?.setDirty(true);
+            }}
             disabled={!price.trim()}
             className={`${inputClass} disabled:opacity-40`}
           />
@@ -216,11 +226,13 @@ export default function SaleFields({
           <span className="mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]">
             Ends
           </span>
-          <input
-            ref={endRef}
-            type="datetime-local"
+          <DateTimeField
+            label="Ends"
             value={mounted ? isoToLocalInput(endIso || null) : ""}
-            onChange={(e) => setEndIso(localInputToIso(e.target.value))}
+            onChange={(v) => {
+              setEndIso(localInputToIso(v));
+              dirtyCtx?.setDirty(true);
+            }}
             disabled={!price.trim()}
             className={`${inputClass} disabled:opacity-40`}
           />
@@ -257,18 +269,19 @@ export default function SaleFields({
 
 /**
  * The sale's on/off switch. Saves the moment it's flipped (its own server
- * action, not the main Save), so it's the quick way to run a sale with no
- * dates: set a price, Save, then flip this on and off as needed. It's a
- * plain button, so flipping it doesn't mark the edit form as unsaved.
+ * action, not the main Save). Turning it ON also saves the sale price,
+ * shipping and dates currently typed in, so a sale with no dates is just:
+ * type a price, flip it on. It's a plain button, so flipping it doesn't mark
+ * the edit form as unsaved.
  */
 function SaleSwitch({
   productId,
   enabled,
-  hasSavedSale,
+  draft,
 }: {
   productId: string;
   enabled: boolean;
-  hasSavedSale: boolean;
+  draft: { price: string; shipping: string; startsAt: string; endsAt: string };
 }) {
   const [on, setOn] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
@@ -280,7 +293,9 @@ function SaleSwitch({
     setOn(next);
     setError(null);
     startSaving(async () => {
-      const result = await setProductSaleEnabledAction(productId, next);
+      const result = next
+        ? await turnOnProductSaleAction(productId, draft)
+        : await setProductSaleEnabledAction(productId, false);
       if ("error" in result) {
         setOn(!next); // roll back to what the server still has
         setError(result.error);
@@ -295,33 +310,29 @@ function SaleSwitch({
       <div>
         <p className="text-sm font-semibold text-[var(--text-primary)]">Sale on / off</p>
         <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-          {!hasSavedSale
-            ? "Enter a sale price below and click Save first."
-            : saving
-              ? "Saving…"
-              : on
-                ? "On — no dates needed. Switch off any time; the sale stays saved."
-                : "Off — regular price showing. The sale stays saved for next time."}
+          {saving
+            ? "Saving…"
+            : on
+              ? "On — no dates needed. Switch off any time; the sale stays saved."
+              : "Off — type a sale price below and flip this on. No Save or dates needed."}
         </p>
         {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
       </div>
       <button
         type="button"
         role="switch"
-        aria-checked={hasSavedSale && on}
+        aria-checked={on}
         aria-label="Sale on or off"
         onClick={toggle}
-        disabled={!hasSavedSale || saving}
+        disabled={saving}
         className={`relative h-11 w-[72px] shrink-0 border transition-colors disabled:opacity-40 ${
-          hasSavedSale && on
-            ? "border-[var(--accent)] bg-[var(--accent)]/20"
-            : "border-[var(--border)] bg-transparent"
+          on ? "border-[var(--accent)] bg-[var(--accent)]/20" : "border-[var(--border)] bg-transparent"
         }`}
       >
         {/* 44px tall hit area: the admin's touch-target floor. */}
         <span
           className={`absolute top-1/2 h-8 w-8 -translate-y-1/2 transition-all ${
-            hasSavedSale && on ? "left-[34px] bg-[var(--accent)]" : "left-1 bg-[var(--text-muted)]"
+            on ? "left-[34px] bg-[var(--accent)]" : "left-1 bg-[var(--text-muted)]"
           }`}
         />
       </button>

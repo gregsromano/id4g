@@ -538,6 +538,42 @@ export async function setProductSaleEnabledAction(
   return { ok: true };
 }
 
+/**
+ * The Sale switch flipped ON: saves the sale price, sale shipping and dates
+ * currently typed in the Sale section and switches the sale on, in one step
+ * — so the switch works without pressing the main Save first. Validated
+ * exactly like Save (parseSale).
+ */
+export async function turnOnProductSaleAction(
+  id: string,
+  draft: { price: string; shipping: string; startsAt: string; endsAt: string },
+): Promise<{ error: string } | { ok: true }> {
+  await requireAdmin();
+  if (typeof id !== "string" || !id) return { error: "Missing product." };
+  if (!String(draft.price ?? "").trim()) return { error: "Enter a sale price first." };
+
+  const product = await getProductWithVariants(id);
+  if (!product) return { error: "Product not found." };
+
+  const formData = new FormData();
+  formData.set("sale_price", String(draft.price ?? ""));
+  formData.set("sale_shipping", String(draft.shipping ?? ""));
+  formData.set("sale_starts_at", String(draft.startsAt ?? ""));
+  formData.set("sale_ends_at", String(draft.endsAt ?? ""));
+
+  try {
+    const sale = parseSale(formData, product.priceCents);
+    await updateProduct(id, sale);
+    await setProductSaleEnabled(id, true);
+  } catch (error) {
+    return { error: error instanceof Error ? `${error.message}.` : "Could not save that." };
+  }
+
+  revalidateProduct(id, product.slug);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function setProductSoldAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const id = requireId(formData);

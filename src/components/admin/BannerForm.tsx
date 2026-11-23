@@ -31,6 +31,8 @@ const inputClass =
   "w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)] disabled:opacity-40";
 const labelClass = "mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]";
 
+import DateTimeField from "./DateTimeField";
+
 /**
  * The announcement banner under the storefront menu: an on/off switch, its
  * text, an optional start and end, its colors and type, and a live preview.
@@ -169,7 +171,7 @@ export default function BannerForm({
             onChange={(e) => setText(e.target.value)}
             maxLength={maxLength}
             rows={2}
-            placeholder="Free shipping on all hoodies this weekend"
+            placeholder="Type your banner text"
             className={inputClass}
           />
         </label>
@@ -177,20 +179,20 @@ export default function BannerForm({
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <label className="block">
             <span className={labelClass}>Starts</span>
-            <input
-              type="datetime-local"
+            <DateTimeField
+              label="Starts"
               value={mounted ? isoToLocalInput(startIso || null) : ""}
-              onChange={(e) => setStartIso(localInputToIso(e.target.value))}
+              onChange={(v) => setStartIso(localInputToIso(v))}
               disabled={!hasText}
               className={inputClass}
             />
           </label>
           <label className="block">
             <span className={labelClass}>Ends</span>
-            <input
-              type="datetime-local"
+            <DateTimeField
+              label="Ends"
               value={mounted ? isoToLocalInput(endIso || null) : ""}
-              onChange={(e) => setEndIso(localInputToIso(e.target.value))}
+              onChange={(v) => setEndIso(localInputToIso(v))}
               disabled={!hasText}
               className={inputClass}
             />

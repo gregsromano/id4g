@@ -7,6 +7,7 @@ import {
   removeSitewideSaleAction,
   saveSitewideSaleAction,
   setSitewideSaleEnabledAction,
+  turnOnSitewideSaleAction,
   type SitewideSaleState,
 } from "@/app/(admin)/admin/products/settings-actions";
 import { sitewideSaleStatus, type SitewideSale } from "@/lib/product";
@@ -20,6 +21,8 @@ import {
 const inputClass =
   "w-full border border-[var(--border)] bg-[var(--bg-section-alt)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)] disabled:opacity-40";
 const labelClass = "mb-2 block text-xs uppercase tracking-widest text-[var(--text-muted)]";
+
+import DateTimeField from "./DateTimeField";
 
 /**
  * Percent off every product at once, with an on/off switch and optional
@@ -89,8 +92,8 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
             server) resets the switch instead of leaving it showing On. */}
         <EnabledSwitch
           key={`${sale.enabled}-${sale.percentOff}`}
-          enabled={sale.enabled}
-          hasSavedSale={sale.percentOff !== null}
+          enabled={sale.enabled && sale.percentOff !== null}
+          draft={{ percent, startsAt: startIso, endsAt: endIso }}
         />
       </div>
 
@@ -105,7 +108,7 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
           {status === "none" && (
             <>
               <strong className="text-[var(--text-primary)]">No site-wide sale.</strong> Enter a
-              percent below, click Save, then switch it on.
+              percent below and flip the switch on.
             </>
           )}
           {status === "off" && (
@@ -148,7 +151,7 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
                 value={percent}
                 onChange={(e) => setPercent(e.target.value)}
                 inputMode="numeric"
-                placeholder="20"
+                placeholder="Enter %"
                 className={`${inputClass} pr-8`}
               />
               <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)]">
@@ -158,20 +161,20 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
           </label>
           <label className="block">
             <span className={labelClass}>Starts</span>
-            <input
-              type="datetime-local"
+            <DateTimeField
+              label="Starts"
               value={mounted ? isoToLocalInput(startIso || null) : ""}
-              onChange={(e) => setStartIso(localInputToIso(e.target.value))}
+              onChange={(v) => setStartIso(localInputToIso(v))}
               disabled={!hasPercent}
               className={inputClass}
             />
           </label>
           <label className="block">
             <span className={labelClass}>Ends</span>
-            <input
-              type="datetime-local"
+            <DateTimeField
+              label="Ends"
               value={mounted ? isoToLocalInput(endIso || null) : ""}
-              onChange={(e) => setEndIso(localInputToIso(e.target.value))}
+              onChange={(v) => setEndIso(localInputToIso(v))}
               disabled={!hasPercent}
               className={inputClass}
             />
@@ -217,8 +220,18 @@ export default function SitewideSaleForm({ sale }: { sale: SitewideSale }) {
   );
 }
 
-/** On/off switch that saves immediately, rolling back if the save fails. */
-function EnabledSwitch({ enabled, hasSavedSale }: { enabled: boolean; hasSavedSale: boolean }) {
+/**
+ * On/off switch that saves immediately, rolling back if the save fails.
+ * Turning it on also saves the percent and dates currently typed in, so it
+ * works without pressing Save first.
+ */
+function EnabledSwitch({
+  enabled,
+  draft,
+}: {
+  enabled: boolean;
+  draft: { percent: string; startsAt: string; endsAt: string };
+}) {
   const [on, setOn] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -229,7 +242,9 @@ function EnabledSwitch({ enabled, hasSavedSale }: { enabled: boolean; hasSavedSa
     setOn(next);
     setError(null);
     startSaving(async () => {
-      const result = await setSitewideSaleEnabledAction(next);
+      const result = next
+        ? await turnOnSitewideSaleAction(draft)
+        : await setSitewideSaleEnabledAction(false);
       if (result && "error" in result) {
         setOn(!next);
         setError(result.error);
@@ -239,7 +254,7 @@ function EnabledSwitch({ enabled, hasSavedSale }: { enabled: boolean; hasSavedSa
     });
   }
 
-  const shownOn = hasSavedSale && on;
+  const shownOn = on;
   return (
     <div className="flex shrink-0 flex-col items-end gap-1">
       <button
@@ -248,7 +263,7 @@ function EnabledSwitch({ enabled, hasSavedSale }: { enabled: boolean; hasSavedSa
         aria-checked={shownOn}
         aria-label="Site-wide sale on or off"
         onClick={toggle}
-        disabled={!hasSavedSale || saving}
+        disabled={saving}
         className={`relative h-11 w-[72px] border transition-colors disabled:opacity-40 ${
           shownOn ? "border-[var(--accent)] bg-[var(--accent)]/20" : "border-[var(--border)] bg-transparent"
         }`}
