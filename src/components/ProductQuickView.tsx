@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { cardFitTransform } from "@/lib/card-fit";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
 import SoldOverlay from "@/components/SoldOverlay";
 
-type QuickViewImage = { url: string; alt: string; posterUrl?: string | null };
+type QuickViewImage = { url: string; alt: string; posterUrl?: string | null; cardFit?: unknown };
 
 export default function ProductQuickView({
   href,
@@ -47,11 +48,11 @@ export default function ProductQuickView({
     <>
       <div className="group relative">
         <Link href={href} className="block">
-          {/* The artwork shows whole (object-contain, no base zoom): photos
-              shot edge to edge, like the tees, were losing their sleeves and
-              hem to the old 1.2 crop. overflow-hidden keeps the small hover
-              zoom from spilling over the product name below and the "Shop"
-              heading above. */}
+          {/* The artwork shows whole: object-contain, zoomed only as far as
+              that photo's own empty space allows (cardFit), so an edge-to-edge
+              shot like the tees keeps its sleeves and hem. overflow-hidden
+              keeps the small hover zoom from spilling over the product name
+              below and the "Shop" heading above. */}
           <div className="relative aspect-square w-full overflow-hidden">
             {image ? (
               <>
@@ -78,6 +79,10 @@ export default function ProductQuickView({
                     width={800}
                     height={800}
                     className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
+                    // Zooms a photo with empty space around its subject until
+                    // the subject fills the square — measured per photo, so
+                    // one shot edge to edge is never cropped.
+                    style={{ transform: cardFitTransform(image.cardFit) }}
                   />
                 )}
               </>

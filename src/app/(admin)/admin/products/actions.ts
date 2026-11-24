@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/admin-dal";
+import { parseCardFit } from "@/lib/card-fit";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { cartesianCombinations, parseOptionsText, PRODUCT_CATEGORIES } from "@/lib/product-options";
 import {
@@ -422,6 +423,8 @@ export async function attachProductUpload(
   productId: string,
   path: string,
   alt: string,
+  /** Measured in the browser before upload (AddImageTile); validated, never trusted as-is. */
+  cardFit?: unknown,
 ): Promise<UploadImagesResult> {
   await requireAdmin();
   if (!UUID_RE.test(productId)) return { ok: false, message: "Invalid product id" };
@@ -429,8 +432,13 @@ export async function attachProductUpload(
   const verified = await verifyProductUpload(productId, path);
   if (!verified.ok) return verified;
 
+  const fit = parseCardFit(cardFit);
   await appendProductImages(productId, [
-    { url: verified.publicUrl, alt: alt.slice(0, MAX_IMAGE_ALT_LENGTH) },
+    {
+      url: verified.publicUrl,
+      alt: alt.slice(0, MAX_IMAGE_ALT_LENGTH),
+      ...(fit ? { cardFit: fit } : {}),
+    },
   ]);
   revalidateProduct(productId);
 

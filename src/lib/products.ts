@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { CardFit } from "./card-fit";
 import { assertServiceRoleConfigured, getSupabaseAdmin } from "./supabase";
 import { buildVariantLabel, variantOptionKey, type ProductOption } from "./variant";
 import { getSiteSettings } from "./settings";
@@ -26,6 +27,8 @@ export type ProductImage = {
   position: number;
   /** Still frame shown before a video plays. Meaningless for a photo entry. */
   posterUrl?: string | null;
+  /** Where the subject sits in the square product card; see lib/card-fit. Photos only. */
+  cardFit?: CardFit | null;
 };
 
 export type Product = {
@@ -618,7 +621,7 @@ export async function replaceVariants(
 
 export async function appendProductImages(
   productId: string,
-  newImages: { url: string; alt: string }[],
+  newImages: { url: string; alt: string; cardFit?: CardFit | null }[],
 ): Promise<void> {
   assertServiceRoleConfigured();
   const supabase = getSupabaseAdmin();

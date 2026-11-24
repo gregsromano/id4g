@@ -7,6 +7,7 @@ import {
   attachProductUpload,
   createProductUploadUrl,
 } from "@/app/(admin)/admin/products/actions";
+import { measureCardFit, type CardFit } from "@/lib/card-fit";
 import { getSupabase } from "@/lib/supabase";
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -69,7 +70,8 @@ export default function AddImageTile({ productId }: { productId: string }) {
           break;
         }
 
-        const attached = await attachProductUpload(productId, signed.path, file.name);
+        const cardFit = isVideo ? null : await measureFile(file);
+        const attached = await attachProductUpload(productId, signed.path, file.name, cardFit);
         if (!attached.ok) {
           setError(attached.message);
           break;
@@ -116,6 +118,33 @@ export default function AddImageTile({ productId }: { productId: string }) {
       )}
     </label>
   );
+}
+
+/** Longest side the photo is shrunk to for measuring — plenty for a card-sized crop, and fast. */
+const MEASURE_SIDE = 400;
+
+/**
+ * Where the photo's subject sits, so its product card can zoom in to fill the
+ * square (lib/card-fit). Best effort: a photo the browser can't decode here
+ * just gets no zoom.
+ */
+async function measureFile(file: File): Promise<CardFit | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MEASURE_SIDE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    return measureCardFit(ctx.getImageData(0, 0, width, height).data, width, height);
+  } catch {
+    return null;
+  }
 }
 
 function Spinner() {
