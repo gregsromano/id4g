@@ -6,7 +6,7 @@ import { buildVariantLabel } from "@/lib/variant";
 import { UNIT_WEIGHT_OZ } from "@/lib/fulfillment";
 import { syncScheduledCodes } from "@/lib/discounts";
 import { getSiteSettings, type SiteSettings } from "@/lib/settings";
-import { customVersionPriceCents, priceWithSale, shippingWithSale } from "@/lib/product";
+import { isPurchasable, isUuid, priceLine, regularLinePriceCents } from "@/lib/line-pricing";
 
 type IncomingItem = {
   productId: string;
@@ -28,6 +28,8 @@ type NormalizedLine = {
   taxCode: string;
   weightOz: number;
   shippingCents: number;
+  /** A live sale (product or site-wide) lowered this line's price. */
+  onSale: boolean;
 };
 
 /** Stripe metadata values are capped at 500 chars; this leaves headroom. */
@@ -55,7 +57,7 @@ function normalize(
     { productId: string; variantId: string; quantity: number; customNote: string }
   >();
   for (const raw of items as IncomingItem[]) {
-    if (!raw || typeof raw.productId !== "string" || typeof raw.variantId !== "string") {
+    if (!raw || !isUuid(raw.productId) || !isUuid(raw.variantId)) {
       return null;
     }
     const qty = Number(raw.quantity);
@@ -83,35 +85,27 @@ function normalize(
   for (const { productId, variantId, quantity, customNote } of merged.values()) {
     const variant = byVariantId.get(variantId);
     if (!variant) return null;
-    // Defense against a spoofed productId/variantId pairing.
-    if (variant.productId !== productId) return null;
-    if (variant.product.status !== "active") return null;
-    // A sold one-of-one can still be ordered as a custom recreation
-    // (customNote present) but never re-sold as the claimed original.
-    if (variant.product.sold && !customNote) return null;
+    // Spoofed productId/variantId pairing, a product that isn't live, or a
+    // sold one-of-one claimed as the original rather than a custom version.
+    if (!isPurchasable(variant, productId, customNote)) return null;
+
+    // Same rule /api/cart/prices shows in the cart drawer. A live sale
+    // lowers unit_amount itself rather than attaching a Stripe coupon, so
+    // Stripe Tax computes on the price actually charged.
+    const priced = priceLine(variant, customNote, sitewideSale, now);
 
     lines.push({
       variantId,
       productId,
       quantity,
-      // A live sale lowers unit_amount itself rather than attaching a Stripe
-      // coupon: the `discounts` param can't be combined with
-      // allow_promotion_codes, and Stripe Tax then computes on the price
-      // actually charged. Custom versions get only the site-wide percent.
-      priceCents: customNote
-        ? customVersionPriceCents(sitewideSale, now)
-        : priceWithSale(variant.priceCents, variant.product, now, sitewideSale),
+      ...priced,
+      onSale: priced.priceCents < regularLinePriceCents(variant, customNote),
       currency: variant.product.currency,
       productName: variant.product.name,
       variantLabel: buildVariantLabel(variant.optionValues, variant.product.options),
       customNote,
       taxCode: variant.product.taxCode,
       weightOz: variant.product.weightOz ?? UNIT_WEIGHT_OZ,
-      // Sale shipping applies to the product's own sale, not to a custom
-      // version, which is priced on its own terms.
-      shippingCents: customNote
-        ? variant.product.shippingCents
-        : shippingWithSale(variant.product.shippingCents, variant.product, now),
     });
   }
 
@@ -129,7 +123,9 @@ export async function POST(req: NextRequest) {
         ...new Set(
           (body.items as IncomingItem[])
             .map((i) => i?.variantId)
-            .filter((id): id is string => typeof id === "string"),
+            // Only well-formed ids reach the database; a malformed one would
+            // make the lookup error out (500) instead of an "Invalid cart" 400.
+            .filter(isUuid),
         ),
       ]
     : [];
@@ -147,6 +143,7 @@ export async function POST(req: NextRequest) {
   }
 
   const currency = normalized[0].currency;
+  const cartHasSale = normalized.some((line) => line.onSale);
 
   // tax_behavior "exclusive" = tax is added on top of the listed price.
   const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = normalized.map((line) => {
@@ -198,15 +195,14 @@ export async function POST(req: NextRequest) {
     // Stripe Tax computes sales tax from the shipping address, and only
     // charges in states where you've added a tax registration.
     automatic_tax: { enabled: true },
-    // Renders Stripe's "Add promotion code" box. Validation, redemption
-    // limits and the active/inactive state are all enforced by Stripe at
-    // redemption, so no code here needs to know which codes exist — and
-    // Stripe Tax recomputes tax on the DISCOUNTED subtotal, which is the part
-    // a hand-applied discount would silently get wrong.
-    //
-    // Mutually exclusive with the `discounts` param: passing both is an API
-    // error, so a code can never be force-applied here as well.
-    allow_promotion_codes: true,
+    // Renders Stripe's "Add promotion code" box — except when anything in
+    // the cart is on sale: a sale price is already the discount, and promo
+    // codes never stack on top of it. Stripe applies a code to the whole
+    // order, so one sale item turns codes off for the entire checkout.
+    // Validation, redemption limits and active/inactive state are enforced
+    // by Stripe at redemption, and Stripe Tax recomputes tax on the
+    // DISCOUNTED subtotal.
+    allow_promotion_codes: !cartHasSale,
     // Shipping is a choice, not a fixed charge: some buyers collect in
     // person. Stripe renders these as radio buttons and records which one
     // was picked on the session, so the fulfillment queue can tell a pickup

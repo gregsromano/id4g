@@ -88,6 +88,59 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, hydrated]);
 
+  const lineSignature = items.map((i) => lineKey(i.productId, i.variantId, i.customNote)).join("|");
+
+  // Re-price the cart whenever it opens (adding an item opens it too). Prices
+  // are snapshots from add-to-cart time, so a sale that started or ended
+  // since would otherwise show one total here and charge another at Stripe.
+  // Only price/shipping change; a line that can't be bought any more is left
+  // for checkout to reject with its usual message.
+  useEffect(() => {
+    if (!hydrated || !isOpen || items.length === 0) return;
+    const controller = new AbortController();
+    const sent = items.map((i) => ({
+      productId: i.productId,
+      variantId: i.variantId,
+      customNote: i.customNote,
+    }));
+    fetch("/api/cart/prices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: sent }),
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { prices?: ({ priceCents: number; shippingCents: number } | null)[] } | null) => {
+        const prices = data?.prices;
+        if (!Array.isArray(prices) || prices.length !== sent.length) return;
+        const fresh = new Map<string, { priceCents: number; shippingCents: number }>();
+        sent.forEach((line, index) => {
+          const price = prices[index];
+          if (price) fresh.set(lineKey(line.productId, line.variantId, line.customNote), price);
+        });
+        setItems((prev) => {
+          let changed = false;
+          const next = prev.map((item) => {
+            const price = fresh.get(lineKey(item.productId, item.variantId, item.customNote));
+            if (!price) return item;
+            if (price.priceCents === item.priceCents && price.shippingCents === item.shippingCents) {
+              return item;
+            }
+            changed = true;
+            return { ...item, ...price };
+          });
+          // Unchanged prices keep the same array, so this doesn't loop.
+          return changed ? next : prev;
+        });
+      })
+      .catch(() => {
+        // Offline or aborted: keep showing the saved prices; checkout still charges the real ones.
+      });
+    return () => controller.abort();
+    // Re-run on open and when the set of lines changes, not on quantity edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, isOpen, lineSignature]);
+
   // Keep the cart in sync across tabs.
   useEffect(() => {
     function onStorage(e: StorageEvent) {
