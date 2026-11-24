@@ -47,10 +47,11 @@ export default function ProductQuickView({
     <>
       <div className="group relative">
         <Link href={href} className="block">
-          {/* overflow-hidden is load-bearing: the artwork is scaled to 1.2
-              (and 1.26 on hover) to crop in on the print, and without a clip
-              it spilled outside this box — over the product name below it,
-              past the card's left edge, and up under the "Shop" heading. */}
+          {/* The artwork shows whole (object-contain, no base zoom): photos
+              shot edge to edge, like the tees, were losing their sleeves and
+              hem to the old 1.2 crop. overflow-hidden keeps the small hover
+              zoom from spilling over the product name below and the "Shop"
+              heading above. */}
           <div className="relative aspect-square w-full overflow-hidden">
             {image ? (
               <>
@@ -68,7 +69,7 @@ export default function ProductQuickView({
                     playsInline
                     preload="metadata"
                     aria-label={image.alt || name}
-                    className="pointer-events-none h-full w-full scale-[1.2] object-contain transition-transform duration-500 group-hover:scale-[1.26]"
+                    className="pointer-events-none h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                 ) : (
                   <Image
@@ -76,7 +77,7 @@ export default function ProductQuickView({
                     alt={image.alt}
                     width={800}
                     height={800}
-                    className="h-full w-full scale-[1.2] object-contain transition-transform duration-500 group-hover:scale-[1.26]"
+                    className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.04]"
                   />
                 )}
               </>
