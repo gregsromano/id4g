@@ -3,7 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { UNIT_WEIGHT_OZ, type OrderItem } from "@/lib/fulfillment";
 import Stripe from "stripe";
-import { sendOrderNotification } from "@/lib/order-email";
+import { sendCustomerConfirmation, sendOrderNotification, type OrderEmailDetails } from "@/lib/order-email";
 
 /**
  * Reconstructs the point-of-sale item snapshot from the session's line items,
@@ -181,10 +181,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Email the owner only on the first, successful save — a retried event
-    // returned early above as a duplicate, so this can't double-send. Never
-    // throws; a mail failure is logged, and the order is already safe.
-    await sendOrderNotification({
+    // Email the owner and the customer only on the first, successful save —
+    // a retried event returned early above as a duplicate, so this can't
+    // double-send. Neither throws; a mail failure is logged, and the order is
+    // already safe.
+    const emailDetails: OrderEmailDetails = {
       orderId: (inserted as { id: string } | null)?.id ?? null,
       stripeSessionId: session.id,
       paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null),
@@ -202,7 +203,8 @@ export async function POST(req: NextRequest) {
       deliveryMethod,
       shippingName: shipping?.name ?? null,
       shippingAddress: shipping?.address ?? null,
-    });
+    };
+    await Promise.all([sendOrderNotification(emailDetails), sendCustomerConfirmation(emailDetails)]);
   }
 
   return NextResponse.json({ received: true });
