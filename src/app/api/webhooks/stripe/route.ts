@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { UNIT_WEIGHT_OZ, type OrderItem } from "@/lib/fulfillment";
 import Stripe from "stripe";
+import { sendOrderNotification } from "@/lib/order-email";
 
 /**
  * Reconstructs the point-of-sale item snapshot from the session's line items,
@@ -131,7 +132,7 @@ export async function POST(req: NextRequest) {
     // order we must NOT return 2xx: Stripe treats that as delivered and never
     // retries, leaving a paid order with nothing to ship against. Returning
     // 5xx makes Stripe retry with backoff.
-    const { error } = await supabaseAdmin.from("orders").insert({
+    const { data: inserted, error } = await supabaseAdmin.from("orders").insert({
       stripe_session_id: session.id,
       customer_email: session.customer_details?.email,
       customer_name: session.customer_details?.name,
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
       shipping_address: shipping?.address,
       delivery_method: deliveryMethod,
       status: "paid",
-    });
+    }).select("id").single();
 
     if (error) {
       // Retrying a delivered event re-inserts the same session. The unique
@@ -179,6 +180,29 @@ export async function POST(req: NextRequest) {
         { status: 500 },
       );
     }
+
+    // Email the owner only on the first, successful save — a retried event
+    // returned early above as a duplicate, so this can't double-send. Never
+    // throws; a mail failure is logged, and the order is already safe.
+    await sendOrderNotification({
+      orderId: (inserted as { id: string } | null)?.id ?? null,
+      stripeSessionId: session.id,
+      paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null),
+      createdAt: new Date(session.created * 1000),
+      customerName: session.customer_details?.name ?? null,
+      customerEmail: session.customer_details?.email ?? null,
+      customerPhone: session.customer_details?.phone ?? null,
+      items,
+      subtotalCents: session.amount_subtotal,
+      discountCents: session.total_details?.amount_discount ?? 0,
+      discountCode,
+      shippingCents: expanded.shipping_cost?.amount_total ?? null,
+      taxCents: session.total_details?.amount_tax ?? null,
+      totalCents: session.amount_total,
+      deliveryMethod,
+      shippingName: shipping?.name ?? null,
+      shippingAddress: shipping?.address ?? null,
+    });
   }
 
   return NextResponse.json({ received: true });
