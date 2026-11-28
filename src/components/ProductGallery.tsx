@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
 import SoldOverlay from "@/components/SoldOverlay";
+import { parseCardFit } from "@/lib/card-fit";
 
-type GalleryImage = { url: string; alt: string; posterUrl?: string | null };
+type GalleryImage = { url: string; alt: string; posterUrl?: string | null; cardFit?: unknown };
 
 export default function ProductGallery({
   images,
@@ -18,6 +19,10 @@ export default function ProductGallery({
   const [index, setIndex] = useState(0);
   const [open, setOpen] = useState(false);
   const active = images[index];
+  // The photo's subject (the garment itself) inside the square, so a click
+  // on it opens the larger view but a click on the empty space around it
+  // doesn't. A photo with no measured fit already fills the square.
+  const subject = parseCardFit(active?.cardFit) ?? { l: 0, t: 0, r: 1, b: 1 };
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +68,23 @@ export default function ProductGallery({
                 controls, so a lightbox copy would just be a second player
                 competing with the first — and its button would sit over the
                 scrubber on small screens. */}
+            {!isVideoUrl(active.url) && (
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                style={{
+                  left: `${subject.l * 100}%`,
+                  top: `${subject.t * 100}%`,
+                  width: `${(subject.r - subject.l) * 100}%`,
+                  height: `${(subject.b - subject.t) * 100}%`,
+                }}
+                // Pointer shortcut only; the + button is the one keyboard and
+                // screen-reader users get, so they don't hear it twice.
+                tabIndex={-1}
+                aria-hidden
+                className="absolute cursor-zoom-in"
+              />
+            )}
             {!isVideoUrl(active.url) && (
               <button
                 type="button"

@@ -92,7 +92,12 @@ export default async function ProductDetailPage({
 
   const images = [...product.images]
     .sort((a, b) => a.position - b.position)
-    .map((image) => ({ url: image.url, alt: image.alt, posterUrl: image.posterUrl }));
+    .map((image) => ({
+      url: image.url,
+      alt: image.alt,
+      posterUrl: image.posterUrl,
+      cardFit: image.cardFit,
+    }));
 
   // Product schema: this is what lets a search result show the price and
   // whether it is in stock, rather than just a blue link. Built from the same
