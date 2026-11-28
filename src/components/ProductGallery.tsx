@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { isVideoUrl } from "@/lib/media";
 import SoldOverlay from "@/components/SoldOverlay";
@@ -24,15 +24,34 @@ export default function ProductGallery({
   // doesn't. A photo with no measured fit already fills the square.
   const subject = parseCardFit(active?.cardFit) ?? { l: 0, t: 0, r: 1, b: 1 };
 
+  // The larger view steps through photos only: a video already plays inline
+  // on the page, so it's skipped rather than shown as a second player.
+  const photoIndexes = images.flatMap((image, i) => (isVideoUrl(image.url) ? [] : [i]));
+  const canStep = photoIndexes.length > 1;
+  const touchStartX = useRef<number | null>(null);
+
+  /** Next (+1) or previous (-1) photo, wrapping around; the page's main photo follows. */
+  function step(direction: 1 | -1) {
+    setIndex((current) => {
+      const at = photoIndexes.indexOf(current);
+      if (at === -1 || photoIndexes.length === 0) return current;
+      return photoIndexes[(at + direction + photoIndexes.length) % photoIndexes.length];
+    });
+  }
+
   useEffect(() => {
     if (!open) return;
 
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
+      if (e.key === "ArrowRight") step(1);
+      if (e.key === "ArrowLeft") step(-1);
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
+    // step only reads `images` (via photoIndexes), which this effect tracks.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, images]);
 
   return (
     <div>
@@ -155,6 +174,17 @@ export default function ProductGallery({
           aria-modal="true"
           aria-label="Larger image"
           onClick={() => setOpen(false)}
+          // Swipe left/right on a phone to change photo.
+          onTouchStart={(e) => {
+            touchStartX.current = e.touches[0]?.clientX ?? null;
+          }}
+          onTouchEnd={(e) => {
+            const start = touchStartX.current;
+            touchStartX.current = null;
+            const end = e.changedTouches[0]?.clientX;
+            if (!canStep || start === null || end === undefined) return;
+            if (Math.abs(end - start) > 50) step(end < start ? 1 : -1);
+          }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-6"
         >
           <button
@@ -178,6 +208,40 @@ export default function ProductGallery({
               className="h-full w-full object-contain"
             />
           </div>
+
+          {canStep && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous photo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(-1);
+                }}
+                className="absolute left-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-white/30 bg-black/60 text-white/80 transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] sm:left-6"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <polyline points="13,3 6,10 13,17" stroke="currentColor" strokeWidth="2.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                aria-label="Next photo"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(1);
+                }}
+                className="absolute right-2 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center border border-white/30 bg-black/60 text-white/80 transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] sm:right-6"
+              >
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+                  <polyline points="7,3 14,10 7,17" stroke="currentColor" strokeWidth="2.5" />
+                </svg>
+              </button>
+              <p className="absolute bottom-6 left-1/2 -translate-x-1/2 text-xs uppercase tracking-widest text-white/70">
+                {photoIndexes.indexOf(index) + 1} / {photoIndexes.length}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>
